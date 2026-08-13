@@ -1,0 +1,28 @@
+{
+  "name": "larasell/larasell",
+  "description": "A e-commerce package built on top of Laravel",
+  "type": "library",
+  "license": "MIT",
+  "version": "1.0.0",	
+  "authors": [
+    {
+      "name": "Nils Haberkamp",
+      "email": "haberkamp.n@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Larasell\\Larasell\\": "src"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Larasell\\Larasell\\LarasellServiceProvider"
+      ]
+    }
+  },
+  "require-dev": {
+    "orchestra/testbench": "^11.0"
+  }
+}
