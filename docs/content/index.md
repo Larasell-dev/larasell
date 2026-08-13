@@ -1,0 +1,21 @@
+---
+seo:
+  title: Larasell
+  description: Documentation for building ecommerce experiences with Larasell.
+---
+
+# Larasell
+
+Larasell is an ecommerce package built on top of Laravel.
+
+Use these guides to wire product and category data into your application.
+
+## Tasks
+
+- [Create a product listing page](/tasks/product-listing-page)
+- [Create a product detail page](/tasks/product-detail-page)
+- [Build a navigation](/tasks/building-a-navigation)
+
+## API
+
+- [Category API](/api/category)
