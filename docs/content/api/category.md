@@ -8,6 +8,16 @@ description: Fetch sibling categories, child categories, descendants, and produc
 The category model exposes relationships and query helpers for building
 storefront navigation and product listing pages.
 
+## Getting the root category
+
+Use `root()` when you want the visible top-level category.
+
+```php
+use Larasell\Larasell\Models\Category;
+
+$root = Category::query()->root()->first();
+```
+
 ## Getting the sibling categories
 
 Use `siblings()` when you want the visible categories that share the
