@@ -13,6 +13,7 @@ use Larasell\Larasell\Enums\Visibility;
  * @property int $id
  * @property string $slug
  * @property string $name
+ * @property string|null $description
  * @property Visibility $status
  *
  * @method static Builder<static> visible()

@@ -23,3 +23,4 @@ Use these guides to wire product and category data into your application.
 ## API
 
 - [Category API](/api/category)
+- [Product API](/api/product)

@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->string('slug')->unique();
             $table->string('name');
+            $table->text('description')->nullable();
             $table->string('status')->default(Visibility::Visible->value);
             $table->timestamps();
         });
