@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->json('price');
+            $table->integer('stock')->default(0);
+            $table->boolean('allow_backorders')->default(true);
             $table->string('status')->default(Visibility::Visible->value);
             $table->timestamps();
         });

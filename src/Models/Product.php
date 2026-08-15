@@ -17,6 +17,8 @@ use Larasell\Larasell\Price;
  * @property string $name
  * @property string|null $description
  * @property Price $price
+ * @property int $stock
+ * @property bool $allow_backorders
  * @property Visibility $status
  *
  * @method static Builder<static> visible()
@@ -31,6 +33,8 @@ class Product extends Model
 
     protected $casts = [
         'price' => PriceCast::class,
+        'stock' => 'integer',
+        'allow_backorders' => 'boolean',
         'status' => Visibility::class,
     ];
 

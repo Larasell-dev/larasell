@@ -15,6 +15,11 @@ Products must also include a `price` field. Price values use minor
 units, such as cents for USD, and are cast to
 `Larasell\Larasell\Price` on the model.
 
+Products include a `stock` field that defaults to `0`. By default,
+products also allow backorders, which means they can be purchased even
+when stock would go below zero. Set `allow_backorders` to `false` when a
+product should stop selling once stock reaches zero.
+
 ```php
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Enums\Currency;
@@ -29,6 +34,21 @@ $product = Product::create([
 $amount = $product->price->amount();
 $currency = $product->price->currency();
 $currencyCode = $product->price->currencyCode();
+```
+
+## Managing stock
+
+Use `stock` to store the current inventory count for the product.
+Products allow backorders by default through `allow_backorders`.
+
+```php
+$product->stock; // 0
+$product->allow_backorders; // true
+
+$product->update([
+    'stock' => 10,
+    'allow_backorders' => false,
+]);
 ```
 
 ## Getting visible products
