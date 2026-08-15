@@ -11,6 +11,26 @@ storefront product listing and detail pages.
 Products include a nullable `description` text field for longer
 plain-text product copy.
 
+Products must also include a `price` field. Price values use minor
+units, such as cents for USD, and are cast to
+`Larasell\Larasell\Price` on the model.
+
+```php
+use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Price;
+
+$product = Product::create([
+    'slug' => 'basic-plan',
+    'name' => 'Basic Plan',
+    'price' => Price::of(1299, Currency::USD),
+]);
+
+$amount = $product->price->amount();
+$currency = $product->price->currency();
+$currencyCode = $product->price->currencyCode();
+```
+
 ## Getting visible products
 
 Use `visible()` when you want to query only products that should be

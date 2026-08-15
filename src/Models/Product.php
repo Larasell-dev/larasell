@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Price;
 
 /**
  * @property int $id
  * @property string $slug
  * @property string $name
  * @property string|null $description
+ * @property Price $price
  * @property Visibility $status
  *
  * @method static Builder<static> visible()
@@ -27,6 +30,7 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'price' => PriceCast::class,
         'status' => Visibility::class,
     ];
 

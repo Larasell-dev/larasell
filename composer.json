@@ -24,5 +24,8 @@
   },
   "require-dev": {
     "orchestra/testbench": "^11.0"
+  },
+  "require": {
+    "moneyphp/money": "^4.9"
   }
 }

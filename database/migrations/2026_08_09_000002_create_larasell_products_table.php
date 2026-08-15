@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->json('price');
             $table->string('status')->default(Visibility::Visible->value);
             $table->timestamps();
         });
