@@ -1,5 +1,124 @@
-1. HandleInertiaRequest
-2. Get root category
-3. Build menu
-4. Find a way to cache that
-4.1. Maybe Inertia ::once ?
+---
+title: Building A Navigation
+description: Share a category navigation with your Inertia pages.
+---
+
+You'll learn how to create a category navigation, so that customers
+are able to browse the store from every page.
+
+## Sharing the navigation
+
+First up, share the navigation from your Inertia middleware.
+
+```php
+// app/Http/Middleware/HandleInertiaRequests.php
+<?php
+
+namespace App\Http\Middleware;
+
+use Illuminate\Http\Request;
+use Inertia\Middleware;
+
+class HandleInertiaRequests extends Middleware
+{
+    public function share(Request $request): array
+    {
+        return [
+            ...parent::share($request),
+            'navigation' => fn () => $this->navigation(),
+        ];
+    }
+}
+```
+
+Using a closure keeps the navigation lazy, so it is only built when
+Inertia needs the prop.
+
+## Getting the root category
+
+Next up, fetch the root category and load the categories you want to
+show in the menu.
+
+```php
+<?php
+
+use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Routing\CategoryUrl;
+use RuntimeException;
+
+private function navigation(): array
+{
+    $root = Category::query()
+        ->root()
+        ->first();
+
+    if (! $root) {
+        throw new RuntimeException('No root category found.');
+    }
+
+    $categories = $root->descendants()->get();
+
+    return $categories
+        ->map(fn (Category $category) => $this->navigationItem($category))
+        ->values()
+        ->all() ?? [];
+}
+
+private function navigationItem(Category $category): array
+{
+    return [
+        'name' => $category->name,
+        'url' => CategoryUrl::make($category, prefix: 'c'),
+        'children' => $category->children
+            ->map(fn (Category $category) => $this->navigationItem($category))
+            ->values()
+            ->all(),
+    ];
+}
+```
+
+The `descendants` relationship runs as a second query from the root
+category and recursively eager loads visible child categories.
+
+## Rendering a menu
+
+Finally, read the shared `navigation` prop from your layout and render
+the links.
+
+```jsx
+// resources/js/Layouts/AppLayout.jsx
+import { Link, usePage } from '@inertiajs/react';
+
+function NavigationItems({ items }) {
+    return (
+        <ul>
+            {items.map((item) => (
+                <li key={item.url}>
+                    <Link href={item.url}>{item.name}</Link>
+
+                    {item.children.length > 0 && (
+                        <NavigationItems items={item.children} />
+                    )}
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+export default function AppLayout({ children }) {
+    const { navigation } = usePage().props;
+
+    return (
+        <>
+            <nav>
+                <NavigationItems items={navigation} />
+            </nav>
+
+            {children}
+        </>
+    );
+}
+```
+
+If the navigation does not change often, wrap the query in Laravel's
+cache and clear it whenever categories are updated.

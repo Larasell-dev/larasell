@@ -44,6 +44,9 @@ class Category extends Model
         );
     }
 
+    /**
+     * @return HasMany<Model, self>
+     */
     public function descendants(): HasMany
     {
         return $this->onlyVisible($this->children())->with('descendants');
