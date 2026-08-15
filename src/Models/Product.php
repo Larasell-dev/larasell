@@ -9,6 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Larasell\Larasell\Enums\Visibility;
 
+/**
+ * @property int $id
+ * @property string $slug
+ * @property string $name
+ * @property Visibility $status
+ *
+ * @method static Builder<static> visible()
+ */
 class Product extends Model
 {
     use HasFactory;
@@ -30,6 +38,9 @@ class Product extends Model
         return $query->where('status', Visibility::Visible->value);
     }
 
+    /**
+     * @return BelongsToMany<Category, $this>
+     */
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(
