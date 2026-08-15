@@ -25,8 +25,6 @@ class Category extends Model
 {
     use HasFactory;
 
-    public const RootSlug = '__root';
-
     protected $table = 'larasell_categories';
 
     protected $guarded = [];
@@ -80,25 +78,7 @@ class Category extends Model
     #[Scope]
     protected function root(Builder $query): Builder
     {
-        $root = static::rootCategory();
-
-        return $this->onlyVisible($query)
-            ->where('parent_id', $root->getKey())
-            ->withAttributes([
-                'parent_id' => $root->getKey(),
-            ], asConditions: false);
-    }
-
-    public static function rootCategory(): static
-    {
-        return static::query()->firstOrCreate(
-            ['slug' => self::RootSlug],
-            [
-                'name' => 'Root',
-                'parent_id' => null,
-                'status' => Visibility::Hidden,
-            ],
-        );
+        return $this->onlyVisible($query)->whereNull('parent_id');
     }
 
     /**

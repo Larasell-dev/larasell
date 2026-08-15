@@ -34,34 +34,25 @@ class HandleInertiaRequests extends Middleware
 Using a closure keeps the navigation lazy, so it is only built when
 Inertia needs the prop.
 
-## Getting the root category
+## Getting root categories
 
-Next up, fetch the root category and load the categories you want to
-show in the menu.
+Next up, fetch the root-level category collection and load the
+categories you want to show in the menu.
 
 ```php
 <?php
 
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Routing\CategoryUrl;
-use RuntimeException;
 
 private function navigation(): array
 {
-    $root = Category::query()
+    return Category::query()
         ->root()
-        ->first();
-
-    if (! $root) {
-        throw new RuntimeException('No root category found.');
-    }
-
-    $categories = $root->descendants()->get();
-
-    return $categories
+        ->get()
         ->map(fn (Category $category) => $this->navigationItem($category))
         ->values()
-        ->all() ?? [];
+        ->all();
 }
 
 private function navigationItem(Category $category): array
@@ -77,8 +68,8 @@ private function navigationItem(Category $category): array
 }
 ```
 
-The `descendants` relationship runs as a second query from the root
-category and recursively loads visible child categories.
+The `root()` scope returns the visible categories with no parent. Each
+navigation item then recursively renders its visible child categories.
 
 ## Rendering a menu
 

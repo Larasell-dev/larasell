@@ -23,13 +23,8 @@ class CategoryUrl
     private function segments(Model $category): array
     {
         $segments = [];
-        $root = $this->categoryModel()::rootCategory();
 
         while ($category) {
-            if ($category->is($root)) {
-                break;
-            }
-
             array_unshift($segments, $category->slug);
 
             $category = $category->relationLoaded('parent')
@@ -46,13 +41,12 @@ class CategoryUrl
             return null;
         }
 
-        if ($category->parent_id === $this->categoryModel()::rootCategory()->getKey()) {
-            return null;
-        }
-
         return $this->categoryModel()::query()->find($category->parent_id);
     }
 
+    /**
+     * @return class-string<Category>
+     */
     private function categoryModel(): string
     {
         return app()->bound('config')
