@@ -2,17 +2,30 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Larasell\Larasell\Enums\Visibility;
 
+/**
+ * @property int $id
+ * @property int|null $parent_id
+ * @property string $slug
+ * @property string $name
+ * @property Visibility $status
+ *
+ * @method static Builder<static> root()
+ */
 class Category extends Model
 {
     use HasFactory;
+
+    public const RootSlug = '__root';
 
     protected $table = 'larasell_categories';
 
@@ -23,7 +36,7 @@ class Category extends Model
     ];
 
     /**
-     * @return BelongsTo<Model, self>
+     * @return BelongsTo<self, $this>
      */
     public function parent(): BelongsTo
     {
@@ -34,7 +47,7 @@ class Category extends Model
     }
 
     /**
-     * @return HasMany<Model, self>
+     * @return HasMany<self, $this>
      */
     public function children(): HasMany
     {
@@ -45,7 +58,7 @@ class Category extends Model
     }
 
     /**
-     * @return HasMany<Model, self>
+     * @return HasMany<self, $this>
      */
     public function descendants(): HasMany
     {
@@ -61,6 +74,36 @@ class Category extends Model
         );
     }
 
+    /**
+     * @param Builder<self> $query
+     */
+    #[Scope]
+    protected function root(Builder $query): Builder
+    {
+        $root = static::rootCategory();
+
+        return $this->onlyVisible($query)
+            ->where('parent_id', $root->getKey())
+            ->withAttributes([
+                'parent_id' => $root->getKey(),
+            ], asConditions: false);
+    }
+
+    public static function rootCategory(): static
+    {
+        return static::query()->firstOrCreate(
+            ['slug' => self::RootSlug],
+            [
+                'name' => 'Root',
+                'parent_id' => null,
+                'status' => Visibility::Hidden,
+            ],
+        );
+    }
+
+    /**
+     * @return BelongsToMany<Product, $this>
+     */
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -91,9 +134,9 @@ class Category extends Model
     }
 
     /**
-     * @param Builder<self> $query
+     * @param  Builder<self>|Relation<self, self, mixed>  $query
      */
-    private function onlyVisible(Builder $query): Builder
+    private function onlyVisible(Builder|Relation $query): Builder|Relation
     {
         return $query->where('status', Visibility::Visible->value);
     }
