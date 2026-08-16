@@ -16,6 +16,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->json('price');
             $table->integer('stock')->nullable();
+            $table->unsignedInteger('min_quantity')->nullable();
+            $table->unsignedInteger('max_quantity')->nullable();
             $table->boolean('allow_backorders')->default(true);
             $table->string('status')->default(Visibility::Visible->value);
             $table->timestamps();

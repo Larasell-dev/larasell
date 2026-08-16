@@ -21,6 +21,9 @@ product and customers may buy any quantity. By default, products also
 allow backorders, which means products with a finite stock can be
 purchased even when stock would go below zero. Set `allow_backorders` to
 `false` when a product should stop selling once stock reaches zero.
+Products can also define nullable `min_quantity` and `max_quantity`
+fields. Both default to `null`. When set, each value must be at least
+`1`, and `min_quantity` cannot exceed `max_quantity`.
 
 ```php
 use Larasell\Larasell\Models\Product;
@@ -50,6 +53,8 @@ $product->allow_backorders; // true
 
 $product->update([
     'stock' => 10,
+    'min_quantity' => 1,
+    'max_quantity' => 20,
     'allow_backorders' => false,
 ]);
 ```
