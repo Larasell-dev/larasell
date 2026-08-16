@@ -114,6 +114,14 @@ class Cart extends Model
 
     private function assertProductCanBePurchased(Product $product, int $quantity): void
     {
+        if ($product->min_quantity !== null && $quantity < $product->min_quantity) {
+            throw new InvalidArgumentException('Cart item quantity is below the product minimum quantity.');
+        }
+
+        if ($product->max_quantity !== null && $quantity > $product->max_quantity) {
+            throw new InvalidArgumentException('Cart item quantity exceeds the product maximum quantity.');
+        }
+
         if (! $product->allow_backorders && $product->stock !== null && $quantity > $product->stock) {
             throw new InvalidArgumentException('Cart item quantity exceeds available product stock.');
         }
