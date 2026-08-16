@@ -16,6 +16,12 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  fonts: {
+    families: [
+      { name: 'Public Sans', provider: 'none' }
+    ]
+  },
+
   content: {
     build: {
       markdown: {
