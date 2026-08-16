@@ -1,8 +1,8 @@
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'green',
-      neutral: 'slate'
+      primary: 'brand',
+      neutral: 'mauve'
     },
     footer: {
       slots: {
@@ -18,9 +18,9 @@ export default defineAppConfig({
     title: '',
     to: '/',
     logo: {
-      alt: '',
-      light: '',
-      dark: ''
+      alt: 'Larasell',
+      light: '/logo-light.svg',
+      dark: '/logo-dark.svg'
     },
     search: true,
     colorMode: true,

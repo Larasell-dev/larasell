@@ -7,17 +7,17 @@
   --container-8xl: 90rem;
   --font-sans: 'Public Sans', sans-serif;
 
-  --color-green-50: #EFFDF5;
-  --color-green-100: #D9FBE8;
-  --color-green-200: #B3F5D1;
-  --color-green-300: #75EDAE;
-  --color-green-400: #00DC82;
-  --color-green-500: #00C16A;
-  --color-green-600: #00A155;
-  --color-green-700: #007F45;
-  --color-green-800: #016538;
-  --color-green-900: #0A5331;
-  --color-green-950: #052E16;
+  --color-brand-50: oklch(0.95 0.021 8);
+  --color-brand-100: oklch(0.882 0.052 8);
+  --color-brand-200: oklch(0.814 0.087 8);
+  --color-brand-300: oklch(0.746 0.127 8);
+  --color-brand-400: oklch(0.678 0.172 8);
+  --color-brand-500: oklch(0.61 0.169 8);
+  --color-brand-600: oklch(0.542 0.15 8);
+  --color-brand-700: oklch(0.474 0.131 8);
+  --color-brand-800: oklch(0.406 0.113 8);
+  --color-brand-900: oklch(0.338 0.094 8);
+  --color-brand-950: oklch(0.27 0.075 8);
 }
 
 :root {
