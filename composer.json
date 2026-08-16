@@ -15,6 +15,11 @@
       "Larasell\\Larasell\\": "src"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Larasell\\Larasell\\Tests\\": "tests"
+    }
+  },
   "extra": {
     "laravel": {
       "providers": [
@@ -23,9 +28,18 @@
     }
   },
   "require-dev": {
-    "orchestra/testbench": "^11.0"
+    "orchestra/testbench": "^11.0",
+    "pestphp/pest": "^5.1"
   },
   "require": {
     "moneyphp/money": "^4.9"
+  },
+  "scripts": {
+    "test": "pest"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
   }
 }
