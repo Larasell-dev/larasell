@@ -60,10 +60,30 @@ class Product extends Model
         )->withTimestamps();
     }
 
+    /**
+     * @return BelongsToMany<ProductImage, $this>
+     */
+    public function images(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            $this->productImageModel(),
+            'larasell_product_product_image',
+            'product_id',
+            'product_image_id'
+        )->withPivot('position')->orderByPivot('position')->withTimestamps();
+    }
+
     protected function categoryModel(): string
     {
         return app()->bound('config')
             ? config('larasell.models.category', Category::class)
             : Category::class;
+    }
+
+    protected function productImageModel(): string
+    {
+        return app()->bound('config')
+            ? config('larasell.models.product_image', ProductImage::class)
+            : ProductImage::class;
     }
 }

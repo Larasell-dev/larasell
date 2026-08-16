@@ -88,6 +88,75 @@ $products = Product::query()
     ->get();
 ```
 
+## Managing product images
+
+Product images are stored as reusable image records and attached to
+products through a pivot table. The pivot table stores the product
+specific `position`, so the same image can be used by multiple products
+with a different order for each product.
+
+Larasell stores product image paths in the database and resolves URLs
+through Laravel's filesystem. Configure the disk in
+`config/larasell.php` or with environment variables:
+
+```env
+LARASELL_IMAGES_DISK=public
+LARASELL_IMAGES_PATH=larasell/products
+LARASELL_IMAGES_VISIBILITY=public
+```
+
+The disk may be any Laravel filesystem disk, including local, S3, or a
+custom disk registered by the application.
+
+Create an image record with the stored file path, then attach it to the
+product with a position.
+
+```php
+use Larasell\Larasell\Models\ProductImage;
+
+$image = ProductImage::create([
+    'path' => 'products/basic-plan/front.jpg',
+    'alt' => 'Basic Plan product image',
+]);
+
+$product->images()->attach($image, [
+    'position' => 0,
+]);
+```
+
+The `images()` relationship includes the pivot position and sorts images
+by that position.
+
+```php
+$product = Product::query()
+    ->with('images')
+    ->where('slug', 'basic-plan')
+    ->firstOrFail();
+
+foreach ($product->images as $image) {
+    $url = $image->url();
+    $position = $image->pivot->position;
+}
+```
+
+You may update a product's image order by updating the pivot data.
+
+```php
+$product->images()->updateExistingPivot($image->id, [
+    'position' => 1,
+]);
+```
+
+To replace all image associations and their positions, use `sync` with
+pivot values.
+
+```php
+$product->images()->sync([
+    $firstImage->id => ['position' => 0],
+    $secondImage->id => ['position' => 1],
+]);
+```
+
 ## Getting a visible product by slug
 
 For product detail pages, combine the slug with the `visible()` scope so

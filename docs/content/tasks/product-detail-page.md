@@ -48,10 +48,21 @@ class ProductController
 {
     public function show(ProductDetailRequest $request): Response
     {
-       $product = $request->product();
+       $product = $request->product()->load('images');
 
        return Inertia::render('Products/Show', [
-           'product' => $product
+           'product' => [
+               'id' => $product->id,
+               'name' => $product->name,
+               'description' => $product->description,
+               'price' => $product->price,
+               'images' => $product->images->map(fn ($image) => [
+                   'id' => $image->id,
+                   'url' => $image->url(),
+                   'alt' => $image->alt,
+                   'position' => $image->pivot->position,
+               ]),
+           ],
        ]);
     }
 }
@@ -70,6 +81,14 @@ export default function Show({ product }) {
             <h1>{product.name}</h1>
             <p>{product.price}</p>
             <p>{product.description}</p>
+
+            {product.images.map((image) => (
+                <img
+                    key={image.id}
+                    src={image.url}
+                    alt={image.alt ?? ''}
+                />
+            ))}
 
             <form method="post" action="/cart">
                 <input type="hidden" name="product_id" value={product.id} />
