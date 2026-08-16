@@ -114,7 +114,7 @@ class Cart extends Model
 
     private function assertProductCanBePurchased(Product $product, int $quantity): void
     {
-        if (! $product->allow_backorders && $quantity > $product->stock) {
+        if (! $product->allow_backorders && $product->stock !== null && $quantity > $product->stock) {
             throw new InvalidArgumentException('Cart item quantity exceeds available product stock.');
         }
     }

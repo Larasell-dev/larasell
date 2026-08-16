@@ -75,4 +75,5 @@ Empty carts return `null` from `total()`.
 
 Products allow backorders by default. When a product has
 `allow_backorders` set to `false`, the cart rejects quantities greater
-than the product's available `stock`.
+than the product's available `stock`. Products with `stock` set to
+`null` do not have inventory limits and may be added in any quantity.

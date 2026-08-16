@@ -17,7 +17,7 @@ use Larasell\Larasell\Price;
  * @property string $name
  * @property string|null $description
  * @property Price $price
- * @property int $stock
+ * @property int|null $stock
  * @property bool $allow_backorders
  * @property Visibility $status
  *
