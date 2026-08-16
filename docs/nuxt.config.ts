@@ -18,7 +18,8 @@ export default defineNuxtConfig({
 
   fonts: {
     families: [
-      { name: 'Public Sans', provider: 'none' }
+      { name: 'Geist', provider: 'google' },
+      { name: 'Inter', provider: 'google' }
     ]
   },
 
