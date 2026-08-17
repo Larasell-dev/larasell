@@ -37,3 +37,8 @@ php artisan vendor:publish --tag=larasell-config
 
 The configuration file will be published to `config/larasell.php`.
 
+## Optional admin panel
+
+Larasell also ships an optional Inertia administration panel. It is not
+registered by default. See the [admin panel guide](/getting-started/admin-panel)
+when you want to opt in.
