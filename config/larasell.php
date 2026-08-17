@@ -5,6 +5,8 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Models\ProductOption;
+use Larasell\Larasell\Models\ProductOptionValue;
 
 return [
     'models' => [
@@ -13,6 +15,8 @@ return [
         'category' => Category::class,
         'product' => Product::class,
         'product_image' => ProductImage::class,
+        'product_option' => ProductOption::class,
+        'product_option_value' => ProductOptionValue::class,
     ],
 
     'images' => [

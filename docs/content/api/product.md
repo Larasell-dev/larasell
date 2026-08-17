@@ -162,6 +162,66 @@ $product->images()->sync([
 ]);
 ```
 
+## Managing product options
+
+Product options are reusable typed definitions, such as `Size`, `Color`,
+or `Gift wrap`. Supported option types are `text`, `number`, and
+`boolean`. Each option owns its available values, and products are
+assigned the specific values they support.
+
+```php
+use Larasell\Larasell\Enums\ProductOptionType;
+use Larasell\Larasell\Models\ProductOption;
+
+$size = ProductOption::create([
+    'slug' => 'size',
+    'name' => 'Size',
+    'type' => ProductOptionType::Text,
+]);
+
+$small = $size->values()->create([
+    'slug' => 'small',
+    'name' => 'Small',
+    'value' => 'small',
+    'position' => 0,
+]);
+
+$product->optionValues()->attach($small);
+```
+
+Option values must match their parent option type. Text options accept
+strings, number options accept integers or floats, and boolean options
+accept booleans.
+
+```php
+$giftWrap = ProductOption::create([
+    'slug' => 'gift-wrap',
+    'name' => 'Gift wrap',
+    'type' => ProductOptionType::Boolean,
+]);
+
+$giftWrap->values()->create([
+    'slug' => 'yes',
+    'name' => 'Yes',
+    'value' => true,
+]);
+```
+
+Use `withOptions()` to load product option values with their parent
+option when rendering a product page.
+
+```php
+$product = Product::query()
+    ->withOptions()
+    ->where('slug', 'basic-plan')
+    ->firstOrFail();
+
+foreach ($product->optionValues as $value) {
+    $optionName = $value->option->name;
+    $valueName = $value->name;
+}
+```
+
 ## Getting a visible product by slug
 
 For product detail pages, combine the slug with the `visible()` scope so

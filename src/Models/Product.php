@@ -26,6 +26,7 @@ use Larasell\Larasell\Price;
  * @property Visibility $status
  *
  * @method static Builder<static> visible()
+ * @method static Builder<static> withOptions()
  */
 class Product extends Model
 {
@@ -98,6 +99,15 @@ class Product extends Model
     }
 
     /**
+     * @param Builder<self> $query
+     */
+    #[Scope]
+    protected function withOptions(Builder $query): Builder
+    {
+        return $query->with('optionValues.option');
+    }
+
+    /**
      * @return BelongsToMany<Category, $this>
      */
     public function categories(): BelongsToMany
@@ -123,6 +133,19 @@ class Product extends Model
         )->withPivot('position')->orderByPivot('position')->withTimestamps();
     }
 
+    /**
+     * @return BelongsToMany<ProductOptionValue, $this>
+     */
+    public function optionValues(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            $this->productOptionValueModel(),
+            'larasell_product_product_option_value',
+            'product_id',
+            'product_option_value_id'
+        )->withTimestamps();
+    }
+
     protected function categoryModel(): string
     {
         return app()->bound('config')
@@ -135,5 +158,12 @@ class Product extends Model
         return app()->bound('config')
             ? config('larasell.models.product_image', ProductImage::class)
             : ProductImage::class;
+    }
+
+    protected function productOptionValueModel(): string
+    {
+        return app()->bound('config')
+            ? config('larasell.models.product_option_value', ProductOptionValue::class)
+            : ProductOptionValue::class;
     }
 }
