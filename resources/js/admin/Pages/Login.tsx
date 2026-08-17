@@ -1,8 +1,8 @@
 import { useForm } from '@inertiajs/react'
-import { Field as BaseField } from '@base-ui/react/field'
 import * as stylex from '@stylexjs/stylex'
 import type { FormEvent } from 'react'
 import Button from '../Components/Button'
+import Error from '../Components/Error'
 import Field from '../Components/Field'
 import Form from '../Components/Form'
 import Input from '../Components/Input'
@@ -43,7 +43,7 @@ export default function Login({ loginUrl }: LoginProps) {
             type="email"
             value={form.data.email}
           />
-          <BaseField.Error {...stylex.props(styles.error)} />
+          <Error />
         </Field>
 
         <Field name="password">
@@ -54,7 +54,7 @@ export default function Login({ loginUrl }: LoginProps) {
             type="password"
             value={form.data.password}
           />
-          <BaseField.Error {...stylex.props(styles.error)} />
+          <Error />
         </Field>
 
         <Button disabled={form.processing} type="submit">
@@ -94,13 +94,5 @@ const styles = stylex.create({
     fontSize: 14,
     margin: 0,
     textAlign: 'center',
-  },
-  error: {
-    color: 'oklch(50.5% 0.213 27.518)',
-    fontSize: 13,
-    marginBottom: 0,
-    marginLeft: 0,
-    marginRight: 0,
-    marginTop: 0,
   },
 })
