@@ -2,14 +2,20 @@ import { Button as BaseButton } from '@base-ui/react/button'
 import * as stylex from '@stylexjs/stylex'
 import type { ComponentProps } from 'react'
 
-type ButtonProps = ComponentProps<typeof BaseButton>
+type ButtonProps = ComponentProps<typeof BaseButton> & {
+  variant?: 'primary' | 'secondary'
+}
 
-export default function Button({ disabled, ...props }: ButtonProps) {
+export default function Button({ disabled, variant = 'primary', ...props }: ButtonProps) {
   return (
     <BaseButton
       disabled={disabled}
       {...props}
-      {...stylex.props(styles.button, disabled && styles.disabled)}
+      {...stylex.props(
+        styles.button,
+        variant === 'primary' ? styles.primary : styles.secondary,
+        disabled && styles.disabled,
+      )}
     />
   )
 }
@@ -17,12 +23,10 @@ export default function Button({ disabled, ...props }: ButtonProps) {
 const styles = stylex.create({
   button: {
     appearance: 'none',
-    backgroundColor: 'var(--color-brand-500)',
-    borderStyle: 'none',
-    borderWidth: 0,
+    borderStyle: 'solid',
+    borderWidth: 1,
     borderRadius: 6,
     boxSizing: 'border-box',
-    color: '#fff',
     cursor: 'pointer',
     fontFamily: 'inherit',
     fontSize: 15,
@@ -46,6 +50,16 @@ const styles = stylex.create({
     paddingTop: 9,
     textAlign: 'center',
     textTransform: 'none',
+  },
+  primary: {
+    backgroundColor: { default: 'var(--color-brand-500)', ':hover': 'var(--color-brand-600)' },
+    borderColor: { default: 'var(--color-brand-500)', ':hover': 'var(--color-brand-600)' },
+    color: '#fff',
+  },
+  secondary: {
+    backgroundColor: { default: '#fff', ':hover': 'var(--color-neutral-100)' },
+    borderColor: 'var(--color-neutral-300)',
+    color: 'var(--color-neutral-900)',
   },
   disabled: {
     cursor: 'wait',
