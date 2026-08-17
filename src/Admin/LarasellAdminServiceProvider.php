@@ -34,6 +34,7 @@ class LarasellAdminServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../../config/larasell-admin.php' => config_path('larasell-admin.php'),
                 __DIR__.'/../../database/admin-migrations/2026_08_17_000001_create_larasell_admin_users_table.php' => database_path('migrations/2026_08_17_000001_create_larasell_admin_users_table.php'),
+                __DIR__.'/../../resources/css/admin.css' => resource_path('css/vendor/larasell/admin.css'),
                 __DIR__.'/../../resources/js/admin' => resource_path('js/vendor/larasell/admin'),
                 __DIR__.'/../../resources/views' => resource_path('views/vendor/larasell-admin'),
                 __DIR__.'/../../routes/admin.php' => base_path('routes/larasell-admin.php'),

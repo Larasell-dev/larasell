@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react'
-import type { CSSProperties } from 'react'
+import * as stylex from '@stylexjs/stylex'
 
 type HomeProps = {
   logoutUrl: string
@@ -11,13 +11,13 @@ export default function Home({ logoutUrl }: HomeProps) {
   }
 
   return (
-    <main style={styles.page}>
-      <section style={styles.section}>
-        <h1 style={styles.heading}>Larasell Admin</h1>
+    <main {...stylex.props(styles.page)}>
+      <section {...stylex.props(styles.section)}>
+        <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
 
         <button
           onClick={logout}
-          style={styles.button}
+          {...stylex.props(styles.button)}
           type="button"
         >
           Sign out
@@ -27,14 +27,17 @@ export default function Home({ logoutUrl }: HomeProps) {
   )
 }
 
-const styles = {
+const styles = stylex.create({
   page: {
     background: '#f6f5f2',
     color: '#202020',
     display: 'grid',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     minHeight: '100vh',
-    padding: '0 16px',
+    paddingBottom: 0,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 0,
     placeItems: 'center',
   },
   section: {
@@ -58,6 +61,9 @@ const styles = {
     cursor: 'pointer',
     font: 'inherit',
     fontWeight: 600,
-    padding: '10px 14px',
+    paddingBottom: 10,
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 10,
   },
-} satisfies Record<string, CSSProperties>
+})

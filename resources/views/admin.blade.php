@@ -6,7 +6,7 @@
 
         <title>Larasell Admin</title>
 
-        @vite(['resources/js/app.ts'])
+        @vite(['resources/css/admin.css', 'resources/js/admin/app.tsx'])
         @inertiaHead
     </head>
     <body>

@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react'
-import type { CSSProperties, FormEvent } from 'react'
+import * as stylex from '@stylexjs/stylex'
+import type { FormEvent } from 'react'
 
 type LoginProps = {
   loginUrl: string
@@ -18,46 +19,42 @@ export default function Login({ loginUrl }: LoginProps) {
   }
 
   return (
-    <main style={styles.page}>
-      <form style={styles.form} onSubmit={submit}>
-        <h1 style={styles.heading}>Larasell Admin</h1>
+    <main {...stylex.props(styles.page)}>
+      <form {...stylex.props(styles.form)} onSubmit={submit}>
+        <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
 
-        <label style={styles.label}>
+        <label {...stylex.props(styles.label)}>
           <span>Email</span>
           <input
             autoComplete="email"
             autoFocus
             onChange={(event) => form.setData('email', event.target.value)}
-            style={styles.input}
+            {...stylex.props(styles.input)}
             type="email"
             value={form.data.email}
           />
         </label>
         {form.errors.email ? (
-          <p style={styles.error}>{form.errors.email}</p>
+          <p {...stylex.props(styles.error)}>{form.errors.email}</p>
         ) : null}
 
-        <label style={styles.label}>
+        <label {...stylex.props(styles.label)}>
           <span>Password</span>
           <input
             autoComplete="current-password"
             onChange={(event) => form.setData('password', event.target.value)}
-            style={styles.input}
+            {...stylex.props(styles.input)}
             type="password"
             value={form.data.password}
           />
         </label>
         {form.errors.password ? (
-          <p style={styles.error}>{form.errors.password}</p>
+          <p {...stylex.props(styles.error)}>{form.errors.password}</p>
         ) : null}
 
         <button
           disabled={form.processing}
-          style={{
-            ...styles.button,
-            cursor: form.processing ? 'wait' : 'pointer',
-            opacity: form.processing ? 0.65 : 1,
-          }}
+          {...stylex.props(styles.button, form.processing && styles.processing)}
           type="submit"
         >
           Sign in
@@ -67,14 +64,17 @@ export default function Login({ loginUrl }: LoginProps) {
   )
 }
 
-const styles = {
+const styles = stylex.create({
   page: {
     background: '#f6f5f2',
     color: '#202020',
     display: 'grid',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     minHeight: '100vh',
-    padding: '0 16px',
+    paddingBottom: 0,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 0,
     placeItems: 'center',
   },
   form: {
@@ -100,12 +100,18 @@ const styles = {
     borderRadius: 6,
     color: '#202020',
     font: 'inherit',
-    padding: '10px 12px',
+    paddingBottom: 10,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 10,
   },
   error: {
     color: '#b42318',
     fontSize: 13,
-    margin: '-8px 0 0',
+    marginBottom: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: -8,
   },
   button: {
     background: '#202020',
@@ -114,6 +120,14 @@ const styles = {
     color: '#fff',
     font: 'inherit',
     fontWeight: 600,
-    padding: '11px 14px',
+    cursor: 'pointer',
+    paddingBottom: 11,
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 11,
   },
-} satisfies Record<string, CSSProperties>
+  processing: {
+    cursor: 'wait',
+    opacity: 0.65,
+  },
+})

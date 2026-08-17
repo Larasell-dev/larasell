@@ -33,7 +33,8 @@ the host Laravel application before registering the admin provider:
 
 ```bash
 composer require inertiajs/inertia-laravel
-npm install @inertiajs/react react react-dom
+npm install @inertiajs/react react react-dom @stylexjs/stylex
+npm install --save-dev @stylexjs/unplugin
 ```
 
 ## Create an admin user
@@ -88,8 +89,29 @@ The package publishes its admin pages to:
 resources/js/vendor/larasell/admin/Pages
 ```
 
-Make sure your application Inertia page resolver includes that directory.
-For example, in a React Inertia app:
+The package also publishes the StyleX CSS entrypoint to:
+
+```txt
+resources/css/vendor/larasell/admin.css
+```
+
+Configure StyleX before the React plugin in your Vite config:
+
+```ts
+import stylex from '@stylexjs/unplugin'
+
+export default defineConfig({
+  plugins: [
+    stylex.vite({
+      useCSSLayers: true,
+    }),
+    react(),
+  ],
+})
+```
+
+Make sure your application Inertia page resolver can find the published
+admin pages. For example, in a React Inertia app:
 
 ```ts
 const pages = import.meta.glob([
@@ -98,6 +120,10 @@ const pages = import.meta.glob([
 ])
 ```
 
-The admin pages use `@inertiajs/react`, `react`, and `react-dom`.
+Import the published CSS entrypoint from your app entry:
+
+```ts
+import '../css/vendor/larasell/admin.css'
+```
 
 The login page is available at `/admin/login` by default.

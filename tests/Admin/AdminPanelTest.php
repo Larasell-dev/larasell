@@ -11,6 +11,18 @@ it('redirects guest admin users to the larasell admin login route', function () 
     $this->get('/admin')->assertRedirect(route('larasell.admin.login'));
 });
 
+it('redirects authenticated admin users to the larasell admin home route from login', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->get('/admin/login')
+        ->assertRedirect(route('larasell.admin.home'));
+});
+
 it('creates an admin user from the console command', function () {
     $this->artisan('admin:create-user', [
         '--name' => 'Larasell Admin',
