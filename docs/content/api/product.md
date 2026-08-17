@@ -93,6 +93,25 @@ $products = Product::query()
     ->get();
 ```
 
+## Filtering product listings
+
+`ProductListingRequest::products()` applies the current category, sort,
+and product option filters from the request query string.
+
+```php
+$products = $request->products()->get();
+```
+
+Filter by product option slug and option value slug with the `options`
+query parameter.
+
+```text
+/c/shirts?options[size][]=small&options[size][]=medium&options[color]=black
+```
+
+Multiple values for the same option match any selected value. Multiple
+options must all match.
+
 ## Managing product images
 
 Product images are stored as reusable image records and attached to

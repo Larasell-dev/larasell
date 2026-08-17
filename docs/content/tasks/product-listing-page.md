@@ -49,7 +49,7 @@ class ProductController
     public function index(ProductListingRequest $request): Response
     {
        $category = $request->category();
-       $products = $category->products()->visible()->get();
+       $products = $request->products()->get();
 
        return Inertia::render('Products/Index', [
            'category' => $category,
@@ -58,6 +58,16 @@ class ProductController
     }
 }
 ```
+
+The request supports sorting and product option filters through query
+parameters:
+
+```text
+/c/mens/clothing/shirts?sort=price_asc&options[size][]=small&options[size][]=medium&options[color]=black
+```
+
+Multiple values for the same option match any selected value. Multiple
+options must all match.
 
 ## Creating a template
 
