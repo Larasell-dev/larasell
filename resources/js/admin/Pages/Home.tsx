@@ -1,9 +1,12 @@
+import { Link } from '@inertiajs/react'
 import * as stylex from '@stylexjs/stylex'
 import { useState } from 'react'
 import DropdownMenu from '../Components/DropdownMenu'
+import Logo from '../Components/Logo'
 import LogoutDialog from '../Components/LogoutDialog'
 
 type HomeProps = {
+  homeUrl: string
   logoutUrl: string
   user: {
     name: string
@@ -11,12 +14,16 @@ type HomeProps = {
   }
 }
 
-export default function Home({ logoutUrl, user }: HomeProps) {
+export default function Home({ homeUrl, logoutUrl, user }: HomeProps) {
   const [logoutOpen, setLogoutOpen] = useState(false)
 
   return (
     <div {...stylex.props(styles.page)}>
       <aside {...stylex.props(styles.sidebar)}>
+        <Link aria-label="Larasell admin home" href={homeUrl} {...stylex.props(styles.logoLink)}>
+          <Logo />
+        </Link>
+
         <div {...stylex.props(styles.account)}>
           <DropdownMenu
             items={[{ label: 'Log out', onClick: () => setLogoutOpen(true) }]}
@@ -73,6 +80,15 @@ const styles = stylex.create({
   account: {
     marginTop: 'auto',
   },
+  logoLink: {
+    borderRadius: 4,
+    display: 'block',
+    outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' },
+    outlineOffset: 4,
+    outlineStyle: 'solid',
+    outlineWidth: 2,
+    width: 'fit-content',
+  },
   userTrigger: {
     alignItems: 'center',
     backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-100)' },
@@ -105,6 +121,7 @@ const styles = stylex.create({
   userName: { fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   userEmail: { color: 'var(--color-neutral-500)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   main: {
+    backgroundColor: 'var(--color-neutral-50)',
     marginLeft: { default: 256, '@media (max-width: 640px)': 0 },
     width: '100%',
   },

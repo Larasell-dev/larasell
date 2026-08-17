@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import stylex from '@stylexjs/unplugin'
 
 export default defineConfig({
+  base: '/vendor/larasell/admin/',
   plugins: [
     stylex.vite({
       useCSSLayers: true,

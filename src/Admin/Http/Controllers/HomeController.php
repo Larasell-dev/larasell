@@ -14,6 +14,7 @@ class HomeController extends Controller
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         return Inertia::render('Home', [
+            'homeUrl' => route('larasell.admin.home'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,
