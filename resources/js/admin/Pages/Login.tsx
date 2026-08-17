@@ -1,6 +1,12 @@
 import { useForm } from '@inertiajs/react'
+import { Field as BaseField } from '@base-ui/react/field'
 import * as stylex from '@stylexjs/stylex'
 import type { FormEvent } from 'react'
+import Button from '../Components/Button'
+import Field from '../Components/Field'
+import Form from '../Components/Form'
+import Input from '../Components/Input'
+import Label from '../Components/Label'
 
 type LoginProps = {
   loginUrl: string
@@ -20,53 +26,48 @@ export default function Login({ loginUrl }: LoginProps) {
 
   return (
     <main {...stylex.props(styles.page)}>
-      <form {...stylex.props(styles.form)} onSubmit={submit}>
-        <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
+      <Form errors={form.errors} onSubmit={submit}>
+        <header {...stylex.props(styles.header)}>
+          <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
+          <p {...stylex.props(styles.description)}>
+            Sign in to access the Larasell administration area.
+          </p>
+        </header>
 
-        <label {...stylex.props(styles.label)}>
-          <span>Email</span>
-          <input
+        <Field name="email">
+          <Label>Email</Label>
+          <Input
             autoComplete="email"
             autoFocus
             onChange={(event) => form.setData('email', event.target.value)}
-            {...stylex.props(styles.input)}
             type="email"
             value={form.data.email}
           />
-        </label>
-        {form.errors.email ? (
-          <p {...stylex.props(styles.error)}>{form.errors.email}</p>
-        ) : null}
+          <BaseField.Error {...stylex.props(styles.error)} />
+        </Field>
 
-        <label {...stylex.props(styles.label)}>
-          <span>Password</span>
-          <input
+        <Field name="password">
+          <Label>Password</Label>
+          <Input
             autoComplete="current-password"
             onChange={(event) => form.setData('password', event.target.value)}
-            {...stylex.props(styles.input)}
             type="password"
             value={form.data.password}
           />
-        </label>
-        {form.errors.password ? (
-          <p {...stylex.props(styles.error)}>{form.errors.password}</p>
-        ) : null}
+          <BaseField.Error {...stylex.props(styles.error)} />
+        </Field>
 
-        <button
-          disabled={form.processing}
-          {...stylex.props(styles.button, form.processing && styles.processing)}
-          type="submit"
-        >
+        <Button disabled={form.processing} type="submit">
           Sign in
-        </button>
-      </form>
+        </Button>
+      </Form>
     </main>
   )
 }
 
 const styles = stylex.create({
   page: {
-    background: 'var(--color-neutral-50)',
+    backgroundColor: 'var(--color-neutral-50)',
     color: 'var(--color-neutral-950)',
     display: 'grid',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
@@ -77,35 +78,22 @@ const styles = stylex.create({
     paddingTop: 0,
     placeItems: 'center',
   },
-  form: {
-    display: 'grid',
-    gap: 16,
-    maxWidth: 380,
-    width: '100%',
-  },
   heading: {
     fontSize: 28,
     fontWeight: 650,
     margin: 0,
+    textAlign: 'center',
   },
-  label: {
+  header: {
     display: 'grid',
-    fontSize: 14,
-    fontWeight: 500,
     gap: 6,
+    marginBottom: 8,
   },
-  input: {
-    background: '#fff',
-    borderColor: 'var(--color-neutral-300)',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderRadius: 6,
-    color: 'var(--color-neutral-950)',
-    font: 'inherit',
-    paddingBottom: 10,
-    paddingLeft: 12,
-    paddingRight: 12,
-    paddingTop: 10,
+  description: {
+    color: 'var(--color-neutral-600)',
+    fontSize: 14,
+    margin: 0,
+    textAlign: 'center',
   },
   error: {
     color: 'oklch(50.5% 0.213 27.518)',
@@ -113,23 +101,6 @@ const styles = stylex.create({
     marginBottom: 0,
     marginLeft: 0,
     marginRight: 0,
-    marginTop: -8,
-  },
-  button: {
-    background: 'var(--color-brand-900)',
-    border: 0,
-    borderRadius: 6,
-    color: '#fff',
-    font: 'inherit',
-    fontWeight: 600,
-    cursor: 'pointer',
-    paddingBottom: 11,
-    paddingLeft: 14,
-    paddingRight: 14,
-    paddingTop: 11,
-  },
-  processing: {
-    cursor: 'wait',
-    opacity: 0.65,
+    marginTop: 0,
   },
 })
