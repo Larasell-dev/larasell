@@ -29,8 +29,8 @@ export default function Home({ logoutUrl }: HomeProps) {
 
 const styles = stylex.create({
   page: {
-    background: '#f6f5f2',
-    color: '#202020',
+    background: 'var(--color-neutral-50)',
+    color: 'var(--color-neutral-950)',
     display: 'grid',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     minHeight: '100vh',
@@ -54,7 +54,7 @@ const styles = stylex.create({
     margin: 0,
   },
   button: {
-    background: '#202020',
+    background: 'var(--color-brand-900)',
     border: 0,
     borderRadius: 6,
     color: '#fff',

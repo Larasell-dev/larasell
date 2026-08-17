@@ -13,9 +13,9 @@ class LoginController extends Controller
 {
     public function create(): Response
     {
-        return Inertia::render('vendor/larasell/admin/Pages/Login', [
+        return Inertia::render('Login', [
             'loginUrl' => route('larasell.admin.login'),
-        ]);
+        ])->rootView('larasell-admin::admin');
     }
 
     public function store(Request $request): RedirectResponse

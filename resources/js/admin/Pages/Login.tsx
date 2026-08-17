@@ -66,8 +66,8 @@ export default function Login({ loginUrl }: LoginProps) {
 
 const styles = stylex.create({
   page: {
-    background: '#f6f5f2',
-    color: '#202020',
+    background: 'var(--color-neutral-50)',
+    color: 'var(--color-neutral-950)',
     display: 'grid',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     minHeight: '100vh',
@@ -96,9 +96,11 @@ const styles = stylex.create({
   },
   input: {
     background: '#fff',
-    border: '1px solid #c9c6bd',
+    borderColor: 'var(--color-neutral-300)',
+    borderStyle: 'solid',
+    borderWidth: 1,
     borderRadius: 6,
-    color: '#202020',
+    color: 'var(--color-neutral-950)',
     font: 'inherit',
     paddingBottom: 10,
     paddingLeft: 12,
@@ -106,7 +108,7 @@ const styles = stylex.create({
     paddingTop: 10,
   },
   error: {
-    color: '#b42318',
+    color: 'oklch(50.5% 0.213 27.518)',
     fontSize: 13,
     marginBottom: 0,
     marginLeft: 0,
@@ -114,7 +116,7 @@ const styles = stylex.create({
     marginTop: -8,
   },
   button: {
-    background: '#202020',
+    background: 'var(--color-brand-900)',
     border: 0,
     borderRadius: 6,
     color: '#fff',

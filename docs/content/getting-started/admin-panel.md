@@ -25,6 +25,12 @@ After registering the provider, run the migrations:
 php artisan migrate
 ```
 
+Publish the compiled admin assets:
+
+```bash
+php artisan vendor:publish --tag=larasell-admin-assets
+```
+
 The provider creates a separate `larasell-admin` auth guard and stores
 admin users in the `larasell_admin_users` table.
 
@@ -54,76 +60,8 @@ php artisan admin:create-user \
     --password="password"
 ```
 
-## Publish the admin files
-
-Publish the admin configuration, routes, migration, views, and Inertia
-pages with the `larasell-admin` tag:
-
-```bash
-php artisan vendor:publish --tag=larasell-admin
-```
-
-The published configuration lives at `config/larasell-admin.php`. Use it
-to change the admin path, route file, middleware, guard name, or admin
-user model:
-
-```php
-return [
-    'path' => 'admin/commerce',
-
-    'routes' => base_path('routes/larasell-admin.php'),
-
-    'middleware' => [
-        'web',
-    ],
-
-    'guard' => 'larasell-admin',
-];
-```
-
-## Inertia pages
-
-The package publishes its admin pages to:
-
-```txt
-resources/js/vendor/larasell/admin/Pages
-```
-
-The package also publishes the StyleX CSS entrypoint to:
-
-```txt
-resources/css/vendor/larasell/admin.css
-```
-
-Configure StyleX before the React plugin in your Vite config:
-
-```ts
-import stylex from '@stylexjs/unplugin'
-
-export default defineConfig({
-  plugins: [
-    stylex.vite({
-      useCSSLayers: true,
-    }),
-    react(),
-  ],
-})
-```
-
-Make sure your application Inertia page resolver can find the published
-admin pages. For example, in a React Inertia app:
-
-```ts
-const pages = import.meta.glob([
-  './Pages/**/*.tsx',
-  './vendor/larasell/admin/Pages/**/*.tsx',
-])
-```
-
-Import the published CSS entrypoint from your app entry:
-
-```ts
-import '../css/vendor/larasell/admin.css'
-```
+Only the compiled JavaScript, CSS, and Vite manifest are published. The
+configuration, routes, migrations, views, and source files continue to
+load directly from the package.
 
 The login page is available at `/admin/login` by default.

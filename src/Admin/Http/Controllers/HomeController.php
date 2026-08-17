@@ -10,8 +10,8 @@ class HomeController extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('vendor/larasell/admin/Pages/Home', [
+        return Inertia::render('Home', [
             'logoutUrl' => route('larasell.admin.logout'),
-        ]);
+        ])->rootView('larasell-admin::admin');
     }
 }

@@ -32,7 +32,8 @@
     "pestphp/pest": "^5.1"
   },
   "require": {
-    "moneyphp/money": "^4.9"
+    "moneyphp/money": "^4.9",
+    "inertiajs/inertia-laravel": "^3.0"
   },
   "scripts": {
     "test": "pest"

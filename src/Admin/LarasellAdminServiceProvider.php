@@ -17,6 +17,7 @@ class LarasellAdminServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureAuth();
+        $this->configureInertia();
 
         $this->loadMigrationsFrom(__DIR__.'/../../database/admin-migrations');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'larasell-admin');
@@ -32,13 +33,21 @@ class LarasellAdminServiceProvider extends ServiceProvider
             ]);
 
             $this->publishes([
-                __DIR__.'/../../config/larasell-admin.php' => config_path('larasell-admin.php'),
-                __DIR__.'/../../database/admin-migrations/2026_08_17_000001_create_larasell_admin_users_table.php' => database_path('migrations/2026_08_17_000001_create_larasell_admin_users_table.php'),
-                __DIR__.'/../../resources/css/admin.css' => resource_path('css/vendor/larasell/admin.css'),
-                __DIR__.'/../../resources/js/admin' => resource_path('js/vendor/larasell/admin'),
-                __DIR__.'/../../resources/views' => resource_path('views/vendor/larasell-admin'),
-                __DIR__.'/../../routes/admin.php' => base_path('routes/larasell-admin.php'),
-            ], 'larasell-admin');
+                __DIR__.'/../../public/build' => public_path('vendor/larasell/admin'),
+            ], 'larasell-admin-assets');
+        }
+    }
+
+    private function configureInertia(): void
+    {
+        $pagePath = realpath(__DIR__.'/../../resources/js/admin/Pages') ?: __DIR__.'/../../resources/js/admin/Pages';
+        $paths = config('inertia.pages.paths', []);
+
+        if (! in_array($pagePath, $paths, true)) {
+            config()->set('inertia.pages.paths', [
+                ...$paths,
+                $pagePath,
+            ]);
         }
     }
 
