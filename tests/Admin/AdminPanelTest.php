@@ -80,9 +80,110 @@ it('shows products in the admin product index', function () {
         ->assertJsonPath('props.products.0.stock', 12)
         ->assertJsonPath('props.products.0.status', 'visible')
         ->assertJsonPath('props.products.0.url', route('larasell.admin.products.show', $product))
+        ->assertJsonPath('props.products.0.deleteUrl', route('larasell.admin.products.destroy', $product))
         ->assertJsonPath('props.pagination.currentPage', 1)
         ->assertJsonPath('props.pagination.total', 1)
+        ->assertJsonPath('props.productCreateUrl', route('larasell.admin.products.create'))
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
+});
+
+it('deletes a product', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(4999, 'EUR'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->delete(route('larasell.admin.products.destroy', $product))
+        ->assertRedirect(route('larasell.admin.products.index'));
+
+    expect(Product::query()->whereKey($product->getKey())->exists())->toBeFalse();
+});
+
+it('shows the product create page', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.products.create'))
+        ->assertOk()
+        ->assertJsonPath('component', 'Products/Create')
+        ->assertJsonPath('props.productStoreUrl', route('larasell.admin.products.store'))
+        ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
+});
+
+it('creates a product in the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(1000, 'EUR'),
+    ]);
+
+    $response = $this->actingAs($admin, 'larasell-admin')
+        ->post(route('larasell.admin.products.store'), [
+            'name' => 'Desk lamp',
+            'description' => 'A focused task light.',
+            'stock' => 12,
+            'min_quantity' => 2,
+            'max_quantity' => 6,
+            'allow_backorders' => false,
+            'status' => 'hidden',
+            'price_amount' => 49.99,
+            'price_currency' => 'EUR',
+        ]);
+
+    $product = Product::query()->where('slug', 'desk-lamp-2')->sole();
+
+    $response->assertRedirect(route('larasell.admin.products.show', $product));
+    expect($product)
+        ->name->toBe('Desk lamp')
+        ->description->toBe('A focused task light.')
+        ->stock->toBe(12)
+        ->min_quantity->toBe(2)
+        ->max_quantity->toBe(6)
+        ->allow_backorders->toBeFalse()
+        ->status->toBe(Visibility::Hidden)
+        ->price->toEqual(Price::of(4999, 'EUR'));
+});
+
+it('validates product creation', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->from(route('larasell.admin.products.create'))
+        ->post(route('larasell.admin.products.store'), [
+            'name' => '',
+            'stock' => -1,
+            'min_quantity' => 5,
+            'max_quantity' => 2,
+            'allow_backorders' => false,
+            'status' => 'unknown',
+            'price_amount' => -1,
+            'price_currency' => 'BTC',
+        ])
+        ->assertRedirect(route('larasell.admin.products.create'))
+        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'price_currency']);
+
+    expect(Product::query()->count())->toBe(0);
 });
 
 it('shows product options in the admin product option index', function () {

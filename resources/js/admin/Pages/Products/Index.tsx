@@ -1,9 +1,17 @@
+import { Button as BaseButton } from '@base-ui/react/button'
 import { Deferred, Head, Link, router } from '@inertiajs/react'
 import * as stylex from '@stylexjs/stylex'
+import { useState } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
+import Button from '../../Components/Button'
+import Dialog from '../../Components/Dialog'
+import DropdownMenu from '../../Components/DropdownMenu'
+import EmptyState from '../../Components/EmptyState'
+import Icon from '../../Components/Icon'
 import Table, { type PaginationData } from '../../Components/Table'
 
 type Product = {
+  deleteUrl: string
   id: number | string
   name: string
   price: { amount: string; currency: string }
@@ -16,15 +24,36 @@ type ProductImage = { alt: string | null; url: string }
 
 type Props = AdminLayoutProps & {
   pagination: PaginationData
+  productCreateUrl: string
   productImages?: Record<string, ProductImage | null>
   products: Product[]
 }
 
-export default function ProductIndex({ pagination, productImages, products, ...layoutProps }: Props) {
+export default function ProductIndex({ pagination, productCreateUrl, productImages, products, ...layoutProps }: Props) {
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+
+  const deleteProduct = () => {
+    if (productToDelete === null) return
+
+    router.delete(productToDelete.deleteUrl, {
+      onSuccess: () => setProductToDelete(null),
+      preserveScroll: true,
+    })
+  }
+
   return (
     <AdminLayout active="products" {...layoutProps}>
       <Head title="Products" />
-      <Table.Frame>
+      {products.length === 0 ? (
+        <div {...stylex.props(styles.emptyStateWrapper)}>
+          <EmptyState
+            actions={<Button render={<Link href={productCreateUrl} />}>Create product</Button>}
+            description="Add a product to start selling it in your storefront."
+            renderIcon={() => <Icon name="products" height={24} width={24} />}
+            title="No products yet"
+          />
+        </div>
+      ) : <Table.Frame>
         <Table.Scroll>
           <Table.Root>
             <Table.Header>
@@ -33,6 +62,14 @@ export default function ProductIndex({ pagination, productImages, products, ...l
                 <Table.Heading>Status</Table.Heading>
                 <Table.Heading numeric>Price</Table.Heading>
                 <Table.Heading numeric>Stock</Table.Heading>
+                <Table.Heading>
+                  <div {...stylex.props(styles.actionsHeading)}>
+                    <Button render={<Link href={productCreateUrl} />}>
+                      <Icon height={16} name="plus" width={16} />
+                      Create
+                    </Button>
+                  </div>
+                </Table.Heading>
               </tr>
             </Table.Header>
             <Table.Body>
@@ -64,14 +101,42 @@ export default function ProductIndex({ pagination, productImages, products, ...l
                   </Table.Cell>
                   <Table.Cell numeric selectable>{formatPrice(product.price)}</Table.Cell>
                   <Table.Cell numeric selectable>{product.stock ?? 'Unlimited'}</Table.Cell>
+                  <Table.Cell>
+                    <div onClick={(event) => event.stopPropagation()} {...stylex.props(styles.actions)}>
+                      <DropdownMenu
+                        align="end"
+                        items={[{
+                          icon: <Icon height={18} name="trash" width={18} />,
+                          label: 'Delete',
+                          onClick: () => setProductToDelete(product),
+                          variant: 'danger',
+                        }]}
+                        side="bottom"
+                        trigger={(open) => (
+                          <BaseButton aria-label={`Actions for ${product.name}`} type="button" {...stylex.props(styles.actionsTrigger, open && styles.actionsTriggerOpen)}>
+                            <Icon height={20} name="dots" width={20} />
+                          </BaseButton>
+                        )}
+                      />
+                    </div>
+                  </Table.Cell>
                 </Table.Row>
               ))}
-              {products.length === 0 && <Table.Empty colSpan={4}>No products yet.</Table.Empty>}
             </Table.Body>
           </Table.Root>
         </Table.Scroll>
         <Table.Pagination data={pagination} itemLabel="products" label="Product pagination" />
-      </Table.Frame>
+      </Table.Frame>}
+
+      <Dialog
+        description={productToDelete === null ? '' : `This will permanently delete "${productToDelete.name}".`}
+        onOpenChange={(open) => !open && setProductToDelete(null)}
+        open={productToDelete !== null}
+        title="Delete product?"
+      >
+        <Button onClick={() => setProductToDelete(null)} type="button" variant="secondary">Cancel</Button>
+        <Button onClick={deleteProduct} type="button" variant="danger">Delete</Button>
+      </Dialog>
     </AdminLayout>
   )
 }
@@ -95,6 +160,11 @@ function formatPrice(price: Product['price']) {
 }
 
 const styles = stylex.create({
+  emptyStateWrapper: { height: '100%', marginInline: 'auto', maxWidth: 360, width: '100%' },
+  actions: { display: 'flex', justifyContent: 'flex-end' },
+  actionsHeading: { display: 'flex', justifyContent: 'flex-end' },
+  actionsTrigger: { alignItems: 'center', backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-200)' }, borderColor: 'transparent', borderRadius: 4, borderStyle: 'solid', borderWidth: 0, color: 'var(--color-neutral-600)', cursor: 'pointer', display: 'flex', height: 32, justifyContent: 'center', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, padding: 0, width: 32 },
+  actionsTriggerOpen: { backgroundColor: 'var(--color-neutral-200)' },
   productName: { fontWeight: 600 },
   productIdentity: { alignItems: 'center', display: 'flex', gap: 8 },
   productImage: { borderRadius: 3, flexShrink: 0, height: 20, objectFit: 'cover', width: 20 },

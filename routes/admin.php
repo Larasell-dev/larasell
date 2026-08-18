@@ -18,6 +18,8 @@ Route::middleware(AdminGuest::using($guard))->group(function () {
 Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('products', [ProductController::class, 'store'])->name('products.store');
     Route::get('product-options', [ProductOptionController::class, 'index'])->name('product-options.index');
     Route::get('product-options/create', [ProductOptionController::class, 'create'])->name('product-options.create');
     Route::post('product-options', [ProductOptionController::class, 'store'])->name('product-options.store');
@@ -26,6 +28,7 @@ Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::delete('product-options/{adminProductOption}', [ProductOptionController::class, 'destroy'])->name('product-options.destroy');
     Route::get('products/{adminProduct}', [ProductController::class, 'show'])->name('products.show');
     Route::patch('products/{adminProduct}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('products/{adminProduct}', [ProductController::class, 'destroy'])->name('products.destroy');
     Route::patch('products/{adminProduct}/general', [ProductController::class, 'updateGeneral'])->name('products.general.update');
     Route::patch('products/{adminProduct}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
     Route::post('products/{adminProduct}/images', [ProductController::class, 'storeImage'])->name('products.images.store');

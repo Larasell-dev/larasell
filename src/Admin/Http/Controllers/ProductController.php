@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -38,6 +39,7 @@ class ProductController extends Controller
                 'stock' => $product->getAttribute('stock'),
                 'status' => $product->getAttribute('status')->value,
                 'url' => route('larasell.admin.products.show', $product->getKey()),
+                'deleteUrl' => route('larasell.admin.products.destroy', $product->getKey()),
             ]);
 
         $productIds = collect($products->items())->pluck('id');
@@ -45,6 +47,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', [
             'homeUrl' => route('larasell.admin.home'),
             'productsUrl' => route('larasell.admin.products.index'),
+            'productCreateUrl' => route('larasell.admin.products.create'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -77,6 +80,35 @@ class ProductController extends Controller
                 'total' => $products->total(),
             ],
         ])->rootView('larasell-admin::admin');
+    }
+
+    public function create(Request $request): Response
+    {
+        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+
+        return Inertia::render('Products/Create', [
+            'homeUrl' => route('larasell.admin.home'),
+            'productsUrl' => route('larasell.admin.products.index'),
+            'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'productStoreUrl' => route('larasell.admin.products.store'),
+            'logoutUrl' => route('larasell.admin.logout'),
+            'user' => [
+                'name' => $admin->name,
+                'email' => $admin->email,
+            ],
+        ])->rootView('larasell-admin::admin');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        /** @var class-string<Model> $productModel */
+        $productModel = config('larasell.models.product', Product::class);
+        $data = $this->validatedProductData($request);
+        $data['slug'] = $this->uniqueSlug($productModel, $data['name']);
+
+        $product = $productModel::query()->create($data);
+
+        return redirect()->route('larasell.admin.products.show', $product->getKey());
     }
 
     public function show(Request $request, string $adminProduct): Response
@@ -181,6 +213,13 @@ class ProductController extends Controller
         return back();
     }
 
+    public function destroy(string $adminProduct): RedirectResponse
+    {
+        $this->findProduct($adminProduct)->delete();
+
+        return redirect()->route('larasell.admin.products.index');
+    }
+
     public function storeImage(Request $request, string $adminProduct): JsonResponse
     {
         $product = $this->findProduct($adminProduct);
@@ -258,5 +297,40 @@ class ProductController extends Controller
         $productModel = config('larasell.models.product', Product::class);
 
         return $productModel::query()->findOrFail($id);
+    }
+
+    /** @param class-string<Model> $model */
+    private function uniqueSlug(string $model, string $name): string
+    {
+        $base = Str::slug($name) ?: 'product';
+        $slug = $base;
+        $suffix = 2;
+
+        while ($model::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
+    }
+
+    private function validatedProductData(Request $request): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'min_quantity' => ['nullable', 'integer', 'min:1', 'lte:max_quantity'],
+            'max_quantity' => ['nullable', 'integer', 'min:1', 'gte:min_quantity'],
+            'allow_backorders' => ['required', 'boolean'],
+            'status' => ['required', Rule::enum(Visibility::class)],
+            'price_amount' => ['required', 'numeric', 'min:0'],
+            'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+        ]);
+
+        $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
+        $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
+        unset($data['price_amount'], $data['price_currency']);
+
+        return $data;
     }
 }
