@@ -82,7 +82,7 @@ const styles = stylex.create({
   viewport: { bottom: 24, display: 'flex', justifyContent: 'center', left: 0, outline: 0, pointerEvents: 'none', position: 'fixed', width: '100%', zIndex: 20 },
   motion: { maxWidth: 'calc(100vw - 32px)', pointerEvents: 'auto', width: 420 },
   toast: { backgroundClip: 'padding-box', backgroundColor: 'var(--color-neutral-950)', borderColor: 'rgba(255, 255, 255, 0.16)', borderRadius: 8, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 12px 32px rgba(20, 15, 18, 0.22)', color: '#fff', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, width: '100%' },
-  content: { alignItems: 'center', display: 'flex', gap: 20, justifyContent: 'space-between', padding: 12 },
+  content: { alignItems: 'center', display: 'flex', gap: 20, justifyContent: 'space-between', paddingBlock: 12, paddingLeft: 16, paddingRight: 12 },
   title: { fontSize: 14, fontWeight: 650 },
   description: { color: 'var(--color-neutral-300)', fontSize: 13, marginTop: 2 },
   actions: { display: 'flex', flexShrink: 0, gap: 8 },
