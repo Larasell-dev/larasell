@@ -15,8 +15,12 @@ export default function ProductOptionShow({ productOption, ...props }: Props) {
       <Head title={productOption.name} />
       <div {...stylex.props(styles.page)}>
         <FormContainer style={styles.pageContent}>
-          <BackLink href={props.productOptionsUrl}>Back to product options</BackLink>
-          <h1 {...stylex.props(styles.heading)}>{productOption.name}</h1>
+          <header {...stylex.props(styles.pageHeader)}>
+            <div>
+              <BackLink href={props.productOptionsUrl}>Back to product options</BackLink>
+              <h1 {...stylex.props(styles.heading)}>{productOption.name}</h1>
+            </div>
+          </header>
           <ProductOptionForm action={productOption.updateUrl} initialProductOption={productOption} method="patch" />
         </FormContainer>
       </div>
@@ -27,5 +31,6 @@ export default function ProductOptionShow({ productOption, ...props }: Props) {
 const styles = stylex.create({
   page: { backgroundColor: 'var(--color-neutral-50)', minHeight: '100vh', width: '100%' },
   pageContent: { paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 } },
-  heading: { fontSize: 24, fontWeight: 650, lineHeight: 1.3, marginBottom: 52, marginTop: 8 },
+  pageHeader: { alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 24, minHeight: 48 },
+  heading: { fontSize: 24, fontWeight: 650, lineHeight: 1.3, marginTop: 4, userSelect: 'text' },
 })
