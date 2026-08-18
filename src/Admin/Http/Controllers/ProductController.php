@@ -45,6 +45,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', [
             'homeUrl' => route('larasell.admin.home'),
             'productsUrl' => route('larasell.admin.products.index'),
+            'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,
@@ -88,6 +89,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Show', [
             'homeUrl' => route('larasell.admin.home'),
             'productsUrl' => route('larasell.admin.products.index'),
+            'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,

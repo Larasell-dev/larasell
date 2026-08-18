@@ -1,19 +1,33 @@
 import ArrowLeftIcon from '~icons/tabler/arrow-left'
+import AdjustmentsHorizontalIcon from '~icons/tabler/adjustments-horizontal'
+import AdjustmentsHorizontalFilledIcon from '~icons/tabler/adjustments-horizontal-filled'
+import ChevronLeftIcon from '~icons/tabler/chevron-left'
+import ChevronRightIcon from '~icons/tabler/chevron-right'
 import LayoutDashboardIcon from '~icons/tabler/layout-dashboard'
 import LayoutDashboardFilledIcon from '~icons/tabler/layout-dashboard-filled'
 import MenuIcon from '~icons/tabler/menu-2'
+import DotsIcon from '~icons/tabler/dots'
+import PlusIcon from '~icons/tabler/plus'
 import ShoppingCartIcon from '~icons/tabler/shopping-cart'
 import ShoppingCartFilledIcon from '~icons/tabler/shopping-cart-filled'
+import TrashIcon from '~icons/tabler/trash'
 import XIcon from '~icons/tabler/x'
 import type { ComponentProps } from 'react'
 
 const icons = {
+  'product-options': AdjustmentsHorizontalIcon,
+  'product-options-filled': AdjustmentsHorizontalFilledIcon,
   'arrow-left': ArrowLeftIcon,
+  'chevron-left': ChevronLeftIcon,
+  'chevron-right': ChevronRightIcon,
   dashboard: LayoutDashboardIcon,
   'dashboard-filled': LayoutDashboardFilledIcon,
+  dots: DotsIcon,
   menu: MenuIcon,
+  plus: PlusIcon,
   products: ShoppingCartIcon,
   'products-filled': ShoppingCartFilledIcon,
+  trash: TrashIcon,
   x: XIcon,
 }
 

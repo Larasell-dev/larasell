@@ -10,7 +10,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Larasell Admin</title>
+        <link rel="icon" href="{{ $adminVite->asset('resources/images/admin/favicon.svg', 'vendor/larasell/admin') }}" type="image/svg+xml">
 
         {{ $adminVite->reactRefresh() }}
         {{ $adminVite('resources/js/admin/app.tsx', 'vendor/larasell/admin') }}

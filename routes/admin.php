@@ -5,6 +5,7 @@ use Larasell\Larasell\Admin\Http\Authenticate as AdminAuthenticate;
 use Larasell\Larasell\Admin\Http\Controllers\HomeController;
 use Larasell\Larasell\Admin\Http\Controllers\LoginController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
+use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
 
 $guard = config('larasell-admin.guard', 'larasell-admin');
@@ -17,6 +18,12 @@ Route::middleware(AdminGuest::using($guard))->group(function () {
 Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('product-options', [ProductOptionController::class, 'index'])->name('product-options.index');
+    Route::get('product-options/create', [ProductOptionController::class, 'create'])->name('product-options.create');
+    Route::post('product-options', [ProductOptionController::class, 'store'])->name('product-options.store');
+    Route::get('product-options/{adminProductOption}', [ProductOptionController::class, 'show'])->name('product-options.show');
+    Route::patch('product-options/{adminProductOption}', [ProductOptionController::class, 'update'])->name('product-options.update');
+    Route::delete('product-options/{adminProductOption}', [ProductOptionController::class, 'destroy'])->name('product-options.destroy');
     Route::get('products/{adminProduct}', [ProductController::class, 'show'])->name('products.show');
     Route::patch('products/{adminProduct}', [ProductController::class, 'update'])->name('products.update');
     Route::patch('products/{adminProduct}/general', [ProductController::class, 'updateGeneral'])->name('products.general.update');

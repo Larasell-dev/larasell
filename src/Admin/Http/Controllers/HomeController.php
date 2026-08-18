@@ -16,6 +16,7 @@ class HomeController extends Controller
         return Inertia::render('Home', [
             'homeUrl' => route('larasell.admin.home'),
             'productsUrl' => route('larasell.admin.products.index'),
+            'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,

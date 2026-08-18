@@ -1,24 +1,24 @@
-import { Deferred, Link, router, useForm } from '@inertiajs/react'
-import { Toast } from '@base-ui/react/toast'
+import { Deferred, Head, useForm } from '@inertiajs/react'
 import { pointerDistance } from '@dnd-kit/collision'
 import { Feedback } from '@dnd-kit/dom'
 import { DragDropProvider } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
 import * as stylex from '@stylexjs/stylex'
-import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
+import BackLink from '../../Components/BackLink'
 import Card from '../../Components/Card'
 import Checkbox from '../../Components/Checkbox'
 import Error from '../../Components/Error'
 import Field from '../../Components/Field'
 import Form from '../../Components/Form'
-import Icon from '../../Components/Icon'
+import FormContainer from '../../Components/FormContainer'
 import Input from '../../Components/Input'
 import Label from '../../Components/Label'
 import NumberInput from '../../Components/NumberInput'
 import Select from '../../Components/Select'
 import Toggle from '../../Components/Toggle'
+import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
 
 type Product = {
   id: number | string
@@ -45,11 +45,7 @@ const currencies: { label: string; value: Currency }[] = ['USD', 'EUR', 'GBP', '
   .map((currency) => ({ label: currency, value: currency as Currency }))
 
 export default function ProductShow({ images, product, ...layoutProps }: Props) {
-  return (
-    <Toast.Provider timeout={0}>
-      <ProductEditor images={images} product={product} {...layoutProps} />
-    </Toast.Provider>
-  )
+  return <ProductEditor images={images} product={product} {...layoutProps} />
 }
 
 function ProductEditor({ images, product, ...layoutProps }: Props) {
@@ -67,8 +63,6 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
     image_order: [] as ProductImage['id'][],
     new_image_ids: [] as ProductImage['id'][],
   })
-  const { add: addToast, close: closeToast, toasts } = Toast.useToastManager()
-  const allowNextVisit = useRef(false)
   const initializedImageProduct = useRef<Product['id'] | null>(null)
   const initializedImageSignature = useRef<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -97,44 +91,7 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
     initializedImageSignature.current = imageSignature
   }, [images, product.id])
 
-  useEffect(() => {
-    if (form.isDirty) {
-      addToast({ id: 'unsaved-product-changes', title: 'Unsaved changes', timeout: 0 })
-    } else {
-      closeToast('unsaved-product-changes')
-    }
-  }, [addToast, closeToast, form.isDirty])
-
-  useEffect(() => () => closeToast('unsaved-product-changes'), [closeToast])
-
-  useEffect(() => {
-    if (!form.isDirty) {
-      return
-    }
-
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-
-    const removeBeforeListener = router.on('before', () => {
-      if (allowNextVisit.current) {
-        return
-      }
-
-      return window.confirm('You have unsaved changes. Are you sure you want to leave this page?')
-    })
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      removeBeforeListener()
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [form.isDirty])
-
   function submitProduct() {
-    allowNextVisit.current = true
     form.patch(product.updateUrl, {
       except: ['images'],
       preserveScroll: true,
@@ -143,11 +100,19 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
         form.setDefaults(savedData)
         form.setData(savedData)
       },
-      onFinish: () => {
-        allowNextVisit.current = false
-      },
     })
   }
+
+  useUnsavedChanges({
+    dirty: form.isDirty,
+    onReset: () => {
+      form.reset()
+      form.clearErrors()
+      setUploadedImages([])
+    },
+    onSave: submitProduct,
+    processing: form.processing,
+  })
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -196,14 +161,12 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
 
   return (
     <AdminLayout active="products" {...layoutProps}>
+      <Head title={product.name} />
       <div {...stylex.props(styles.page)}>
-        <div {...stylex.props(styles.pageContent)}>
+        <FormContainer style={styles.pageContent}>
         <header {...stylex.props(styles.pageHeader)}>
           <div>
-            <Link href={layoutProps.productsUrl} {...stylex.props(styles.backLink)}>
-              <Icon height="16" name="arrow-left" width="16" />
-              Back to products
-            </Link>
+            <BackLink href={layoutProps.productsUrl}>Back to products</BackLink>
             <h1 {...stylex.props(styles.heading)}>{product.name}</h1>
           </div>
         </header>
@@ -325,47 +288,8 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
           </Card>
           </div>
         </Form>
-        </div>
+        </FormContainer>
       </div>
-      <Toast.Portal>
-        <Toast.Viewport {...stylex.props(styles.toastViewport)}>
-          <AnimatePresence>
-            {toasts.map((toast) => (
-              <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                initial={{ opacity: 0, y: 12 }}
-                key={toast.id}
-                transition={{ damping: 30, mass: 0.8, stiffness: 400, type: 'spring' }}
-                {...stylex.props(styles.toastMotion)}
-              >
-                <Toast.Root swipeDirection={[]} toast={toast} {...stylex.props(styles.toast)}>
-                  <Toast.Content {...stylex.props(styles.toastContent)}>
-                    <Toast.Title {...stylex.props(styles.toastTitle)} />
-                    <div {...stylex.props(styles.toastActions)}>
-                      <button
-                        disabled={form.processing}
-                        onClick={() => {
-                          form.reset()
-                          form.clearErrors()
-                          setUploadedImages([])
-                        }}
-                        type="button"
-                        {...stylex.props(styles.toastButton, styles.toastResetButton)}
-                      >
-                        Reset
-                      </button>
-                      <button disabled={form.processing} onClick={submitProduct} type="button" {...stylex.props(styles.toastButton, styles.toastSaveButton)}>
-                        Save
-                      </button>
-                    </div>
-                  </Toast.Content>
-                </Toast.Root>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </Toast.Viewport>
-      </Toast.Portal>
     </AdminLayout>
   )
 }
@@ -491,10 +415,9 @@ const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
 
 const styles = stylex.create({
   page: { backgroundColor: 'var(--color-neutral-50)', minHeight: '100vh', width: '100%' },
-  pageContent: { marginInline: 'auto', maxWidth: 960, paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 }, width: '100%' },
+  pageContent: { paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 } },
   pageHeader: { alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 24, minHeight: 48 },
   heading: { fontSize: 24, fontWeight: 650, lineHeight: 1.3, marginTop: 4, userSelect: 'text' },
-  backLink: { alignItems: 'center', borderRadius: 4, color: { default: 'var(--color-brand-700)', ':hover': 'var(--color-brand-900)' }, display: 'inline-flex', fontSize: 13, fontWeight: 600, gap: 5, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 3, outlineStyle: 'solid', outlineWidth: 2, textDecoration: 'none' },
   cards: { display: 'grid', gap: 52 },
   imageGrid: { display: 'grid', gap: 12, gridTemplateColumns: { default: 'repeat(7, minmax(0, 1fr))', '@media (max-width: 640px)': 'repeat(4, minmax(0, 1fr))' } },
   imageItem: { aspectRatio: '1', backgroundColor: 'var(--color-neutral-100)', borderColor: 'rgba(20, 15, 18, 0.18)', borderRadius: 6, borderStyle: 'solid', borderWidth: 1, cursor: 'grab', overflow: 'hidden', padding: 0, position: 'relative', touchAction: 'none' },
@@ -517,15 +440,6 @@ const styles = stylex.create({
   settingRow: { alignItems: 'center', cursor: 'pointer', display: 'flex', gap: 16, justifyContent: 'space-between' },
   settingTitle: { display: 'block', fontSize: 14, fontWeight: 600 },
   settingDescription: { color: 'var(--color-neutral-500)', display: 'block', fontSize: 13, marginTop: 2 },
-  toastViewport: { bottom: 24, display: 'flex', justifyContent: 'center', left: 0, outline: 0, pointerEvents: 'none', position: 'fixed', width: '100%', zIndex: 20 },
-  toastMotion: { maxWidth: 'calc(100vw - 32px)', pointerEvents: 'auto', width: 420 },
-  toast: { backgroundClip: 'padding-box', backgroundColor: 'var(--color-neutral-950)', borderColor: 'rgba(255, 255, 255, 0.16)', borderRadius: 8, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 12px 32px rgba(20, 15, 18, 0.22)', color: '#fff', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, width: '100%' },
-  toastContent: { alignItems: 'center', display: 'flex', gap: 20, justifyContent: 'space-between', padding: 12 },
-  toastTitle: { fontSize: 14, fontWeight: 650 },
-  toastActions: { display: 'flex', flexShrink: 0, gap: 8 },
-  toastButton: { borderRadius: 6, cursor: { default: 'pointer', ':disabled': 'wait' }, fontSize: 14, fontWeight: 600, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-300)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, paddingBlock: 7, paddingInline: 12 },
-  toastResetButton: { backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-800)' }, borderColor: 'var(--color-neutral-700)', borderStyle: 'solid', borderWidth: 1, color: '#fff' },
-  toastSaveButton: { backgroundColor: { default: 'var(--color-brand-500)', ':hover': 'var(--color-brand-600)' }, color: '#fff' },
 })
 
 function currencyFractionDigits(currency: Currency) {

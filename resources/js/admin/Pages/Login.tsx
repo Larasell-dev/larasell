@@ -1,11 +1,10 @@
-import { useForm } from '@inertiajs/react'
+import { Head, useForm } from '@inertiajs/react'
 import * as stylex from '@stylexjs/stylex'
 import type { FormEvent } from 'react'
 import Button from '../Components/Button'
 import Error from '../Components/Error'
 import Field from '../Components/Field'
 import Form from '../Components/Form'
-import FormContainer from '../Components/FormContainer'
 import Input from '../Components/Input'
 import Label from '../Components/Label'
 
@@ -27,7 +26,8 @@ export default function Login({ loginUrl }: LoginProps) {
 
   return (
     <main {...stylex.props(styles.page)}>
-      <FormContainer>
+      <Head title="Sign in" />
+      <div {...stylex.props(styles.formContainer)}>
         <Form errors={form.errors} onSubmit={submit}>
           <header {...stylex.props(styles.header)}>
             <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
@@ -63,7 +63,7 @@ export default function Login({ loginUrl }: LoginProps) {
             Sign in
           </Button>
         </Form>
-      </FormContainer>
+      </div>
     </main>
   )
 }
@@ -81,6 +81,7 @@ const styles = stylex.create({
     paddingTop: 0,
     placeItems: 'center',
   },
+  formContainer: { maxWidth: 380, width: '100%' },
   heading: {
     fontSize: 28,
     fontWeight: 650,

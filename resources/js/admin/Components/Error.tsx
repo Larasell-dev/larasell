@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react'
 type ErrorProps = ComponentProps<typeof Field.Error>
 
 export default function Error(props: ErrorProps) {
-  return <Field.Error {...props} {...stylex.props(styles.error)} />
+  return <Field.Error match={Boolean(props.children)} {...props} {...stylex.props(styles.error)} />
 }
 
 const styles = stylex.create({

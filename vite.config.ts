@@ -14,6 +14,7 @@ export default defineConfig({
     laravel({
       input: [
         'resources/css/admin.css',
+        'resources/images/admin/favicon.svg',
         'resources/js/admin/app.tsx',
       ],
       refresh: true,

@@ -11,16 +11,17 @@ import useBreakpoint from '../Hooks/useBreakpoint'
 export type AdminLayoutProps = {
   homeUrl: string
   productsUrl: string
+  productOptionsUrl: string
   logoutUrl: string
   user: { name: string; email: string }
 }
 
 type Props = AdminLayoutProps & {
-  active: 'home' | 'products'
+  active: 'home' | 'product-options' | 'products'
   children?: ReactNode
 }
 
-export default function AdminLayout({ active, children, homeUrl, logoutUrl, productsUrl, user }: Props) {
+export default function AdminLayout({ active, children, homeUrl, logoutUrl, productOptionsUrl, productsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   useBreakpoint({ onBreakpointExceeded: { lg: () => setMenuOpen(false) } })
@@ -53,6 +54,14 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, prod
           >
             <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
             Products
+          </Link>
+          <Link
+            aria-current={active === 'product-options' ? 'page' : undefined}
+            href={productOptionsUrl}
+            {...stylex.props(styles.navLink, active === 'product-options' && styles.navLinkActive)}
+          >
+            <Icon name={active === 'product-options' ? 'product-options-filled' : 'product-options'} width={18} height={18} />
+            Product options
           </Link>
         </nav>
 
@@ -110,6 +119,15 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, prod
                   >
                     <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
                     Products
+                  </Link>
+                  <Link
+                    aria-current={active === 'product-options' ? 'page' : undefined}
+                    href={productOptionsUrl}
+                    onClick={() => setMenuOpen(false)}
+                    {...stylex.props(styles.navLink, active === 'product-options' && styles.navLinkActive)}
+                  >
+                    <Icon name={active === 'product-options' ? 'product-options-filled' : 'product-options'} width={18} height={18} />
+                    Product options
                   </Link>
                 </nav>
 

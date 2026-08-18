@@ -3,7 +3,7 @@ import * as stylex from '@stylexjs/stylex'
 import type { ComponentProps } from 'react'
 
 type ButtonProps = ComponentProps<typeof BaseButton> & {
-  variant?: 'primary' | 'secondary'
+  variant?: 'danger' | 'primary' | 'secondary'
 }
 
 export default function Button({ disabled, variant = 'primary', ...props }: ButtonProps) {
@@ -13,7 +13,7 @@ export default function Button({ disabled, variant = 'primary', ...props }: Butt
       {...props}
       {...stylex.props(
         styles.button,
-        variant === 'primary' ? styles.primary : styles.secondary,
+        variant === 'primary' ? styles.primary : variant === 'danger' ? styles.danger : styles.secondary,
         disabled && styles.disabled,
       )}
     />
@@ -22,15 +22,19 @@ export default function Button({ disabled, variant = 'primary', ...props }: Butt
 
 const styles = stylex.create({
   button: {
+    alignItems: 'center',
     appearance: 'none',
     borderStyle: 'solid',
     borderWidth: 1,
     borderRadius: 6,
     boxSizing: 'border-box',
     cursor: 'pointer',
+    display: 'inline-flex',
     fontFamily: 'inherit',
     fontSize: 15,
     fontWeight: 600,
+    gap: 7,
+    justifyContent: 'center',
     letterSpacing: 0,
     lineHeight: 'inherit',
     marginBottom: 0,
@@ -49,6 +53,7 @@ const styles = stylex.create({
     paddingRight: 14,
     paddingTop: 9,
     textAlign: 'center',
+    textDecoration: 'none',
     textTransform: 'none',
   },
   primary: {
@@ -60,6 +65,11 @@ const styles = stylex.create({
     backgroundColor: { default: '#fff', ':hover': 'var(--color-neutral-100)' },
     borderColor: 'var(--color-neutral-300)',
     color: 'var(--color-neutral-900)',
+  },
+  danger: {
+    backgroundColor: { default: '#dc2626', ':hover': '#b91c1c' },
+    borderColor: { default: '#dc2626', ':hover': '#b91c1c' },
+    color: '#fff',
   },
   disabled: {
     cursor: 'wait',
