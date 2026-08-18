@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
 import react from '@vitejs/plugin-react'
 import stylex from '@stylexjs/unplugin'
+import Icons from 'unplugin-icons/vite'
 
 export default defineConfig({
   base: '/vendor/larasell/admin/',
@@ -9,6 +10,7 @@ export default defineConfig({
     stylex.vite({
       useCSSLayers: true,
     }),
+    Icons({ compiler: 'jsx', jsx: 'react' }),
     laravel({
       input: [
         'resources/css/admin.css',

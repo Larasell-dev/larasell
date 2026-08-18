@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "strict": true,
     "target": "ES2022",
-    "types": ["vite/client"]
+    "types": ["vite/client", "unplugin-icons/types/react"]
   },
   "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx"]
 }
