@@ -5,6 +5,7 @@ import Button from '../Components/Button'
 import Error from '../Components/Error'
 import Field from '../Components/Field'
 import Form from '../Components/Form'
+import FormContainer from '../Components/FormContainer'
 import Input from '../Components/Input'
 import Label from '../Components/Label'
 
@@ -26,41 +27,43 @@ export default function Login({ loginUrl }: LoginProps) {
 
   return (
     <main {...stylex.props(styles.page)}>
-      <Form errors={form.errors} onSubmit={submit}>
-        <header {...stylex.props(styles.header)}>
-          <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
-          <p {...stylex.props(styles.description)}>
-            Sign in to access the Larasell administration area.
-          </p>
-        </header>
+      <FormContainer>
+        <Form errors={form.errors} onSubmit={submit}>
+          <header {...stylex.props(styles.header)}>
+            <h1 {...stylex.props(styles.heading)}>Larasell Admin</h1>
+            <p {...stylex.props(styles.description)}>
+              Sign in to access the Larasell administration area.
+            </p>
+          </header>
 
-        <Field name="email">
-          <Label>Email</Label>
-          <Input
-            autoComplete="email"
-            autoFocus
-            onChange={(event) => form.setData('email', event.target.value)}
-            type="email"
-            value={form.data.email}
-          />
-          <Error />
-        </Field>
+          <Field name="email">
+            <Label>Email</Label>
+            <Input
+              autoComplete="email"
+              autoFocus
+              onChange={(event) => form.setData('email', event.target.value)}
+              type="email"
+              value={form.data.email}
+            />
+            <Error />
+          </Field>
 
-        <Field name="password">
-          <Label>Password</Label>
-          <Input
-            autoComplete="current-password"
-            onChange={(event) => form.setData('password', event.target.value)}
-            type="password"
-            value={form.data.password}
-          />
-          <Error />
-        </Field>
+          <Field name="password">
+            <Label>Password</Label>
+            <Input
+              autoComplete="current-password"
+              onChange={(event) => form.setData('password', event.target.value)}
+              type="password"
+              value={form.data.password}
+            />
+            <Error />
+          </Field>
 
-        <Button disabled={form.processing} type="submit">
-          Sign in
-        </Button>
-      </Form>
+          <Button disabled={form.processing} type="submit">
+            Sign in
+          </Button>
+        </Form>
+      </FormContainer>
     </main>
   )
 }

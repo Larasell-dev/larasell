@@ -12,7 +12,6 @@ const styles = stylex.create({
   form: {
     display: 'grid',
     gap: 16,
-    maxWidth: 380,
     width: '100%',
   },
 })

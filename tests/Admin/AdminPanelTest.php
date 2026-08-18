@@ -157,7 +157,12 @@ it('shows a product in the admin panel', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
+        'description' => 'A focused task light.',
         'price' => Price::of(4999, 'EUR'),
+        'stock' => 12,
+        'min_quantity' => 2,
+        'max_quantity' => 6,
+        'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
 
@@ -172,5 +177,134 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('component', 'Products/Show')
         ->assertJsonPath('props.product.id', $product->id)
         ->assertJsonPath('props.product.name', 'Desk lamp')
+        ->assertJsonPath('props.product.slug', 'desk-lamp')
+        ->assertJsonPath('props.product.description', 'A focused task light.')
+        ->assertJsonPath('props.product.stock', 12)
+        ->assertJsonPath('props.product.minQuantity', 2)
+        ->assertJsonPath('props.product.maxQuantity', 6)
+        ->assertJsonPath('props.product.allowBackorders', false)
+        ->assertJsonPath('props.product.status', 'visible')
+        ->assertJsonPath('props.product.price.amount', '4999')
+        ->assertJsonPath('props.product.price.currency', 'EUR')
+        ->assertJsonPath('props.product.updateUrl', route('larasell.admin.products.update', $product))
+        ->assertJsonPath('props.product.generalUpdateUrl', route('larasell.admin.products.general.update', $product))
+        ->assertJsonPath('props.product.stockUpdateUrl', route('larasell.admin.products.stock.update', $product))
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
+});
+
+it('updates all product settings in the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(4999, 'EUR'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.products.update', $product), [
+            'name' => 'Reading lamp',
+            'slug' => 'reading-lamp',
+            'description' => 'Warm, adjustable light.',
+            'stock' => 20,
+            'min_quantity' => 2,
+            'max_quantity' => 8,
+            'allow_backorders' => false,
+            'status' => 'hidden',
+            'price_amount' => 59.95,
+            'price_currency' => 'USD',
+        ])
+        ->assertRedirect();
+
+    expect($product->refresh())
+        ->name->toBe('Reading lamp')
+        ->slug->toBe('reading-lamp')
+        ->description->toBe('Warm, adjustable light.')
+        ->stock->toBe(20)
+        ->min_quantity->toBe(2)
+        ->max_quantity->toBe(8)
+        ->allow_backorders->toBeFalse()
+        ->status->toBe(Visibility::Hidden)
+        ->price->toEqual(Price::of(5995, 'USD'));
+});
+
+it('updates product general information in the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(4999, 'EUR'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.products.general.update', $product), [
+            'name' => 'Reading lamp',
+            'slug' => 'reading-lamp',
+            'description' => 'Warm, adjustable light.',
+        ])
+        ->assertRedirect();
+
+    expect($product->refresh())
+        ->name->toBe('Reading lamp')
+        ->slug->toBe('reading-lamp')
+        ->description->toBe('Warm, adjustable light.');
+});
+
+it('updates product stock settings in the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(4999, 'EUR'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.products.stock.update', $product), [
+            'stock' => 20,
+            'min_quantity' => 2,
+            'max_quantity' => 8,
+            'allow_backorders' => false,
+        ])
+        ->assertRedirect();
+
+    expect($product->refresh())
+        ->stock->toBe(20)
+        ->min_quantity->toBe(2)
+        ->max_quantity->toBe(8)
+        ->allow_backorders->toBeFalse();
+});
+
+it('validates product stock quantity boundaries', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'desk-lamp',
+        'name' => 'Desk lamp',
+        'price' => Price::of(4999, 'EUR'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->from(route('larasell.admin.products.show', $product))
+        ->patch(route('larasell.admin.products.stock.update', $product), [
+            'stock' => -1,
+            'min_quantity' => 5,
+            'max_quantity' => 2,
+            'allow_backorders' => true,
+        ])
+        ->assertRedirect(route('larasell.admin.products.show', $product))
+        ->assertSessionHasErrors(['stock', 'min_quantity', 'max_quantity']);
 });

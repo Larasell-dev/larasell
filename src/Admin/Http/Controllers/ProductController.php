@@ -3,11 +3,17 @@
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Price;
+use Money\Currencies\ISOCurrencies;
+use Money\Currency as MoneyCurrency;
 
 class ProductController extends Controller
 {
@@ -86,7 +92,78 @@ class ProductController extends Controller
             'product' => [
                 'id' => $product->getKey(),
                 'name' => $product->getAttribute('name'),
+                'slug' => $product->getAttribute('slug'),
+                'description' => $product->getAttribute('description'),
+                'stock' => $product->getAttribute('stock'),
+                'minQuantity' => $product->getAttribute('min_quantity'),
+                'maxQuantity' => $product->getAttribute('max_quantity'),
+                'allowBackorders' => $product->getAttribute('allow_backorders'),
+                'status' => $product->getAttribute('status')->value,
+                'price' => $product->getAttribute('price')->toArray(),
+                'updateUrl' => route('larasell.admin.products.update', $product->getKey()),
+                'generalUpdateUrl' => route('larasell.admin.products.general.update', $product->getKey()),
+                'stockUpdateUrl' => route('larasell.admin.products.stock.update', $product->getKey()),
             ],
         ])->rootView('larasell-admin::admin');
+    }
+
+    public function update(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
+            'description' => ['nullable', 'string'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'min_quantity' => ['nullable', 'integer', 'min:1', 'lte:max_quantity'],
+            'max_quantity' => ['nullable', 'integer', 'min:1', 'gte:min_quantity'],
+            'allow_backorders' => ['required', 'boolean'],
+            'status' => ['required', Rule::enum(Visibility::class)],
+            'price_amount' => ['required', 'numeric', 'min:0'],
+            'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+        ]);
+
+        $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
+        $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
+        unset($data['price_amount'], $data['price_currency']);
+
+        $product->fill($data)->save();
+
+        return back();
+    }
+
+    public function updateGeneral(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $product->fill($request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
+            'description' => ['nullable', 'string'],
+        ]))->save();
+
+        return back();
+    }
+
+    public function updateStock(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $data = $request->validate([
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'min_quantity' => ['nullable', 'integer', 'min:1', 'lte:max_quantity'],
+            'max_quantity' => ['nullable', 'integer', 'min:1', 'gte:min_quantity'],
+            'allow_backorders' => ['required', 'boolean'],
+        ]);
+
+        $product->fill($data)->save();
+
+        return back();
+    }
+
+    private function findProduct(string $id): Model
+    {
+        /** @var class-string<Model> $productModel */
+        $productModel = config('larasell.models.product', Product::class);
+
+        return $productModel::query()->findOrFail($id);
     }
 }

@@ -10,8 +10,9 @@ export default function Input(props: InputProps) {
 
 const styles = stylex.create({
   input: {
+    backgroundClip: 'padding-box',
     backgroundColor: '#fff',
-    borderColor: 'var(--color-neutral-300)',
+    borderColor: 'rgba(20, 15, 18, 0.18)',
     borderStyle: 'solid',
     borderWidth: 1,
     borderRadius: 6,
