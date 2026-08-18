@@ -279,7 +279,7 @@ const styles = stylex.create({
   settingDescription: { color: 'var(--color-neutral-500)', display: 'block', fontSize: 13, marginTop: 2 },
   toastViewport: { bottom: 24, display: 'flex', justifyContent: 'center', left: 0, outline: 0, pointerEvents: 'none', position: 'fixed', width: '100%', zIndex: 20 },
   toastMotion: { maxWidth: 'calc(100vw - 32px)', pointerEvents: 'auto', width: 420 },
-  toast: { backgroundClip: 'padding-box', backgroundColor: 'var(--color-neutral-950)', borderColor: 'rgba(255, 255, 255, 0.16)', borderRadius: 8, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 12px 32px rgba(20, 15, 18, 0.22)', color: '#fff', width: '100%' },
+  toast: { backgroundClip: 'padding-box', backgroundColor: 'var(--color-neutral-950)', borderColor: 'rgba(255, 255, 255, 0.16)', borderRadius: 8, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 12px 32px rgba(20, 15, 18, 0.22)', color: '#fff', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, width: '100%' },
   toastContent: { alignItems: 'center', display: 'flex', gap: 20, justifyContent: 'space-between', padding: 12 },
   toastTitle: { fontSize: 14, fontWeight: 650 },
   toastActions: { display: 'flex', flexShrink: 0, gap: 8 },
