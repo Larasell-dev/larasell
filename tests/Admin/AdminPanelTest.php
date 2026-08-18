@@ -28,6 +28,63 @@ it('redirects guest admin users away from the product options page', function ()
     $this->get('/admin/product-options')->assertRedirect(route('larasell.admin.login'));
 });
 
+it('redirects guest admin users away from the media page', function () {
+    $this->get('/admin/media')->assertRedirect(route('larasell.admin.login'));
+});
+
+it('shows uploaded images in the admin media index', function () {
+    Storage::fake('local');
+    config()->set('larasell.images.disk', 'local');
+
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $image = ProductImage::query()->create([
+        'path' => 'products/desk-lamp/hero.jpg',
+        'alt' => 'Desk lamp',
+        'meta' => ['original_name' => 'desk-lamp-hero.jpg'],
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.media.index'))
+        ->assertOk()
+        ->assertJsonPath('component', 'Media/Index')
+        ->assertJsonPath('props.images.0.id', $image->id)
+        ->assertJsonPath('props.images.0.alt', 'Desk lamp')
+        ->assertJsonPath('props.images.0.name', 'desk-lamp-hero.jpg')
+        ->assertJsonPath('props.images.0.url', $image->url())
+        ->assertJsonPath('props.pagination.currentPage', 1)
+        ->assertJsonPath('props.pagination.total', 1)
+        ->assertJsonPath('props.mediaDeleteUrl', route('larasell.admin.media.destroy'))
+        ->assertJsonPath('props.mediaUrl', route('larasell.admin.media.index'));
+});
+
+it('deletes selected media images and their stored files', function () {
+    Storage::fake('local');
+    config()->set('larasell.images.disk', 'local');
+
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $images = collect(['one.jpg', 'two.jpg'])->map(function (string $name) {
+        Storage::disk('local')->put("products/$name", 'image');
+
+        return ProductImage::query()->create(['path' => "products/$name"]);
+    });
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->delete(route('larasell.admin.media.destroy'), ['ids' => $images->pluck('id')->all()])
+        ->assertRedirect();
+
+    expect(ProductImage::query()->whereKey($images->pluck('id'))->exists())->toBeFalse();
+    Storage::disk('local')->assertMissing(['products/one.jpg', 'products/two.jpg']);
+});
+
 it('redirects authenticated admin users to the larasell admin home route from login', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',

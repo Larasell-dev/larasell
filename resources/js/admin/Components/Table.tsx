@@ -79,7 +79,7 @@ function PaginationButton({ direction, label, separated = false, url }: {
     <BaseButton
       aria-label={label}
       disabled={!url}
-      onClick={() => url && router.visit(url, { preserveScroll: true })}
+      onClick={() => url && router.visit(url, { preserveScroll: true, preserveState: true })}
       title={label}
       {...stylex.props(styles.paginationButton, separated && styles.paginationButtonSeparated, !url && styles.paginationButtonDisabled)}
     >

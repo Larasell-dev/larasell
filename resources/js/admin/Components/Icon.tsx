@@ -5,6 +5,8 @@ import ChevronLeftIcon from '~icons/tabler/chevron-left'
 import ChevronRightIcon from '~icons/tabler/chevron-right'
 import LayoutDashboardIcon from '~icons/tabler/layout-dashboard'
 import LayoutDashboardFilledIcon from '~icons/tabler/layout-dashboard-filled'
+import PhotoIcon from '~icons/tabler/photo'
+import PhotoFilledIcon from '~icons/tabler/photo-filled'
 import MenuIcon from '~icons/tabler/menu-2'
 import DotsIcon from '~icons/tabler/dots'
 import PlusIcon from '~icons/tabler/plus'
@@ -24,6 +26,8 @@ const icons = {
   'dashboard-filled': LayoutDashboardFilledIcon,
   dots: DotsIcon,
   menu: MenuIcon,
+  media: PhotoIcon,
+  'media-filled': PhotoFilledIcon,
   plus: PlusIcon,
   products: ShoppingCartIcon,
   'products-filled': ShoppingCartFilledIcon,

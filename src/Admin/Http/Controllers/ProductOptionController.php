@@ -38,6 +38,7 @@ class ProductOptionController extends Controller
 
         return Inertia::render('ProductOptions/Index', [
             'homeUrl' => route('larasell.admin.home'),
+            'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'productOptionCreateUrl' => route('larasell.admin.product-options.create'),
@@ -65,6 +66,7 @@ class ProductOptionController extends Controller
 
         return Inertia::render('ProductOptions/Create', [
             'homeUrl' => route('larasell.admin.home'),
+            'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'productOptionStoreUrl' => route('larasell.admin.product-options.store'),
@@ -107,6 +109,7 @@ class ProductOptionController extends Controller
 
         return Inertia::render('ProductOptions/Show', [
             'homeUrl' => route('larasell.admin.home'),
+            'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'productOption' => [

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Admin\Http\Authenticate as AdminAuthenticate;
 use Larasell\Larasell\Admin\Http\Controllers\HomeController;
 use Larasell\Larasell\Admin\Http\Controllers\LoginController;
+use Larasell\Larasell\Admin\Http\Controllers\MediaController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
@@ -17,6 +18,8 @@ Route::middleware(AdminGuest::using($guard))->group(function () {
 
 Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('/', HomeController::class)->name('home');
+    Route::get('media', [MediaController::class, 'index'])->name('media.index');
+    Route::delete('media', [MediaController::class, 'destroy'])->name('media.destroy');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('products', [ProductController::class, 'store'])->name('products.store');
