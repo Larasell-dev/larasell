@@ -4,9 +4,13 @@ namespace Larasell\Larasell\Admin\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Enums\Visibility;
@@ -101,15 +105,25 @@ class ProductController extends Controller
                 'status' => $product->getAttribute('status')->value,
                 'price' => $product->getAttribute('price')->toArray(),
                 'updateUrl' => route('larasell.admin.products.update', $product->getKey()),
+                'imageUploadUrl' => route('larasell.admin.products.images.store', $product->getKey()),
                 'generalUpdateUrl' => route('larasell.admin.products.general.update', $product->getKey()),
                 'stockUpdateUrl' => route('larasell.admin.products.stock.update', $product->getKey()),
             ],
+            'images' => Inertia::defer(fn (): array => $product->images()
+                ->get()
+                ->map(fn (Model $image): array => [
+                    'id' => $image->getKey(),
+                    'url' => $image->url(),
+                    'alt' => $image->getAttribute('alt'),
+                ])
+                ->all()),
         ])->rootView('larasell-admin::admin');
     }
 
     public function update(Request $request, string $adminProduct): RedirectResponse
     {
         $product = $this->findProduct($adminProduct);
+        $imageModel = $product->images()->getRelated();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
@@ -121,15 +135,92 @@ class ProductController extends Controller
             'status' => ['required', Rule::enum(Visibility::class)],
             'price_amount' => ['required', 'numeric', 'min:0'],
             'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+            'image_order' => ['present', 'array'],
+            'image_order.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
+            'new_image_ids' => ['present', 'array'],
+            'new_image_ids.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
         ]);
+
+        $imageIds = array_map('intval', $data['image_order']);
+        $newImageIds = array_map('intval', $data['new_image_ids']);
+        $attachedImageIds = $product->images()->pluck($imageModel->getQualifiedKeyName())->map(fn ($id): int => (int) $id)->all();
+        $expectedImageIds = [...$attachedImageIds, ...$newImageIds];
+
+        if (count($expectedImageIds) > 11 || count($expectedImageIds) !== count(array_unique($expectedImageIds)) || collect($expectedImageIds)->sort()->values()->all() !== collect($imageIds)->sort()->values()->all()) {
+            throw ValidationException::withMessages(['image_order' => 'The image order must contain every product image exactly once.']);
+        }
+
+        $newImages = $imageModel->newQuery()->whereKey($newImageIds)->get()->keyBy(fn (Model $image) => (string) $image->getKey());
+        if ($newImages->count() !== count($newImageIds) || $newImages->contains(fn (Model $image): bool => (string) data_get($image->getAttribute('meta'), 'pending_product_id') !== (string) $product->getKey())) {
+            throw ValidationException::withMessages(['new_image_ids' => 'One or more uploaded images do not belong to this product.']);
+        }
 
         $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
         $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
-        unset($data['price_amount'], $data['price_currency']);
+        unset($data['price_amount'], $data['price_currency'], $data['image_order'], $data['new_image_ids']);
 
-        $product->fill($data)->save();
+        DB::transaction(function () use ($data, $imageIds, $newImages, $product): void {
+            $product->fill($data)->save();
+
+            foreach ($imageIds as $position => $imageId) {
+                $newImage = $newImages->get((string) $imageId);
+
+                if ($newImage) {
+                    $product->images()->attach($newImage, ['position' => $position]);
+                    $meta = $newImage->getAttribute('meta') ?? [];
+                    unset($meta['pending_product_id']);
+                    $newImage->setAttribute('meta', $meta)->save();
+                } else {
+                    $product->images()->updateExistingPivot($imageId, ['position' => $position]);
+                }
+            }
+        });
 
         return back();
+    }
+
+    public function storeImage(Request $request, string $adminProduct): JsonResponse
+    {
+        $product = $this->findProduct($adminProduct);
+
+        if ($product->images()->count() >= 11) {
+            throw ValidationException::withMessages(['image' => 'A product can have at most 11 images.']);
+        }
+
+        $file = $request->validate([
+            'image' => ['required', 'image', 'max:10240'],
+        ])['image'];
+        $disk = config('larasell.images.disk');
+        $path = $file->store('products/'.$product->getKey(), $disk);
+
+        try {
+            $image = DB::transaction(function () use ($file, $path, $product): Model {
+                $image = $product->images()->getRelated()->newInstance([
+                    'path' => $path,
+                    'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'meta' => [
+                        'mime_type' => $file->getMimeType(),
+                        'original_name' => $file->getClientOriginalName(),
+                        'pending_product_id' => (string) $product->getKey(),
+                    ],
+                ]);
+                $image->save();
+
+                return $image;
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk($disk)->delete($path);
+
+            throw $exception;
+        }
+
+        return response()->json([
+            'image' => [
+                'id' => $image->getKey(),
+                'url' => $image->url(),
+                'alt' => $image->getAttribute('alt'),
+            ],
+        ], 201);
     }
 
     public function updateGeneral(Request $request, string $adminProduct): RedirectResponse

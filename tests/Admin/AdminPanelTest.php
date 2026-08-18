@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Larasell\Larasell\Admin\Models\AdminUser;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Product;
@@ -187,9 +188,57 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.price.amount', '4999')
         ->assertJsonPath('props.product.price.currency', 'EUR')
         ->assertJsonPath('props.product.updateUrl', route('larasell.admin.products.update', $product))
+        ->assertJsonPath('props.product.imageUploadUrl', route('larasell.admin.products.images.store', $product))
         ->assertJsonPath('props.product.generalUpdateUrl', route('larasell.admin.products.general.update', $product))
         ->assertJsonPath('props.product.stockUpdateUrl', route('larasell.admin.products.stock.update', $product))
+        ->assertJsonMissingPath('props.images')
+        ->assertJsonPath('deferredProps.default.0', 'images')
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
+});
+
+it('uploads an image without attaching it to a product', function () {
+    Storage::fake('product-images');
+    config()->set('larasell.images.disk', 'product-images');
+
+    $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
+    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999, 'EUR')]);
+    $existingImage = ProductImage::query()->create(['path' => 'products/existing.jpg']);
+    $product->images()->attach($existingImage, ['position' => 0]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->post(route('larasell.admin.products.images.store', $product), [
+            'image' => UploadedFile::fake()->image('side-view.jpg', 800, 800),
+        ])
+        ->assertCreated()
+        ->assertJsonPath('image.alt', 'side-view');
+
+    $uploadedImage = ProductImage::query()->whereKeyNot($existingImage->id)->sole();
+
+    Storage::disk('product-images')->assertExists($uploadedImage->path);
+    expect($uploadedImage->alt)->toBe('side-view')
+        ->and($uploadedImage->meta['original_name'])->toBe('side-view.jpg')
+        ->and($uploadedImage->meta['pending_product_id'])->toBe((string) $product->id)
+        ->and($product->images()->whereKey($uploadedImage->id)->exists())->toBeFalse();
+});
+
+it('defers ordered images on the admin product page', function () {
+    Storage::fake('product-images');
+    config()->set('larasell.images.disk', 'product-images');
+
+    $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
+    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999, 'EUR')]);
+    $first = ProductImage::query()->create(['path' => 'products/first.jpg', 'alt' => 'First']);
+    $second = ProductImage::query()->create(['path' => 'products/second.jpg', 'alt' => 'Second']);
+    $product->images()->attach($first, ['position' => 1]);
+    $product->images()->attach($second, ['position' => 0]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Partial-Component' => 'Products/Show', 'X-Inertia-Partial-Data' => 'images'])
+        ->get(route('larasell.admin.products.show', $product))
+        ->assertOk()
+        ->assertJsonPath('props.images.0.id', $second->id)
+        ->assertJsonPath('props.images.0.alt', 'Second')
+        ->assertJsonPath('props.images.1.id', $first->id);
 });
 
 it('updates all product settings in the admin panel', function () {
@@ -203,6 +252,11 @@ it('updates all product settings in the admin panel', function () {
         'name' => 'Desk lamp',
         'price' => Price::of(4999, 'EUR'),
     ]);
+    $firstImage = ProductImage::query()->create(['path' => 'products/first.jpg']);
+    $secondImage = ProductImage::query()->create(['path' => 'products/second.jpg']);
+    $uploadedImage = ProductImage::query()->create(['path' => 'products/uploaded.jpg', 'meta' => ['pending_product_id' => (string) $product->id]]);
+    $product->images()->attach($firstImage, ['position' => 0]);
+    $product->images()->attach($secondImage, ['position' => 1]);
 
     $this->actingAs($admin, 'larasell-admin')
         ->patch(route('larasell.admin.products.update', $product), [
@@ -216,6 +270,8 @@ it('updates all product settings in the admin panel', function () {
             'status' => 'hidden',
             'price_amount' => 59.95,
             'price_currency' => 'USD',
+            'image_order' => [$secondImage->id, $uploadedImage->id, $firstImage->id],
+            'new_image_ids' => [$uploadedImage->id],
         ])
         ->assertRedirect();
 
@@ -229,6 +285,9 @@ it('updates all product settings in the admin panel', function () {
         ->allow_backorders->toBeFalse()
         ->status->toBe(Visibility::Hidden)
         ->price->toEqual(Price::of(5995, 'USD'));
+
+    expect($product->images()->pluck('larasell_product_images.id')->all())->toBe([$secondImage->id, $uploadedImage->id, $firstImage->id])
+        ->and($uploadedImage->refresh()->meta)->not->toHaveKey('pending_product_id');
 });
 
 it('updates product general information in the admin panel', function () {
