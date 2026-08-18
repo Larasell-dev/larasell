@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import Card from '../../Components/Card'
+import Checkbox from '../../Components/Checkbox'
 import Error from '../../Components/Error'
 import Field from '../../Components/Field'
 import Form from '../../Components/Form'
@@ -308,7 +309,7 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
                 </div>
                 <Field invalid={Boolean(form.errors.allow_backorders)}>
                   <label {...stylex.props(styles.checkboxRow)}>
-                    <input checked={form.data.allow_backorders} name="allow_backorders" onChange={(event) => form.setData('allow_backorders', event.target.checked)} type="checkbox" {...stylex.props(styles.checkbox)} />
+                    <Checkbox checked={form.data.allow_backorders} name="allow_backorders" onCheckedChange={(checked) => form.setData('allow_backorders', checked)} />
                     <span>
                       <strong {...stylex.props(styles.checkboxTitle)}>Allow backorders</strong>
                       <span {...stylex.props(styles.checkboxDescription)}>Keep accepting orders when available stock reaches zero.</span>
@@ -507,7 +508,6 @@ const styles = stylex.create({
   quantityGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', '@media (max-width: 640px)': '1fr' } },
   priceGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'minmax(0, 1fr) 160px', '@media (max-width: 640px)': '1fr' } },
   checkboxRow: { alignItems: 'flex-start', cursor: 'pointer', display: 'flex', gap: 10 },
-  checkbox: { accentColor: 'var(--color-brand-500)', appearance: 'auto', flexShrink: 0, height: 18, marginTop: 2, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, width: 18 },
   checkboxTitle: { display: 'block', fontSize: 14, fontWeight: 600 },
   checkboxDescription: { color: 'var(--color-neutral-500)', display: 'block', fontSize: 13, marginTop: 2 },
   settingRow: { alignItems: 'center', cursor: 'pointer', display: 'flex', gap: 16, justifyContent: 'space-between' },
