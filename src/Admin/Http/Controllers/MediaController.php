@@ -39,6 +39,7 @@ class MediaController extends Controller
             'mediaDeleteUrl' => route('larasell.admin.media.destroy'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,

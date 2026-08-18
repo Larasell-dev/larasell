@@ -17,6 +17,6 @@ const styles = stylex.create({
   logo: {
     borderRadius: 4,
     height: 'auto',
-    width: 104,
+    width: 92,
   },
 })

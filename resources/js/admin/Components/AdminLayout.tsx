@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { Dialog } from '@base-ui/react/dialog'
 import * as stylex from '@stylexjs/stylex'
 import { useState, type ReactNode } from 'react'
@@ -13,16 +13,17 @@ export type AdminLayoutProps = {
   mediaUrl: string
   productsUrl: string
   productOptionsUrl: string
+  settingsUrl: string
   logoutUrl: string
   user: { name: string; email: string }
 }
 
 type Props = AdminLayoutProps & {
-  active: 'home' | 'media' | 'product-options' | 'products'
+  active: 'home' | 'media' | 'product-options' | 'products' | 'settings'
   children?: ReactNode
 }
 
-export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, productOptionsUrl, productsUrl, user }: Props) {
+export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, productOptionsUrl, productsUrl, settingsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   useBreakpoint({ onBreakpointExceeded: { lg: () => setMenuOpen(false) } })
@@ -76,7 +77,10 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
 
         <div {...stylex.props(styles.account)}>
           <DropdownMenu
-            items={[{ label: 'Log out', onClick: openLogout }]}
+            items={[
+              { icon: <Icon name="settings" width={18} height={18} />, label: 'Settings', onClick: () => router.visit(settingsUrl) },
+              { icon: <Icon name="logout" width={18} height={18} />, label: 'Log out', onClick: openLogout },
+            ]}
             trigger={
               <button type="button" {...stylex.props(styles.userTrigger)}>
                 <span aria-hidden="true" {...stylex.props(styles.avatar)}>{initials(user.name)}</span>
@@ -151,7 +155,10 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
 
                 <div {...stylex.props(styles.account)}>
                   <DropdownMenu
-                    items={[{ label: 'Log out', onClick: openLogout }]}
+                    items={[
+                      { icon: <Icon name="settings" width={18} height={18} />, label: 'Settings', onClick: () => router.visit(settingsUrl) },
+                      { icon: <Icon name="logout" width={18} height={18} />, label: 'Log out', onClick: openLogout },
+                    ]}
                     trigger={
                       <button type="button" {...stylex.props(styles.userTrigger)}>
                         <span aria-hidden="true" {...stylex.props(styles.avatar)}>{initials(user.name)}</span>
@@ -223,11 +230,11 @@ const styles = stylex.create({
     outlineStyle: 'solid',
     outlineWidth: 2,
   },
-  navigation: { display: 'grid', gap: 4, padding: 16 },
+  navigation: { display: 'grid', gap: 0, padding: 0 },
   navLink: {
     alignItems: 'center',
     backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-100)' },
-    borderRadius: 6,
+    borderRadius: 0,
     color: 'var(--color-neutral-700)',
     display: 'flex',
     fontSize: 14,
@@ -237,8 +244,8 @@ const styles = stylex.create({
     outlineOffset: 2,
     outlineStyle: 'solid',
     outlineWidth: 2,
-    paddingBlock: 9,
-    paddingInline: 10,
+    paddingBlock: 10,
+    paddingInline: 19,
     textDecoration: 'none',
   },
   navLinkActive: { backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-900)' },

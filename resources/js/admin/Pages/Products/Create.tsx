@@ -3,7 +3,6 @@ import * as stylex from '@stylexjs/stylex'
 import type { FormEvent } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import BackLink from '../../Components/BackLink'
-import Button from '../../Components/Button'
 import Card from '../../Components/Card'
 import Checkbox from '../../Components/Checkbox'
 import Error from '../../Components/Error'
@@ -15,6 +14,7 @@ import Label from '../../Components/Label'
 import NumberInput from '../../Components/NumberInput'
 import Select from '../../Components/Select'
 import Toggle from '../../Components/Toggle'
+import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
 
 type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'NZD' | 'CHF' | 'JPY'
 type Props = AdminLayoutProps & { productStoreUrl: string }
@@ -35,10 +35,24 @@ export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props
     price_currency: 'EUR' as Currency,
   })
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function submit() {
     form.post(productStoreUrl)
   }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    submit()
+  }
+
+  useUnsavedChanges({
+    dirty: form.isDirty,
+    onReset: () => {
+      form.reset()
+      form.clearErrors()
+    },
+    onSave: submit,
+    processing: form.processing,
+  })
 
   return (
     <AdminLayout active="products" {...layoutProps}>
@@ -47,7 +61,7 @@ export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props
         <FormContainer style={styles.pageContent}>
           <BackLink href={layoutProps.productsUrl}>Back to products</BackLink>
           <h1 {...stylex.props(styles.heading)}>Create product</h1>
-          <Form onSubmit={submit}>
+          <Form onSubmit={handleSubmit}>
             <div {...stylex.props(styles.cards)}>
               <Card>
                 <Card.Header>
@@ -118,7 +132,6 @@ export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props
                 </Card.Body>
               </Card>
             </div>
-            <div {...stylex.props(styles.actions)}><Button disabled={form.processing} type="submit">Create product</Button></div>
           </Form>
         </FormContainer>
       </div>
@@ -131,7 +144,6 @@ const styles = stylex.create({
   pageContent: { paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 } },
   heading: { fontSize: 24, fontWeight: 650, lineHeight: 1.3, marginBottom: 52, marginTop: 8 },
   cards: { display: 'grid', gap: 52 },
-  actions: { display: 'flex', justifyContent: 'flex-end' },
   textarea: { backgroundColor: '#fff', borderColor: 'var(--color-neutral-300)', borderRadius: 6, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 1px 2px oklch(14.5% 0.008 326 / 0.08)', color: 'var(--color-neutral-900)', fontSize: 15, fontWeight: 500, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, padding: 12, resize: 'vertical', width: '100%' },
   priceGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'minmax(0, 1fr) 160px', '@media (max-width: 640px)': '1fr' } },
   quantityGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', '@media (max-width: 640px)': '1fr' } },

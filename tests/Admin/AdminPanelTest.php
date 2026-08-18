@@ -32,6 +32,180 @@ it('redirects guest admin users away from the media page', function () {
     $this->get('/admin/media')->assertRedirect(route('larasell.admin.login'));
 });
 
+it('redirects guest admin users away from settings', function () {
+    $this->get('/admin/settings')->assertRedirect(route('larasell.admin.login'));
+    $this->get('/admin/settings/members')->assertRedirect(route('larasell.admin.login'));
+});
+
+it('shows settings and members to authenticated admin users', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.settings.index'))
+        ->assertOk()
+        ->assertJsonPath('component', 'Settings/Index')
+        ->assertJsonPath('props.membersUrl', route('larasell.admin.settings.members.index'));
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.settings.members.index'))
+        ->assertOk()
+        ->assertJsonPath('component', 'Settings/Members/Index')
+        ->assertJsonPath('props.members.0.email', 'admin@example.com')
+        ->assertJsonPath('props.members.0.url', route('larasell.admin.settings.members.show', $admin));
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.settings.members.show', $admin))
+        ->assertOk()
+        ->assertJsonPath('component', 'Settings/Members/Show')
+        ->assertJsonPath('props.member.name', 'Larasell Admin')
+        ->assertJsonPath('props.member.email', 'admin@example.com')
+        ->assertJsonPath('props.member.updateUrl', route('larasell.admin.settings.members.update', $admin));
+});
+
+it('updates an admin member without requiring a new password', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $password = $admin->password;
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.settings.members.update', $admin), [
+            'name' => 'Store Owner',
+            'email' => 'admin@example.com',
+            'password' => '',
+            'password_confirmation' => '',
+        ])
+        ->assertRedirect();
+
+    $admin->refresh();
+
+    expect($admin->name)->toBe('Store Owner')
+        ->and($admin->email)->toBe('admin@example.com')
+        ->and($admin->password)->toBe($password);
+});
+
+it('updates an admin member password', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.settings.members.update', $admin), [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertRedirect();
+
+    expect(Hash::check('new-password', $admin->refresh()->password))->toBeTrue();
+});
+
+it('deletes another admin member', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $member = AdminUser::query()->create([
+        'name' => 'Store Manager',
+        'email' => 'manager@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->delete(route('larasell.admin.settings.members.destroy', $member))
+        ->assertRedirect(route('larasell.admin.settings.members.index'));
+
+    expect(AdminUser::query()->whereKey($member->getKey())->exists())->toBeFalse()
+        ->and(AdminUser::query()->whereKey($admin->getKey())->exists())->toBeTrue();
+});
+
+it('does not allow an admin member to delete themselves', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    AdminUser::query()->create([
+        'name' => 'Store Manager',
+        'email' => 'manager@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->delete(route('larasell.admin.settings.members.destroy', $admin))
+        ->assertSessionHasErrors(['member' => 'You cannot delete your own admin account.']);
+
+    expect(AdminUser::query()->whereKey($admin->getKey())->exists())->toBeTrue();
+});
+
+it('does not allow the last admin member to be deleted', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->delete(route('larasell.admin.settings.members.destroy', $admin))
+        ->assertSessionHasErrors(['member' => 'At least one admin member must remain.']);
+
+    expect(AdminUser::query()->count())->toBe(1);
+});
+
+it('creates a member from admin settings', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->post(route('larasell.admin.settings.members.store'), [
+            'name' => 'Store Manager',
+            'email' => 'manager@example.com',
+            'password' => 'secure-password',
+            'password_confirmation' => 'secure-password',
+        ])
+        ->assertRedirect(route('larasell.admin.settings.members.index'));
+
+    $member = AdminUser::query()->where('email', 'manager@example.com')->firstOrFail();
+
+    expect($member->name)->toBe('Store Manager')
+        ->and(Hash::check('secure-password', $member->password))->toBeTrue();
+});
+
+it('validates new admin members', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->from(route('larasell.admin.settings.members.create'))
+        ->post(route('larasell.admin.settings.members.store'), [
+            'name' => '',
+            'email' => 'admin@example.com',
+            'password' => 'short',
+            'password_confirmation' => 'different',
+        ])
+        ->assertRedirect(route('larasell.admin.settings.members.create'))
+        ->assertSessionHasErrors(['name', 'email', 'password']);
+});
+
 it('shows uploaded images in the admin media index', function () {
     Storage::fake('local');
     config()->set('larasell.images.disk', 'local');

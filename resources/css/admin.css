@@ -76,7 +76,7 @@
 :root {
   color-scheme: light;
 
-  --admin-header-height: 72px;
+  --admin-header-height: 64px;
 
   --color-brand-50: oklch(0.95 0.021 8);
   --color-brand-100: oklch(0.882 0.052 8);

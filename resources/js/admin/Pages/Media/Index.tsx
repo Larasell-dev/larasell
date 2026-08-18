@@ -115,7 +115,7 @@ const styles = stylex.create({
   content: { flex: 1, minHeight: 0, overflow: 'auto', padding: { default: 24, '@media (max-width: 640px)': 16 } },
   empty: { height: '100%', marginInline: 'auto', maxWidth: 360 },
   grid: { display: 'grid', gap: { default: 16, '@media (max-width: 640px)': 10 }, gridTemplateColumns: { default: 'repeat(auto-fill, minmax(180px, 1fr))', '@media (max-width: 640px)': 'repeat(2, minmax(0, 1fr))' }, listStyle: 'none', margin: 0, padding: 0 },
-  item: { backgroundColor: '#fff', borderRadius: 6, overflow: 'hidden', position: 'relative' },
+  item: { backgroundColor: '#fff', overflow: 'hidden', position: 'relative' },
   imageButton: { backgroundColor: 'transparent', borderWidth: 0, cursor: 'pointer', display: 'block', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: -3, outlineStyle: 'solid', outlineWidth: 2, padding: 0, width: '100%' },
   image: { aspectRatio: '1', height: 'auto', objectFit: 'cover', width: '100%' },
   checkbox: { opacity: { default: 0, [stylex.when.ancestor(':hover')]: 1, [stylex.when.ancestor(':focus-within')]: 1 }, position: 'absolute', right: 10, top: 8 },

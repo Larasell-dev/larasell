@@ -41,6 +41,7 @@ class ProductOptionController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'productOptionCreateUrl' => route('larasell.admin.product-options.create'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -69,6 +70,7 @@ class ProductOptionController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'productOptionStoreUrl' => route('larasell.admin.product-options.store'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -112,6 +114,7 @@ class ProductOptionController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'productOption' => [
                 'name' => $productOption->getAttribute('name'),
                 'type' => $productOption->getAttribute('type')->value,

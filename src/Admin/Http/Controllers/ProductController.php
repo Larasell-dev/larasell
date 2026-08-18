@@ -50,6 +50,7 @@ class ProductController extends Controller
             'productsUrl' => route('larasell.admin.products.index'),
             'productCreateUrl' => route('larasell.admin.products.create'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,
@@ -92,6 +93,7 @@ class ProductController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'productStoreUrl' => route('larasell.admin.products.store'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -125,6 +127,7 @@ class ProductController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,

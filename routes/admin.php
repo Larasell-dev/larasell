@@ -7,6 +7,8 @@ use Larasell\Larasell\Admin\Http\Controllers\LoginController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
+use Larasell\Larasell\Admin\Http\Controllers\MemberController;
+use Larasell\Larasell\Admin\Http\Controllers\SettingsController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
 
 $guard = config('larasell-admin.guard', 'larasell-admin');
@@ -18,6 +20,13 @@ Route::middleware(AdminGuest::using($guard))->group(function () {
 
 Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('/', HomeController::class)->name('home');
+    Route::get('settings', SettingsController::class)->name('settings.index');
+    Route::get('settings/members', [MemberController::class, 'index'])->name('settings.members.index');
+    Route::get('settings/members/create', [MemberController::class, 'create'])->name('settings.members.create');
+    Route::post('settings/members', [MemberController::class, 'store'])->name('settings.members.store');
+    Route::get('settings/members/{adminMember}', [MemberController::class, 'show'])->name('settings.members.show');
+    Route::patch('settings/members/{adminMember}', [MemberController::class, 'update'])->name('settings.members.update');
+    Route::delete('settings/members/{adminMember}', [MemberController::class, 'destroy'])->name('settings.members.destroy');
     Route::get('media', [MediaController::class, 'index'])->name('media.index');
     Route::delete('media', [MediaController::class, 'destroy'])->name('media.destroy');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
