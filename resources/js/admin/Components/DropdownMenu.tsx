@@ -61,7 +61,7 @@ export default function DropdownMenu({ items, trigger }: DropdownMenuProps) {
 
 const styles = stylex.create({
   positioner: {
-    zIndex: 20,
+    zIndex: 50,
   },
   popup: {
     backgroundClip: 'padding-box',

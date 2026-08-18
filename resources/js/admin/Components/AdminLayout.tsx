@@ -1,7 +1,9 @@
 import { Link } from '@inertiajs/react'
+import { Dialog } from '@base-ui/react/dialog'
 import * as stylex from '@stylexjs/stylex'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import DropdownMenu from './DropdownMenu'
+import Icon from './Icon'
 import Logo from './Logo'
 import LogoutDialog from './LogoutDialog'
 
@@ -19,6 +21,22 @@ type Props = AdminLayoutProps & {
 
 export default function AdminLayout({ active, children, homeUrl, logoutUrl, productsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1025px)')
+    const closeMobileMenu = (event: MediaQueryListEvent) => {
+      if (event.matches) setMenuOpen(false)
+    }
+
+    desktop.addEventListener('change', closeMobileMenu)
+    return () => desktop.removeEventListener('change', closeMobileMenu)
+  }, [])
+
+  const openLogout = () => {
+    setMenuOpen(false)
+    setLogoutOpen(true)
+  }
 
   return (
     <div {...stylex.props(styles.page)}>
@@ -33,6 +51,7 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, prod
             href={homeUrl}
             {...stylex.props(styles.navLink, active === 'home' && styles.navLinkActive)}
           >
+            <Icon name={active === 'home' ? 'dashboard-filled' : 'dashboard'} width={18} height={18} />
             Dashboard
           </Link>
           <Link
@@ -40,13 +59,14 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, prod
             href={productsUrl}
             {...stylex.props(styles.navLink, active === 'products' && styles.navLinkActive)}
           >
+            <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
             Products
           </Link>
         </nav>
 
         <div {...stylex.props(styles.account)}>
           <DropdownMenu
-            items={[{ label: 'Log out', onClick: () => setLogoutOpen(true) }]}
+            items={[{ label: 'Log out', onClick: openLogout }]}
             trigger={
               <button type="button" {...stylex.props(styles.userTrigger)}>
                 <span aria-hidden="true" {...stylex.props(styles.avatar)}>{initials(user.name)}</span>
@@ -59,6 +79,67 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, prod
           />
         </div>
       </aside>
+
+      <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
+        <header {...stylex.props(styles.mobileHeader)}>
+          <Link aria-label="Larasell admin home" href={homeUrl} {...stylex.props(styles.mobileLogoLink)}>
+            <Logo />
+          </Link>
+          <Dialog.Trigger
+            aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+            {...stylex.props(styles.iconButton)}
+          >
+            <Icon name={menuOpen ? 'x' : 'menu'} width={22} height={22} />
+          </Dialog.Trigger>
+        </header>
+
+        {menuOpen && (
+          <Dialog.Portal>
+            <Dialog.Backdrop {...stylex.props(styles.backdrop)} />
+            <Dialog.Viewport {...stylex.props(styles.menuViewport)}>
+              <Dialog.Popup {...stylex.props(styles.menuDialog)}>
+                <Dialog.Title {...stylex.props(styles.visuallyHidden)}>Navigation</Dialog.Title>
+
+                <nav aria-label="Admin navigation" {...stylex.props(styles.navigation)}>
+                  <Link
+                    aria-current={active === 'home' ? 'page' : undefined}
+                    href={homeUrl}
+                    onClick={() => setMenuOpen(false)}
+                    {...stylex.props(styles.navLink, active === 'home' && styles.navLinkActive)}
+                  >
+                    <Icon name={active === 'home' ? 'dashboard-filled' : 'dashboard'} width={18} height={18} />
+                    Dashboard
+                  </Link>
+                  <Link
+                    aria-current={active === 'products' ? 'page' : undefined}
+                    href={productsUrl}
+                    onClick={() => setMenuOpen(false)}
+                    {...stylex.props(styles.navLink, active === 'products' && styles.navLinkActive)}
+                  >
+                    <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
+                    Products
+                  </Link>
+                </nav>
+
+                <div {...stylex.props(styles.account)}>
+                  <DropdownMenu
+                    items={[{ label: 'Log out', onClick: openLogout }]}
+                    trigger={
+                      <button type="button" {...stylex.props(styles.userTrigger)}>
+                        <span aria-hidden="true" {...stylex.props(styles.avatar)}>{initials(user.name)}</span>
+                        <span {...stylex.props(styles.userDetails)}>
+                          <strong {...stylex.props(styles.userName)}>{user.name}</strong>
+                          <span {...stylex.props(styles.userEmail)}>{user.email}</span>
+                        </span>
+                      </button>
+                    }
+                  />
+                </div>
+              </Dialog.Popup>
+            </Dialog.Viewport>
+          </Dialog.Portal>
+        )}
+      </Dialog.Root>
 
       <main {...stylex.props(styles.main)}>{children}</main>
       <LogoutDialog logoutUrl={logoutUrl} onOpenChange={setLogoutOpen} open={logoutOpen} />
@@ -75,7 +156,7 @@ const styles = stylex.create({
     background: 'var(--color-neutral-50)',
     color: 'var(--color-neutral-950)',
     display: 'flex',
-    flexDirection: { default: 'row', '@media (max-width: 640px)': 'column' },
+    flexDirection: 'row',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     minHeight: '100vh',
   },
@@ -83,24 +164,47 @@ const styles = stylex.create({
     backgroundColor: '#fff',
     borderRightColor: 'var(--color-neutral-200)',
     borderRightStyle: 'solid',
-    borderRightWidth: { default: 1, '@media (max-width: 640px)': 0 },
+    borderRightWidth: 1,
+    display: { default: 'flex', '@media (max-width: 1024px)': 'none' },
+    flexDirection: 'column',
+    minHeight: '100vh',
+    padding: 0,
+    position: 'fixed',
+    width: 256,
+  },
+  mobileHeader: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderBottomColor: 'var(--color-neutral-200)',
     borderBottomStyle: 'solid',
-    borderBottomWidth: { default: 0, '@media (max-width: 640px)': 1 },
+    borderBottomWidth: 1,
+    display: { default: 'none', '@media (max-width: 1024px)': 'flex' },
+    height: 'var(--admin-header-height)',
+    justifyContent: 'space-between',
+    paddingInline: 16,
+    position: 'fixed',
+    top: 0,
+    width: '100%',
+    zIndex: 50,
+  },
+  mobileLogoLink: {
+    alignItems: 'center',
     display: 'flex',
-    flexDirection: 'column',
-    minHeight: { default: '100vh', '@media (max-width: 640px)': 'auto' },
-    padding: 0,
-    position: { default: 'fixed', '@media (max-width: 640px)': 'relative' },
-    width: { default: 256, '@media (max-width: 640px)': '100%' },
+    outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' },
+    outlineOffset: 4,
+    outlineStyle: 'solid',
+    outlineWidth: 2,
   },
   navigation: { display: 'grid', gap: 4, padding: 16 },
   navLink: {
+    alignItems: 'center',
     backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-100)' },
     borderRadius: 6,
     color: 'var(--color-neutral-700)',
+    display: 'flex',
     fontSize: 14,
     fontWeight: 600,
+    gap: 10,
     outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' },
     outlineOffset: 2,
     outlineStyle: 'solid',
@@ -111,6 +215,68 @@ const styles = stylex.create({
   },
   navLinkActive: { backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-900)' },
   account: { marginTop: 'auto', padding: 16 },
+  iconButton: {
+    alignItems: 'center',
+    backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-100)' },
+    borderColor: 'transparent',
+    borderRadius: 6,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    color: 'var(--color-neutral-800)',
+    cursor: 'pointer',
+    display: 'flex',
+    height: 40,
+    justifyContent: 'center',
+    outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' },
+    outlineOffset: 2,
+    outlineStyle: 'solid',
+    outlineWidth: 2,
+    padding: 0,
+    width: 40,
+  },
+  backdrop: {
+    backdropFilter: 'blur(2px)',
+    backgroundImage: 'linear-gradient(rgb(0 0 0 / 10%), rgb(0 0 0 / 10%))',
+    bottom: 0,
+    left: 0,
+    position: 'fixed',
+    right: 0,
+    top: 'var(--admin-header-height)',
+    zIndex: 40,
+  },
+  menuViewport: {
+    alignItems: 'flex-start',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    left: 0,
+    position: 'fixed',
+    right: 0,
+    top: 'var(--admin-header-height)',
+    zIndex: 41,
+  },
+  menuDialog: {
+    backgroundClip: 'padding-box',
+    backgroundColor: '#fff',
+    borderColor: 'color-mix(in srgb, var(--color-neutral-300) 60%, transparent)',
+    borderStyle: 'solid',
+    borderWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    outline: 'none',
+    overflowY: 'auto',
+    width: '100%',
+  },
+  visuallyHidden: {
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    whiteSpace: 'nowrap',
+    width: 1,
+  },
   logoLink: {
     alignItems: 'center',
     boxShadow: 'inset 0 -1px 0 var(--color-neutral-200)',
@@ -146,5 +312,10 @@ const styles = stylex.create({
   userDetails: { display: 'grid', flex: 1, minWidth: 0 },
   userName: { fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   userEmail: { color: 'var(--color-neutral-500)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  main: { marginLeft: { default: 256, '@media (max-width: 640px)': 0 }, minWidth: 0, width: '100%' },
+  main: {
+    marginLeft: { default: 256, '@media (max-width: 1024px)': 0 },
+    minWidth: 0,
+    paddingTop: { default: 0, '@media (max-width: 1024px)': 'var(--admin-header-height)' },
+    width: '100%',
+  },
 })
