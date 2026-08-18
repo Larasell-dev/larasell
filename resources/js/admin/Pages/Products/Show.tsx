@@ -13,6 +13,7 @@ import Checkbox from '../../Components/Checkbox'
 import Error from '../../Components/Error'
 import Field from '../../Components/Field'
 import Form from '../../Components/Form'
+import Icon from '../../Components/Icon'
 import Input from '../../Components/Input'
 import Label from '../../Components/Label'
 import NumberInput from '../../Components/NumberInput'
@@ -199,7 +200,10 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
         <div {...stylex.props(styles.pageContent)}>
         <header {...stylex.props(styles.pageHeader)}>
           <div>
-            <Link href={layoutProps.productsUrl} {...stylex.props(styles.backLink)}>Back to products</Link>
+            <Link href={layoutProps.productsUrl} {...stylex.props(styles.backLink)}>
+              <Icon height="16" name="arrow-left" width="16" />
+              Back to products
+            </Link>
             <h1 {...stylex.props(styles.heading)}>{product.name}</h1>
           </div>
         </header>
@@ -490,7 +494,7 @@ const styles = stylex.create({
   pageContent: { marginInline: 'auto', maxWidth: 960, paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 }, width: '100%' },
   pageHeader: { alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 24, minHeight: 48 },
   heading: { fontSize: 24, fontWeight: 650, lineHeight: 1.3, marginTop: 4, userSelect: 'text' },
-  backLink: { color: { default: 'var(--color-brand-700)', ':hover': 'var(--color-brand-900)' }, fontSize: 13, fontWeight: 600, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, textDecoration: 'none' },
+  backLink: { alignItems: 'center', borderRadius: 4, color: { default: 'var(--color-brand-700)', ':hover': 'var(--color-brand-900)' }, display: 'inline-flex', fontSize: 13, fontWeight: 600, gap: 5, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 3, outlineStyle: 'solid', outlineWidth: 2, textDecoration: 'none' },
   cards: { display: 'grid', gap: 52 },
   imageGrid: { display: 'grid', gap: 12, gridTemplateColumns: { default: 'repeat(7, minmax(0, 1fr))', '@media (max-width: 640px)': 'repeat(4, minmax(0, 1fr))' } },
   imageItem: { aspectRatio: '1', backgroundColor: 'var(--color-neutral-100)', borderColor: 'rgba(20, 15, 18, 0.18)', borderRadius: 6, borderStyle: 'solid', borderWidth: 1, cursor: 'grab', overflow: 'hidden', padding: 0, position: 'relative', touchAction: 'none' },
