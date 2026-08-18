@@ -1,11 +1,12 @@
 import { Link } from '@inertiajs/react'
 import { Dialog } from '@base-ui/react/dialog'
 import * as stylex from '@stylexjs/stylex'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import DropdownMenu from './DropdownMenu'
 import Icon from './Icon'
 import Logo from './Logo'
 import LogoutDialog from './LogoutDialog'
+import useBreakpoint from '../Hooks/useBreakpoint'
 
 export type AdminLayoutProps = {
   homeUrl: string
@@ -22,16 +23,7 @@ type Props = AdminLayoutProps & {
 export default function AdminLayout({ active, children, homeUrl, logoutUrl, productsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-
-  useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 1025px)')
-    const closeMobileMenu = (event: MediaQueryListEvent) => {
-      if (event.matches) setMenuOpen(false)
-    }
-
-    desktop.addEventListener('change', closeMobileMenu)
-    return () => desktop.removeEventListener('change', closeMobileMenu)
-  }, [])
+  useBreakpoint({ onBreakpointExceeded: { lg: () => setMenuOpen(false) } })
 
   const openLogout = () => {
     setMenuOpen(false)
