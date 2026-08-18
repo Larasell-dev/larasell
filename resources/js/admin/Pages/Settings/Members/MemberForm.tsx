@@ -89,16 +89,18 @@ export default function MemberForm({ action, initialMember, method }: Props) {
             <Card.Description>{editing ? 'Leave these fields blank to keep the current password.' : 'Choose a password for this member.'}</Card.Description>
           </Card.Header>
           <Card.Body>
-            <Field invalid={Boolean(form.errors.password)} name="password">
-              <Label htmlFor="password">Password</Label>
-              <Input autoComplete="new-password" id="password" minLength={8} onChange={(event) => form.setData('password', event.target.value)} required={!editing} type="password" value={form.data.password} />
-              <Error>{form.errors.password}</Error>
-            </Field>
-            <Field invalid={Boolean(form.errors.password_confirmation)} name="password_confirmation">
-              <Label htmlFor="password_confirmation">Confirm password</Label>
-              <Input autoComplete="new-password" id="password_confirmation" minLength={8} onChange={(event) => form.setData('password_confirmation', event.target.value)} required={!editing || form.data.password !== ''} type="password" value={form.data.password_confirmation} />
-              <Error>{form.errors.password_confirmation}</Error>
-            </Field>
+            <div {...stylex.props(styles.passwordGrid)}>
+              <Field invalid={Boolean(form.errors.password)} name="password">
+                <Label htmlFor="password">Password</Label>
+                <Input autoComplete="new-password" id="password" minLength={8} onChange={(event) => form.setData('password', event.target.value)} required={!editing} type="password" value={form.data.password} />
+                <Error>{form.errors.password}</Error>
+              </Field>
+              <Field invalid={Boolean(form.errors.password_confirmation)} name="password_confirmation">
+                <Label htmlFor="password_confirmation">Confirm password</Label>
+                <Input autoComplete="new-password" id="password_confirmation" minLength={8} onChange={(event) => form.setData('password_confirmation', event.target.value)} required={!editing || form.data.password !== ''} type="password" value={form.data.password_confirmation} />
+                <Error>{form.errors.password_confirmation}</Error>
+              </Field>
+            </div>
           </Card.Body>
         </Card>
       </div>
@@ -108,4 +110,5 @@ export default function MemberForm({ action, initialMember, method }: Props) {
 
 const styles = stylex.create({
   cards: { display: 'grid', gap: 52 },
+  passwordGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', '@media (max-width: 640px)': '1fr' } },
 })
