@@ -4,7 +4,9 @@ namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
+use Larasell\Larasell\Payments\FakePaymentProvider;
 
 class LarasellServiceProvider extends ServiceProvider
 {
@@ -14,6 +16,9 @@ class LarasellServiceProvider extends ServiceProvider
 
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
+        ));
+        $this->app->bind(PaymentProvider::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.payments.provider', FakePaymentProvider::class)
         ));
     }
 
