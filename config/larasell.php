@@ -7,6 +7,7 @@ use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Models\ProductOptionValue;
+use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 
 return [
     'models' => [
@@ -23,5 +24,11 @@ return [
         'disk' => env('LARASELL_IMAGES_DISK', config('filesystems.default')),
         'path' => env('LARASELL_IMAGES_PATH', 'larasell/products'),
         'visibility' => env('LARASELL_IMAGES_VISIBILITY', 'public'),
+    ],
+
+    'order_numbers' => [
+        'generator' => SequentialOrderNumberGenerator::class,
+        'prefix' => env('LARASELL_ORDER_NUMBER_PREFIX', 'LS-'),
+        'padding' => 6,
     ],
 ];

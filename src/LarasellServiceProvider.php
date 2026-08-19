@@ -3,12 +3,18 @@
 namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
+use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 
 class LarasellServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
+
+        $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
+        ));
     }
 
     public function boot(): void

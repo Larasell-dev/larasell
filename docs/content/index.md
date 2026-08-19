@@ -24,4 +24,5 @@ Use these guides to wire product and category data into your application.
 
 - [Cart API](/api/cart)
 - [Category API](/api/category)
+- [Order Numbers](/api/order-numbers)
 - [Product API](/api/product)
