@@ -1,7 +1,8 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
-import { ScrollArea } from '@base-ui/react/scroll-area'
 import * as stylex from '@stylexjs/stylex'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 
 export type SelectOption<Value extends string> = {
   label: ReactNode
@@ -18,7 +19,6 @@ type SelectProps<Value extends string, Multiple extends boolean = false> = {
   onValueChange?: (value: Multiple extends true ? Value[] : Value) => void
   placeholder?: string
   required?: boolean
-  scrollable?: boolean
   value?: (Multiple extends true ? Value[] : Value) | null
 }
 
@@ -27,18 +27,22 @@ export default function Select<Value extends string, Multiple extends boolean = 
   multiple,
   onValueChange,
   placeholder,
-  scrollable = false,
   ...props
 }: SelectProps<Value, Multiple>) {
+  const [open, setOpen] = useState(false)
+  const reduceMotion = useReducedMotion()
+
   return (
     <BaseSelect.Root
       items={items}
       multiple={multiple}
+      onOpenChange={setOpen}
       onValueChange={(value) => {
         if (value !== null) {
           onValueChange?.(value)
         }
       }}
+      open={open}
       {...props}
     >
       <BaseSelect.Trigger {...stylex.props(styles.trigger)}>
@@ -47,24 +51,29 @@ export default function Select<Value extends string, Multiple extends boolean = 
           <ChevronIcon />
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
-      <BaseSelect.Portal>
-        <BaseSelect.Positioner alignItemWithTrigger={false} sideOffset={4} {...stylex.props(styles.positioner)}>
-          <BaseSelect.Popup {...stylex.props(styles.popup)}>
-            {scrollable ? (
-              <ScrollArea.Root {...stylex.props(styles.scrollArea)}>
-                <ScrollArea.Viewport {...stylex.props(styles.scrollViewport)}>
-                  <ScrollArea.Content>{renderItems(items)}</ScrollArea.Content>
-                </ScrollArea.Viewport>
-                <ScrollArea.Scrollbar {...stylex.props(styles.scrollbar)}>
-                  <ScrollArea.Thumb {...stylex.props(styles.scrollThumb)} />
-                </ScrollArea.Scrollbar>
-                <div aria-hidden="true" {...stylex.props(styles.scrollFade, styles.scrollFadeTop)} />
-                <div aria-hidden="true" {...stylex.props(styles.scrollFade)} />
-              </ScrollArea.Root>
-            ) : renderItems(items)}
-          </BaseSelect.Popup>
-        </BaseSelect.Positioner>
-      </BaseSelect.Portal>
+      <AnimatePresence>
+        {open && (
+          <BaseSelect.Portal keepMounted>
+            <BaseSelect.Positioner alignItemWithTrigger={false} sideOffset={4} {...stylex.props(styles.positioner)}>
+              <BaseSelect.Popup
+                render={
+                  <motion.div
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : -6 }}
+                    transition={reduceMotion
+                      ? { duration: 0 }
+                      : { type: 'spring', stiffness: 700, damping: 42, mass: 0.55 }}
+                  />
+                }
+                {...stylex.props(styles.popup)}
+              >
+                {renderItems(items)}
+              </BaseSelect.Popup>
+            </BaseSelect.Positioner>
+          </BaseSelect.Portal>
+        )}
+      </AnimatePresence>
     </BaseSelect.Root>
   )
 }
@@ -141,34 +150,12 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderWidth: 1,
     boxShadow: '0 8px 24px rgb(20 15 20 / 0.12)',
+    maxHeight: 240,
     minWidth: 'var(--anchor-width)',
-    overflow: 'hidden',
+    overflowX: 'hidden',
+    overflowY: 'auto',
   },
   list: { padding: 5 },
-  scrollArea: { height: 240, position: 'relative' },
-  scrollViewport: { height: '100%', overscrollBehavior: 'contain' },
-  scrollbar: {
-    display: 'flex',
-    justifyContent: 'center',
-    paddingBlock: 5,
-    width: 10,
-  },
-  scrollThumb: { backgroundColor: 'var(--color-neutral-300)', borderRadius: 4, width: 4 },
-  scrollFade: {
-    backgroundImage: 'linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff)',
-    bottom: 0,
-    height: 36,
-    left: 0,
-    pointerEvents: 'none',
-    position: 'absolute',
-    right: 10,
-    zIndex: 1,
-  },
-  scrollFadeTop: {
-    backgroundImage: 'linear-gradient(to bottom, #fff, rgba(255, 255, 255, 0))',
-    bottom: 'auto',
-    top: 0,
-  },
   item: {
     alignItems: 'center',
     backgroundColor: 'transparent',

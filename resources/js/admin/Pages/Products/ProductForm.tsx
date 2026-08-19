@@ -111,7 +111,7 @@ function PricingSection() {
           </Field>
           <Field invalid={Boolean(form.errors.price_currency)}>
             <Label htmlFor="price_currency">Currency</Label>
-            <Select id="price_currency" items={currencies} name="price_currency" onValueChange={(value) => form.setData('price_currency', value)} scrollable value={form.data.price_currency} />
+            <Select id="price_currency" items={currencies} name="price_currency" onValueChange={(value) => form.setData('price_currency', value)} value={form.data.price_currency} />
             <Error>{form.errors.price_currency}</Error>
           </Field>
         </div>
@@ -167,7 +167,6 @@ function CategoriesSection() {
             name="category_ids[]"
             onValueChange={(value) => form.setData('category_ids', value)}
             placeholder="No categories"
-            scrollable
             value={form.data.category_ids}
           />
           <Error>{form.errors.category_ids}</Error>
