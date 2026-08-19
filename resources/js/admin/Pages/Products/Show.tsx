@@ -13,7 +13,7 @@ import Field from '../../Components/Field'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
-import ProductForm, { type Currency, type ProductFormData } from './ProductForm'
+import ProductForm, { type Currency, type ProductCategory, type ProductFormData } from './ProductForm'
 
 type Product = {
   id: number | string
@@ -30,16 +30,17 @@ type Product = {
   imageUploadUrl: string
   generalUpdateUrl: string
   stockUpdateUrl: string
+  categoryIds: string[]
 }
 
 type ProductImage = { alt: string | null; id: number | string; uploading?: boolean; url: string }
-type Props = AdminLayoutProps & { images?: ProductImage[]; product: Product }
+type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product }
 
 export default function ProductShow({ images, product, ...layoutProps }: Props) {
   return <ProductEditor images={images} product={product} {...layoutProps} />
 }
 
-function ProductEditor({ images, product, ...layoutProps }: Props) {
+function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
   const form = useForm<ProductFormData>({
     name: product.name,
     slug: product.slug,
@@ -53,6 +54,7 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
     price_currency: product.price.currency,
     image_order: [] as ProductImage['id'][],
     new_image_ids: [] as ProductImage['id'][],
+    category_ids: product.categoryIds,
   })
   const initializedImageProduct = useRef<Product['id'] | null>(null)
   const initializedImageSignature = useRef<string | null>(null)
@@ -163,7 +165,7 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
         </header>
 
         <Form id="product-form" onSubmit={handleSubmit}>
-          <ProductForm form={form}>
+          <ProductForm categories={categories} form={form}>
             <div {...stylex.props(styles.cards)}>
             <ProductForm.General includeSlug />
 
@@ -192,6 +194,7 @@ function ProductEditor({ images, product, ...layoutProps }: Props) {
 
             <ProductForm.Pricing />
             <ProductForm.Stock />
+            <ProductForm.Categories />
             </div>
           </ProductForm>
         </Form>

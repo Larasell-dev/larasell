@@ -86,6 +86,8 @@ class ProductController extends Controller
 
     public function create(Request $request): Response
     {
+        /** @var class-string<Model> $productModel */
+        $productModel = config('larasell.models.product', Product::class);
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         return Inertia::render('Products/Create', [
@@ -95,6 +97,7 @@ class ProductController extends Controller
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'productStoreUrl' => route('larasell.admin.products.store'),
+            'categories' => $this->categoryOptions($productModel),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,
@@ -109,8 +112,15 @@ class ProductController extends Controller
         $productModel = config('larasell.models.product', Product::class);
         $data = $this->validatedProductData($request);
         $data['slug'] = $this->uniqueSlug($productModel, $data['name']);
+        $categoryIds = $data['category_ids'];
+        unset($data['category_ids']);
 
-        $product = $productModel::query()->create($data);
+        $product = DB::transaction(function () use ($categoryIds, $data, $productModel): Model {
+            $product = $productModel::query()->create($data);
+            $product->categories()->sync($categoryIds);
+
+            return $product;
+        });
 
         return redirect()->route('larasell.admin.products.show', $product->getKey());
     }
@@ -148,7 +158,9 @@ class ProductController extends Controller
                 'imageUploadUrl' => route('larasell.admin.products.images.store', $product->getKey()),
                 'generalUpdateUrl' => route('larasell.admin.products.general.update', $product->getKey()),
                 'stockUpdateUrl' => route('larasell.admin.products.stock.update', $product->getKey()),
+                'categoryIds' => $product->categories()->pluck($product->categories()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
             ],
+            'categories' => $this->categoryOptions($productModel),
             'images' => Inertia::defer(fn (): array => $product->images()
                 ->get()
                 ->map(fn (Model $image): array => [
@@ -164,6 +176,7 @@ class ProductController extends Controller
     {
         $product = $this->findProduct($adminProduct);
         $imageModel = $product->images()->getRelated();
+        $categoryModel = $product->categories()->getRelated();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
@@ -179,10 +192,13 @@ class ProductController extends Controller
             'image_order.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
             'new_image_ids' => ['present', 'array'],
             'new_image_ids.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
+            'category_ids' => ['sometimes', 'array'],
+            'category_ids.*' => ['required', 'integer', 'distinct', Rule::exists($categoryModel->getTable(), $categoryModel->getKeyName())],
         ]);
 
         $imageIds = array_map('intval', $data['image_order']);
         $newImageIds = array_map('intval', $data['new_image_ids']);
+        $categoryIds = array_key_exists('category_ids', $data) ? array_map('intval', $data['category_ids']) : null;
         $attachedImageIds = $product->images()->pluck($imageModel->getQualifiedKeyName())->map(fn ($id): int => (int) $id)->all();
         $expectedImageIds = [...$attachedImageIds, ...$newImageIds];
 
@@ -197,10 +213,14 @@ class ProductController extends Controller
 
         $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
         $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
-        unset($data['price_amount'], $data['price_currency'], $data['image_order'], $data['new_image_ids']);
+        unset($data['price_amount'], $data['price_currency'], $data['image_order'], $data['new_image_ids'], $data['category_ids']);
 
-        DB::transaction(function () use ($data, $imageIds, $newImages, $product): void {
+        DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $product): void {
             $product->fill($data)->save();
+
+            if ($categoryIds !== null) {
+                $product->categories()->sync($categoryIds);
+            }
 
             foreach ($imageIds as $position => $imageId) {
                 $newImage = $newImages->get((string) $imageId);
@@ -331,12 +351,44 @@ class ProductController extends Controller
             'status' => ['required', Rule::enum(Visibility::class)],
             'price_amount' => ['required', 'numeric', 'min:0'],
             'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+            'category_ids' => ['sometimes', 'array'],
+            'category_ids.*' => ['required', 'integer', 'distinct', Rule::exists($this->categoryTable(), $this->categoryKeyName())],
         ]);
 
         $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
         $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
         unset($data['price_amount'], $data['price_currency']);
+        $data['category_ids'] ??= [];
 
         return $data;
+    }
+
+    /** @param class-string<Model> $productModel */
+    private function categoryOptions(string $productModel): array
+    {
+        return $productModel::query()->getModel()->categories()->getRelated()->newQuery()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Model $category): array => [
+                'label' => $category->getAttribute('name'),
+                'value' => (string) $category->getKey(),
+            ])
+            ->all();
+    }
+
+    private function categoryTable(): string
+    {
+        /** @var class-string<Model> $productModel */
+        $productModel = config('larasell.models.product', Product::class);
+
+        return $productModel::query()->getModel()->categories()->getRelated()->getTable();
+    }
+
+    private function categoryKeyName(): string
+    {
+        /** @var class-string<Model> $productModel */
+        $productModel = config('larasell.models.product', Product::class);
+
+        return $productModel::query()->getModel()->categories()->getRelated()->getKeyName();
     }
 }

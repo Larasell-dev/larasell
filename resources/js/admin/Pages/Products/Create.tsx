@@ -6,11 +6,11 @@ import BackLink from '../../Components/BackLink'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
-import ProductForm, { type Currency, type ProductFormData } from './ProductForm'
+import ProductForm, { type Currency, type ProductCategory, type ProductFormData } from './ProductForm'
 
-type Props = AdminLayoutProps & { productStoreUrl: string }
+type Props = AdminLayoutProps & { categories: ProductCategory[]; productStoreUrl: string }
 
-export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props) {
+export default function ProductCreate({ categories, productStoreUrl, ...layoutProps }: Props) {
   const form = useForm<ProductFormData>({
     name: '',
     description: '',
@@ -21,6 +21,7 @@ export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props
     status: 'visible' as 'visible' | 'hidden',
     price_amount: 0,
     price_currency: 'EUR' as Currency,
+    category_ids: [],
   })
 
   function submit() {
@@ -50,11 +51,12 @@ export default function ProductCreate({ productStoreUrl, ...layoutProps }: Props
           <BackLink href={layoutProps.productsUrl}>Back to products</BackLink>
           <h1 {...stylex.props(styles.heading)}>Create product</h1>
           <Form onSubmit={handleSubmit}>
-            <ProductForm form={form}>
+            <ProductForm categories={categories} form={form}>
               <div {...stylex.props(styles.cards)}>
                 <ProductForm.General />
                 <ProductForm.Pricing />
                 <ProductForm.Stock />
+                <ProductForm.Categories />
               </div>
             </ProductForm>
           </Form>

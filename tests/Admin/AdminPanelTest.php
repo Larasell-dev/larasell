@@ -7,6 +7,7 @@ use Illuminate\Http\UploadedFile;
 use Larasell\Larasell\Admin\Models\AdminUser;
 use Larasell\Larasell\Enums\ProductOptionType;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
@@ -375,12 +376,19 @@ it('shows the product create page', function () {
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
+    $category = Category::query()->create([
+        'name' => 'Lighting',
+        'slug' => 'lighting',
+        'status' => Visibility::Visible,
+    ]);
 
     $this->actingAs($admin, 'larasell-admin')
         ->withHeader('X-Inertia', 'true')
         ->get(route('larasell.admin.products.create'))
         ->assertOk()
         ->assertJsonPath('component', 'Products/Create')
+        ->assertJsonPath('props.categories.0.label', 'Lighting')
+        ->assertJsonPath('props.categories.0.value', (string) $category->id)
         ->assertJsonPath('props.productStoreUrl', route('larasell.admin.products.store'))
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
 });
@@ -396,6 +404,11 @@ it('creates a product in the admin panel', function () {
         'name' => 'Desk lamp',
         'price' => Price::of(1000, 'EUR'),
     ]);
+    $category = Category::query()->create([
+        'name' => 'Lighting',
+        'slug' => 'lighting',
+        'status' => Visibility::Visible,
+    ]);
 
     $response = $this->actingAs($admin, 'larasell-admin')
         ->post(route('larasell.admin.products.store'), [
@@ -408,6 +421,7 @@ it('creates a product in the admin panel', function () {
             'status' => 'hidden',
             'price_amount' => 49.99,
             'price_currency' => 'EUR',
+            'category_ids' => [(string) $category->id],
         ]);
 
     $product = Product::query()->where('slug', 'desk-lamp-2')->sole();
@@ -422,6 +436,7 @@ it('creates a product in the admin panel', function () {
         ->allow_backorders->toBeFalse()
         ->status->toBe(Visibility::Hidden)
         ->price->toEqual(Price::of(4999, 'EUR'));
+    expect($product->categories()->pluck('larasell_categories.id')->all())->toBe([$category->id]);
 });
 
 it('validates product creation', function () {
@@ -442,9 +457,10 @@ it('validates product creation', function () {
             'status' => 'unknown',
             'price_amount' => -1,
             'price_currency' => 'BTC',
+            'category_ids' => ['999999'],
         ])
         ->assertRedirect(route('larasell.admin.products.create'))
-        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'price_currency']);
+        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'price_currency', 'category_ids.0']);
 
     expect(Product::query()->count())->toBe(0);
 });
@@ -735,6 +751,12 @@ it('shows a product in the admin panel', function () {
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
+    $category = Category::query()->create([
+        'name' => 'Lighting',
+        'slug' => 'lighting',
+        'status' => Visibility::Visible,
+    ]);
+    $product->categories()->attach($category);
 
     Route::bind('product', fn (string $value): Product => Product::query()
         ->where('slug', $value)
@@ -756,6 +778,8 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.status', 'visible')
         ->assertJsonPath('props.product.price.amount', '4999')
         ->assertJsonPath('props.product.price.currency', 'EUR')
+        ->assertJsonPath('props.product.categoryIds.0', (string) $category->id)
+        ->assertJsonPath('props.categories.0.label', 'Lighting')
         ->assertJsonPath('props.product.updateUrl', route('larasell.admin.products.update', $product))
         ->assertJsonPath('props.product.imageUploadUrl', route('larasell.admin.products.images.store', $product))
         ->assertJsonPath('props.product.generalUpdateUrl', route('larasell.admin.products.general.update', $product))
@@ -821,6 +845,9 @@ it('updates all product settings in the admin panel', function () {
         'name' => 'Desk lamp',
         'price' => Price::of(4999, 'EUR'),
     ]);
+    $oldCategory = Category::query()->create(['name' => 'Old', 'slug' => 'old', 'status' => Visibility::Visible]);
+    $newCategory = Category::query()->create(['name' => 'Lighting', 'slug' => 'lighting', 'status' => Visibility::Visible]);
+    $product->categories()->attach($oldCategory);
     $firstImage = ProductImage::query()->create(['path' => 'products/first.jpg']);
     $secondImage = ProductImage::query()->create(['path' => 'products/second.jpg']);
     $uploadedImage = ProductImage::query()->create(['path' => 'products/uploaded.jpg', 'meta' => ['pending_product_id' => (string) $product->id]]);
@@ -841,6 +868,7 @@ it('updates all product settings in the admin panel', function () {
             'price_currency' => 'USD',
             'image_order' => [$secondImage->id, $uploadedImage->id, $firstImage->id],
             'new_image_ids' => [$uploadedImage->id],
+            'category_ids' => [(string) $newCategory->id],
         ])
         ->assertRedirect();
 
@@ -856,6 +884,7 @@ it('updates all product settings in the admin panel', function () {
         ->price->toEqual(Price::of(5995, 'USD'));
 
     expect($product->images()->pluck('larasell_product_images.id')->all())->toBe([$secondImage->id, $uploadedImage->id, $firstImage->id])
+        ->and($product->categories()->pluck('larasell_categories.id')->all())->toBe([$newCategory->id])
         ->and($uploadedImage->refresh()->meta)->not->toHaveKey('pending_product_id');
 });
 

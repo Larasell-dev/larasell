@@ -24,22 +24,31 @@ export type ProductFormData = {
   status: 'visible' | 'hidden'
   price_amount: number
   price_currency: Currency
+  category_ids: string[]
   image_order?: Array<number | string>
   new_image_ids?: Array<number | string>
 }
 
 type ProductFormProps = {
   children: ReactNode
+  categories: ProductCategory[]
+  form: InertiaFormProps<ProductFormData>
+}
+
+export type ProductCategory = { label: string; value: string }
+
+type ProductFormContextValue = {
+  categories: ProductCategory[]
   form: InertiaFormProps<ProductFormData>
 }
 
 const currencies: { label: string; value: Currency }[] = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'CHF', 'JPY']
   .map((currency) => ({ label: currency, value: currency as Currency }))
 
-const ProductFormContext = createContext<InertiaFormProps<ProductFormData> | null>(null)
+const ProductFormContext = createContext<ProductFormContextValue | null>(null)
 
-function ProductForm({ children, form }: ProductFormProps) {
-  return <ProductFormContext value={form}>{children}</ProductFormContext>
+function ProductForm({ categories, children, form }: ProductFormProps) {
+  return <ProductFormContext value={{ categories, form }}>{children}</ProductFormContext>
 }
 
 function GeneralSection({ includeSlug = false }: { includeSlug?: boolean }) {
@@ -139,15 +148,49 @@ function StockSection() {
   )
 }
 
+function CategoriesSection() {
+  const { categories, form } = useProductFormContext()
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Categories</Card.Title>
+        <Card.Description>Choose the categories customers can use to discover this product.</Card.Description>
+      </Card.Header>
+      <Card.Body>
+        <Field invalid={Boolean(form.errors.category_ids)}>
+          <Label htmlFor="category_ids">Product categories</Label>
+          <Select
+            id="category_ids"
+            items={categories}
+            multiple
+            name="category_ids[]"
+            onValueChange={(value) => form.setData('category_ids', value)}
+            placeholder="No categories"
+            scrollable
+            value={form.data.category_ids}
+          />
+          <Error>{form.errors.category_ids}</Error>
+        </Field>
+      </Card.Body>
+    </Card>
+  )
+}
+
 function useProductForm() {
-  const form = useContext(ProductFormContext)
-  if (!form) throw new globalThis.Error('Product form sections must be rendered inside ProductForm.')
-  return form
+  return useProductFormContext().form
+}
+
+function useProductFormContext() {
+  const context = useContext(ProductFormContext)
+  if (!context) throw new globalThis.Error('Product form sections must be rendered inside ProductForm.')
+  return context
 }
 
 ProductForm.General = GeneralSection
 ProductForm.Pricing = PricingSection
 ProductForm.Stock = StockSection
+ProductForm.Categories = CategoriesSection
 
 export default ProductForm
 
