@@ -22,7 +22,8 @@ class MediaController extends Controller
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         $images = $imageModel::query()
-            ->latest('id')
+            ->latest()
+            ->latest($imageModel::query()->getModel()->getKeyName())
             ->paginate(24)
             ->withQueryString()
             ->through(fn (Model $image): array => [
@@ -37,6 +38,7 @@ class MediaController extends Controller
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
             'mediaDeleteUrl' => route('larasell.admin.media.destroy'),
+            'mediaUploadUrl' => route('larasell.admin.media.uploads.store'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),

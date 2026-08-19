@@ -1,6 +1,6 @@
 import { Head, router, useRemember } from '@inertiajs/react'
 import * as stylex from '@stylexjs/stylex'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import Button from '../../Components/Button'
 import Checkbox from '../../Components/Checkbox'
@@ -19,12 +19,14 @@ type MediaImage = {
 type Props = AdminLayoutProps & {
   images: MediaImage[]
   mediaDeleteUrl: string
+  mediaUploadUrl: string
   pagination: PaginationData
 }
 
-export default function MediaIndex({ images, mediaDeleteUrl, pagination, ...layoutProps }: Props) {
+export default function MediaIndex({ images, mediaDeleteUrl, mediaUploadUrl, pagination, ...layoutProps }: Props) {
   const [selectedIds, setSelectedIds] = useRemember<Array<number | string>>([], 'media.selectedIds')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const mediaUpload = useMediaUpload(mediaUploadUrl)
 
   const toggleImage = (id: number | string, checked: boolean) => {
     setSelectedIds(checked ? [...selectedIds, id] : selectedIds.filter((selectedId) => selectedId !== id))
@@ -47,15 +49,33 @@ export default function MediaIndex({ images, mediaDeleteUrl, pagination, ...layo
       <div {...stylex.props(styles.frame)}>
         <header {...stylex.props(styles.header)}>
           <h1 {...stylex.props(styles.heading)}>Media</h1>
-          {selectedIds.length > 0 && (
-            <Button onClick={() => setDeleteOpen(true)} type="button" variant="danger">
-              <Icon height={16} name="trash" width={16} />
-              Delete {selectedIds.length === 1 ? 'image' : `${selectedIds.length} images`}
+          <div {...stylex.props(styles.headerActions)}>
+            {selectedIds.length > 0 && (
+              <Button onClick={() => setDeleteOpen(true)} type="button" variant="danger">
+                <Icon height={16} name="trash" width={16} />
+                Delete {selectedIds.length === 1 ? 'image' : `${selectedIds.length} images`}
+              </Button>
+            )}
+            <input
+              accept="image/*"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (file) mediaUpload.submit(file)
+              }}
+              ref={mediaUpload.inputRef}
+              type="file"
+              {...stylex.props(styles.visuallyHidden)}
+            />
+            <Button disabled={mediaUpload.processing} onClick={mediaUpload.openFilePicker} type="button">
+              <Icon height={16} name="plus" width={16} />
+              {mediaUpload.processing ? 'Uploading...' : 'Upload file'}
             </Button>
-          )}
+          </div>
         </header>
 
         <div {...stylex.props(styles.content)}>
+          {mediaUpload.error && <p role="alert" {...stylex.props(styles.uploadError)}>{mediaUpload.error}</p>}
           {images.length === 0 ? (
             <div {...stylex.props(styles.empty)}>
               <EmptyState
@@ -108,10 +128,37 @@ export default function MediaIndex({ images, mediaDeleteUrl, pagination, ...layo
   )
 }
 
+function useMediaUpload(url: string) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = (file: File) => {
+    setProcessing(true)
+    setError(null)
+
+    router.post(url, { image: file }, {
+      forceFormData: true,
+      onError: (errors) => setError(errors.image),
+      onFinish: () => setProcessing(false),
+      preserveScroll: true,
+    })
+  }
+
+  return {
+    error,
+    inputRef,
+    openFilePicker: () => inputRef.current?.click(),
+    processing,
+    submit,
+  }
+}
+
 const styles = stylex.create({
   frame: { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', width: '100%' },
   header: { alignItems: 'center', borderBottomColor: 'var(--color-neutral-200)', borderBottomStyle: 'solid', borderBottomWidth: 1, display: 'flex', flexShrink: 0, height: 'var(--admin-header-height)', justifyContent: 'space-between', paddingInline: { default: 24, '@media (max-width: 640px)': 16 } },
   heading: { fontSize: 18, fontWeight: 700, lineHeight: 1.3, margin: 0 },
+  headerActions: { alignItems: 'center', display: 'flex', gap: 8 },
   content: { flex: 1, minHeight: 0, overflow: 'auto', padding: { default: 24, '@media (max-width: 640px)': 16 } },
   empty: { height: '100%', marginInline: 'auto', maxWidth: 360 },
   grid: { display: 'grid', gap: { default: 16, '@media (max-width: 640px)': 10 }, gridTemplateColumns: { default: 'repeat(auto-fill, minmax(180px, 1fr))', '@media (max-width: 640px)': 'repeat(2, minmax(0, 1fr))' }, listStyle: 'none', margin: 0, padding: 0 },
@@ -121,4 +168,6 @@ const styles = stylex.create({
   checkbox: { opacity: { default: 0, [stylex.when.ancestor(':hover')]: 1, [stylex.when.ancestor(':focus-within')]: 1 }, position: 'absolute', right: 10, top: 8 },
   checkboxSelected: { opacity: 1 },
   label: { color: 'var(--color-neutral-800)', display: 'block', fontSize: 12, overflow: 'hidden', paddingBlock: 9, paddingInline: 2, textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  uploadError: { color: '#b91c1c', fontSize: 14, marginBlockEnd: 16, marginBlockStart: 0 },
+  visuallyHidden: { height: 1, margin: -1, overflow: 'hidden', padding: 0, position: 'absolute', width: 1 },
 })

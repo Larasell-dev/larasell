@@ -215,6 +215,10 @@ it('shows uploaded images in the admin media index', function () {
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
+    ProductImage::query()->create([
+        'path' => 'products/desk-lamp/older.jpg',
+        'alt' => 'Older image',
+    ]);
     $image = ProductImage::query()->create([
         'path' => 'products/desk-lamp/hero.jpg',
         'alt' => 'Desk lamp',
@@ -231,9 +235,37 @@ it('shows uploaded images in the admin media index', function () {
         ->assertJsonPath('props.images.0.name', 'desk-lamp-hero.jpg')
         ->assertJsonPath('props.images.0.url', $image->url())
         ->assertJsonPath('props.pagination.currentPage', 1)
-        ->assertJsonPath('props.pagination.total', 1)
+        ->assertJsonPath('props.pagination.total', 2)
         ->assertJsonPath('props.mediaDeleteUrl', route('larasell.admin.media.destroy'))
+        ->assertJsonPath('props.mediaUploadUrl', route('larasell.admin.media.uploads.store'))
         ->assertJsonPath('props.mediaUrl', route('larasell.admin.media.index'));
+});
+
+it('uploads an image to the media library with a generated file name', function () {
+    Storage::fake('product-images');
+    config()->set('larasell.images.disk', 'product-images');
+    config()->set('larasell.images.path', 'media');
+
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->post(route('larasell.admin.media.uploads.store'), [
+            'image' => UploadedFile::fake()->image('summer-campaign.jpg', 800, 800),
+        ])
+        ->assertRedirect();
+
+    $image = ProductImage::query()->sole();
+
+    Storage::disk('product-images')->assertExists($image->path);
+    expect($image->path)->toStartWith('media/')
+        ->not->toEndWith('summer-campaign.jpg')
+        ->and($image->alt)->toBe('summer-campaign')
+        ->and($image->meta['original_name'])->toBe('summer-campaign.jpg')
+        ->and($image->meta['mime_type'])->toBe('image/jpeg');
 });
 
 it('deletes selected media images and their stored files', function () {
