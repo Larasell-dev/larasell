@@ -2,81 +2,96 @@
 
 namespace Larasell\Larasell;
 
+use InvalidArgumentException;
 use JsonSerializable;
+use NumberFormatter;
+use RuntimeException;
 use Larasell\Larasell\Enums\Currency as LarasellCurrency;
-use Money\Currency;
-use Money\Money;
 
-class Price implements JsonSerializable
+final readonly class Price implements JsonSerializable
 {
     public function __construct(
-        private readonly Money $money
-    ) {}
+        private string $amount,
+    ) {
+        if (! preg_match('/^-?\d+$/', $amount)) {
+            throw new InvalidArgumentException('Price amount must be an integer value in minor units.');
+        }
 
-    public static function of(int|string $amount, LarasellCurrency|string $currency): self
-    {
-        return new self(new Money($amount, new Currency(self::normalizeCurrencyCode($currency))));
     }
 
-    public static function fromMoney(Money $money): self
+    public static function of(int|string $amount): self
     {
-        return new self($money);
+        return new self(self::normalizeAmount($amount));
     }
 
     /**
-     * @param array{amount: int|string, currency: LarasellCurrency|string} $value
+     * @param array{amount: int|string} $value
      */
     public static function fromArray(array $value): self
     {
-        return self::of($value['amount'], $value['currency']);
-    }
-
-    public function money(): Money
-    {
-        return $this->money;
+        return self::of($value['amount']);
     }
 
     public function amount(): string
     {
-        return $this->money->getAmount();
+        return $this->amount;
     }
 
-    public function currency(): ?LarasellCurrency
+    public function add(self $price): self
     {
-        return LarasellCurrency::tryFrom($this->currencyCodeValue());
+        return self::of(bcadd($this->amount, $price->amount, 0));
     }
 
-    public function currencyCode(): string
+    public function multiply(int $multiplier): self
     {
-        return $this->currencyCodeValue();
+        return self::of(bcmul($this->amount, (string) $multiplier, 0));
+    }
+
+    public static function format(self $price, LarasellCurrency|string $currency, ?string $locale = null): string
+    {
+        $currency = $currency instanceof LarasellCurrency ? $currency : LarasellCurrency::from(strtoupper($currency));
+        $formatter = new NumberFormatter($locale ?? \Locale::getDefault(), NumberFormatter::CURRENCY);
+        $majorAmount = bcdiv($price->amount, bcpow('10', (string) $currency->minorUnitDigits(), 0), $currency->minorUnitDigits());
+        $formatted = $formatter->formatCurrency((float) $majorAmount, $currency->value);
+
+        if ($formatted === false) {
+            throw new RuntimeException('The price could not be formatted.');
+        }
+
+        return $formatted;
     }
 
     /**
-     * @return array{amount: string, currency: string}
+     * @return array{amount: string}
      */
     public function toArray(): array
     {
         return [
             'amount' => $this->amount(),
-            'currency' => $this->currencyCode(),
         ];
     }
 
     /**
-     * @return array{amount: string, currency: string}
+     * @return array{amount: string}
      */
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
 
-    private static function normalizeCurrencyCode(LarasellCurrency|string $currency): string
+    private static function normalizeAmount(int|string $amount): string
     {
-        return $currency instanceof LarasellCurrency ? $currency->value : $currency;
+        $amount = (string) $amount;
+
+        if (! preg_match('/^-?\d+$/', $amount)) {
+            throw new InvalidArgumentException('Price amount must be an integer value in minor units.');
+        }
+
+        $negative = str_starts_with($amount, '-');
+        $normalized = ltrim($negative ? substr($amount, 1) : $amount, '0');
+        $normalized = $normalized === '' ? '0' : $normalized;
+
+        return $negative && $normalized !== '0' ? '-'.$normalized : $normalized;
     }
 
-    private function currencyCodeValue(): string
-    {
-        return $this->money->getCurrency()->getCode();
-    }
 }

@@ -11,8 +11,6 @@ import NumberInput from '../../Components/NumberInput'
 import Select from '../../Components/Select'
 import Toggle from '../../Components/Toggle'
 
-export type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'NZD' | 'CHF' | 'JPY'
-
 export type ProductFormData = {
   name: string
   slug?: string
@@ -23,7 +21,6 @@ export type ProductFormData = {
   allow_backorders: boolean
   status: 'visible' | 'hidden'
   price_amount: number
-  price_currency: Currency
   category_ids: string[]
   image_order?: Array<number | string>
   new_image_ids?: Array<number | string>
@@ -41,9 +38,6 @@ type ProductFormContextValue = {
   categories: ProductCategory[]
   form: InertiaFormProps<ProductFormData>
 }
-
-const currencies: { label: string; value: Currency }[] = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'CHF', 'JPY']
-  .map((currency) => ({ label: currency, value: currency as Currency }))
 
 const ProductFormContext = createContext<ProductFormContextValue | null>(null)
 
@@ -103,18 +97,11 @@ function PricingSection() {
     <Card>
       <Card.Header><Card.Title>Pricing</Card.Title><Card.Description>Set the product's selling price and currency.</Card.Description></Card.Header>
       <Card.Body>
-        <div {...stylex.props(styles.priceGrid)}>
-          <Field invalid={Boolean(form.errors.price_amount)}>
-            <Label htmlFor="price_amount">Amount</Label>
-            <NumberInput id="price_amount" min={0} name="price_amount" onValueChange={(value) => form.setData('price_amount', value ?? 0)} step="any" value={form.data.price_amount} />
-            <Error>{form.errors.price_amount}</Error>
-          </Field>
-          <Field invalid={Boolean(form.errors.price_currency)}>
-            <Label htmlFor="price_currency">Currency</Label>
-            <Select id="price_currency" items={currencies} name="price_currency" onValueChange={(value) => form.setData('price_currency', value)} value={form.data.price_currency} />
-            <Error>{form.errors.price_currency}</Error>
-          </Field>
-        </div>
+        <Field invalid={Boolean(form.errors.price_amount)}>
+          <Label htmlFor="price_amount">Amount in minor units</Label>
+          <NumberInput id="price_amount" min={0} name="price_amount" onValueChange={(value) => form.setData('price_amount', value ?? 0)} value={form.data.price_amount} />
+          <Error>{form.errors.price_amount}</Error>
+        </Field>
       </Card.Body>
     </Card>
   )
@@ -196,7 +183,6 @@ export default ProductForm
 const styles = stylex.create({
   required: { color: 'oklch(50.5% 0.213 27.518)', marginLeft: 3 },
   textarea: { backgroundColor: '#fff', borderColor: 'var(--color-neutral-300)', borderRadius: 6, borderStyle: 'solid', borderWidth: 1, boxShadow: '0 1px 2px oklch(14.5% 0.008 326 / 0.08)', color: 'var(--color-neutral-900)', fontSize: 15, fontWeight: 500, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, padding: 12, resize: 'vertical', width: '100%' },
-  priceGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'minmax(0, 1fr) 160px', '@media (max-width: 640px)': '1fr' } },
   quantityGrid: { display: 'grid', gap: 16, gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', '@media (max-width: 640px)': '1fr' } },
   checkboxRow: { alignItems: 'flex-start', cursor: 'pointer', display: 'flex', gap: 10 },
   checkboxTitle: { display: 'block', fontSize: 14, fontWeight: 600 },

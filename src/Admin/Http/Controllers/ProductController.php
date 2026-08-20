@@ -17,8 +17,6 @@ use Inertia\Response;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
-use Money\Currencies\ISOCurrencies;
-use Money\Currency as MoneyCurrency;
 
 class ProductController extends Controller
 {
@@ -47,6 +45,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', [
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
+            'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productCreateUrl' => route('larasell.admin.products.create'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
@@ -93,6 +92,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Create', [
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
+            'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
@@ -135,6 +135,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Show', [
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
+            'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
@@ -186,8 +187,7 @@ class ProductController extends Controller
             'max_quantity' => ['nullable', 'integer', 'min:1', 'gte:min_quantity'],
             'allow_backorders' => ['required', 'boolean'],
             'status' => ['required', Rule::enum(Visibility::class)],
-            'price_amount' => ['required', 'numeric', 'min:0'],
-            'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+            'price_amount' => ['required', 'integer', 'min:0'],
             'image_order' => ['present', 'array'],
             'image_order.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
             'new_image_ids' => ['present', 'array'],
@@ -211,9 +211,8 @@ class ProductController extends Controller
             throw ValidationException::withMessages(['new_image_ids' => 'One or more uploaded images do not belong to this product.']);
         }
 
-        $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
-        $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
-        unset($data['price_amount'], $data['price_currency'], $data['image_order'], $data['new_image_ids'], $data['category_ids']);
+        $data['price'] = Price::of($data['price_amount']);
+        unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids']);
 
         DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $product): void {
             $product->fill($data)->save();
@@ -349,15 +348,13 @@ class ProductController extends Controller
             'max_quantity' => ['nullable', 'integer', 'min:1', 'gte:min_quantity'],
             'allow_backorders' => ['required', 'boolean'],
             'status' => ['required', Rule::enum(Visibility::class)],
-            'price_amount' => ['required', 'numeric', 'min:0'],
-            'price_currency' => ['required', Rule::enum(\Larasell\Larasell\Enums\Currency::class)],
+            'price_amount' => ['required', 'integer', 'min:0'],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['required', 'integer', 'distinct', Rule::exists($this->categoryTable(), $this->categoryKeyName())],
         ]);
 
-        $subunit = (new ISOCurrencies)->subunitFor(new MoneyCurrency($data['price_currency']));
-        $data['price'] = Price::of((string) round((float) $data['price_amount'] * (10 ** $subunit)), $data['price_currency']);
-        unset($data['price_amount'], $data['price_currency']);
+        $data['price'] = Price::of($data['price_amount']);
+        unset($data['price_amount']);
         $data['category_ids'] ??= [];
 
         return $data;

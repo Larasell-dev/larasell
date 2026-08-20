@@ -6,10 +6,12 @@ use Larasell\Larasell\Admin\Http\Controllers\HomeController;
 use Larasell\Larasell\Admin\Http\Controllers\LoginController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaUploadController;
+use Larasell\Larasell\Admin\Http\Controllers\OrderController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
 use Larasell\Larasell\Admin\Http\Controllers\MemberController;
 use Larasell\Larasell\Admin\Http\Controllers\SettingsController;
+use Larasell\Larasell\Admin\Http\Controllers\CurrencySettingsController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
 
 $guard = config('larasell-admin.guard', 'larasell-admin');
@@ -22,6 +24,8 @@ Route::middleware(AdminGuest::using($guard))->group(function () {
 Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('settings', SettingsController::class)->name('settings.index');
+    Route::get('settings/currencies', [CurrencySettingsController::class, 'index'])->name('settings.currencies.index');
+    Route::patch('settings/currencies', [CurrencySettingsController::class, 'update'])->name('settings.currencies.update');
     Route::get('settings/members', [MemberController::class, 'index'])->name('settings.members.index');
     Route::get('settings/members/create', [MemberController::class, 'create'])->name('settings.members.create');
     Route::post('settings/members', [MemberController::class, 'store'])->name('settings.members.store');
@@ -31,6 +35,8 @@ Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('media', [MediaController::class, 'index'])->name('media.index');
     Route::post('media/uploads', [MediaUploadController::class, 'store'])->name('media.uploads.store');
     Route::delete('media', [MediaController::class, 'destroy'])->name('media.destroy');
+    Route::get('orders', OrderController::class)->name('orders.index');
+    Route::get('orders/{adminOrder}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('products', [ProductController::class, 'store'])->name('products.store');

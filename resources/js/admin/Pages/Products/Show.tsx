@@ -13,7 +13,7 @@ import Field from '../../Components/Field'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
-import ProductForm, { type Currency, type ProductCategory, type ProductFormData } from './ProductForm'
+import ProductForm, { type ProductCategory, type ProductFormData } from './ProductForm'
 
 type Product = {
   id: number | string
@@ -25,7 +25,7 @@ type Product = {
   maxQuantity: number | null
   allowBackorders: boolean
   status: 'visible' | 'hidden'
-  price: { amount: string; currency: Currency }
+  price: { amount: string }
   updateUrl: string
   imageUploadUrl: string
   generalUpdateUrl: string
@@ -50,8 +50,7 @@ function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
     max_quantity: product.maxQuantity,
     allow_backorders: product.allowBackorders,
     status: product.status,
-    price_amount: Number(product.price.amount) / (10 ** currencyFractionDigits(product.price.currency)),
-    price_currency: product.price.currency,
+    price_amount: Number(product.price.amount),
     image_order: [] as ProductImage['id'][],
     new_image_ids: [] as ProductImage['id'][],
     category_ids: product.categoryIds,
@@ -342,7 +341,3 @@ const styles = stylex.create({
   imageUploadIcon: { fontSize: 24, fontWeight: 400, lineHeight: 1 },
   visuallyHidden: { height: 1, margin: -1, overflow: 'hidden', padding: 0, position: 'absolute', width: 1 },
 })
-
-function currencyFractionDigits(currency: Currency) {
-  return new Intl.NumberFormat(undefined, { currency, style: 'currency' }).resolvedOptions().maximumFractionDigits ?? 2
-}

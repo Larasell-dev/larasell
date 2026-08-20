@@ -3,9 +3,9 @@ import * as stylex from '@stylexjs/stylex'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import Icon from '../../Components/Icon'
 
-type Props = AdminLayoutProps & { membersUrl: string }
+type Props = AdminLayoutProps & { currenciesUrl: string; membersUrl: string }
 
-export default function SettingsIndex({ membersUrl, ...layoutProps }: Props) {
+export default function SettingsIndex({ currenciesUrl, membersUrl, ...layoutProps }: Props) {
   return (
     <AdminLayout active="settings" {...layoutProps}>
       <Head title="Settings" />
@@ -14,6 +14,14 @@ export default function SettingsIndex({ membersUrl, ...layoutProps }: Props) {
           <h1 {...stylex.props(styles.heading)}>Settings</h1>
         </header>
         <nav aria-label="Settings">
+          <Link href={currenciesUrl} {...stylex.props(styles.moduleLink)}>
+            <span {...stylex.props(styles.icon)}><Icon name="world" height={20} width={20} /></span>
+            <span {...stylex.props(styles.copy)}>
+              <strong {...stylex.props(styles.title)}>Currencies</strong>
+              <span {...stylex.props(styles.description)}>Choose the currencies available for product prices.</span>
+            </span>
+            <Icon name="chevron-right" height={18} width={18} />
+          </Link>
           <Link href={membersUrl} {...stylex.props(styles.moduleLink)}>
             <span {...stylex.props(styles.icon)}><Icon name="users" height={20} width={20} /></span>
             <span {...stylex.props(styles.copy)}>

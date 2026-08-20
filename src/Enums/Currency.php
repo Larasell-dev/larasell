@@ -12,4 +12,12 @@ enum Currency: string
     case NZD = 'NZD';
     case CHF = 'CHF';
     case JPY = 'JPY';
+
+    public function minorUnitDigits(): int
+    {
+        return match ($this) {
+            self::JPY => 0,
+            default => 2,
+        };
+    }
 }

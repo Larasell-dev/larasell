@@ -37,6 +37,7 @@ class MediaController extends Controller
         return Inertia::render('Media/Index', [
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
+            'ordersUrl' => route('larasell.admin.orders.index'),
             'mediaDeleteUrl' => route('larasell.admin.media.destroy'),
             'mediaUploadUrl' => route('larasell.admin.media.uploads.store'),
             'productsUrl' => route('larasell.admin.products.index'),

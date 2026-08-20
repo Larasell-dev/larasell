@@ -32,7 +32,8 @@
     "pestphp/pest": "^5.1"
   },
   "require": {
-    "moneyphp/money": "^4.9",
+    "ext-bcmath": "*",
+    "ext-intl": "*",
     "inertiajs/inertia-laravel": "^3.0"
   },
   "scripts": {

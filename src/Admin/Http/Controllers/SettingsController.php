@@ -16,6 +16,7 @@ class SettingsController extends Controller
         return Inertia::render('Settings/Index', [
             ...$this->layoutProps($admin),
             'membersUrl' => route('larasell.admin.settings.members.index'),
+            'currenciesUrl' => route('larasell.admin.settings.currencies.index'),
         ])->rootView('larasell-admin::admin');
     }
 
@@ -24,6 +25,7 @@ class SettingsController extends Controller
         return [
             'homeUrl' => route('larasell.admin.home'),
             'mediaUrl' => route('larasell.admin.media.index'),
+            'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productOptionsUrl' => route('larasell.admin.product-options.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),

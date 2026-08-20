@@ -11,11 +11,13 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\OrderStatus;
+use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Price;
 
 /**
  * @property int $id
  * @property string $number
+ * @property Currency $currency
  * @property int|null $customer_id
  * @property string $customer_email
  * @property string $customer_name
@@ -37,6 +39,7 @@ class Order extends Model
 
     protected $casts = [
         'customer_id' => 'integer',
+        'currency' => Currency::class,
         'billing_address' => AddressCast::class,
         'shipping_address' => AddressCast::class,
         'status' => OrderStatus::class,

@@ -44,7 +44,7 @@ class CartItem extends Model
 
     public function total(): Price
     {
-        return Price::fromMoney($this->product->price->money()->multiply($this->quantity));
+        return $this->product->price->multiply($this->quantity);
     }
 
     protected function cartModel(): string

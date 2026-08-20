@@ -11,9 +11,9 @@ storefront product listing and detail pages.
 Products include a nullable `description` text field for longer
 plain-text product copy.
 
-Products must also include a `price` field. Price values use minor
-units, such as cents for USD, and are cast to
-`Larasell\Larasell\Price` on the model.
+Products must also include a currency-independent `price` field. Price values
+are integer strings in minor units and are cast to `Larasell\Larasell\Price`
+on the model. Supply the cart or order currency when formatting a price.
 
 Products include a nullable `stock` field that defaults to `null`.
 When `stock` is `null`, Larasell does not track inventory for the
@@ -27,18 +27,16 @@ fields. Both default to `null`. When set, each value must be at least
 
 ```php
 use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Price;
 
 $product = Product::create([
     'slug' => 'basic-plan',
     'name' => 'Basic Plan',
-    'price' => Price::of(1299, Currency::USD),
+    'price' => Price::of(1299),
 ]);
 
 $amount = $product->price->amount();
-$currency = $product->price->currency();
-$currencyCode = $product->price->currencyCode();
+$formatted = Price::format($product->price, 'USD');
 ```
 
 ## Managing stock

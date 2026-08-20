@@ -14,7 +14,7 @@ type Product = {
   deleteUrl: string
   id: number | string
   name: string
-  price: { amount: string; currency: string }
+  price: { amount: string }
   stock: number | null
   status: 'visible' | 'hidden'
   url: string
@@ -60,7 +60,7 @@ export default function ProductIndex({ pagination, productCreateUrl, productImag
               <tr>
                 <Table.Heading>Product</Table.Heading>
                 <Table.Heading>Status</Table.Heading>
-                <Table.Heading numeric>Price</Table.Heading>
+                <Table.Heading numeric>Price (minor units)</Table.Heading>
                 <Table.Heading numeric>Stock</Table.Heading>
                 <Table.Heading>
                   <div {...stylex.props(styles.actionsHeading)}>
@@ -99,7 +99,7 @@ export default function ProductIndex({ pagination, productCreateUrl, productImag
                       {product.status === 'visible' ? 'Visible' : 'Hidden'}
                     </span>
                   </Table.Cell>
-                  <Table.Cell numeric selectable>{formatPrice(product.price)}</Table.Cell>
+                  <Table.Cell numeric selectable>{product.price.amount}</Table.Cell>
                   <Table.Cell numeric selectable>{product.stock ?? 'Unlimited'}</Table.Cell>
                   <Table.Cell>
                     <div onClick={(event) => event.stopPropagation()} {...stylex.props(styles.actions)}>
@@ -151,12 +151,6 @@ function ProductThumbnail({ image }: { image: ProductImage | null | undefined })
 
 function ProductImagePlaceholder() {
   return <span aria-hidden="true" {...stylex.props(styles.productImagePlaceholder)} />
-}
-
-function formatPrice(price: Product['price']) {
-  const formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: price.currency })
-  const fractionDigits = formatter.resolvedOptions().maximumFractionDigits
-  return formatter.format(Number(price.amount) / (10 ** fractionDigits))
 }
 
 const styles = stylex.create({

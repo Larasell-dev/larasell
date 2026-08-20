@@ -6,10 +6,9 @@ use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Price;
-use Money\Money;
 
 /**
- * @implements CastsAttributes<Price, Price|Money|array{amount: int|string, currency: \Larasell\Larasell\Enums\Currency|string}>
+ * @implements CastsAttributes<Price, Price|array{amount: int|string}>
  */
 class PriceCast implements CastsAttributes
 {
@@ -34,14 +33,10 @@ class PriceCast implements CastsAttributes
             return json_encode($value->toArray(), JSON_THROW_ON_ERROR);
         }
 
-        if ($value instanceof Money) {
-            return json_encode(Price::fromMoney($value)->toArray(), JSON_THROW_ON_ERROR);
-        }
-
         if (is_array($value)) {
             return json_encode(Price::fromArray($value)->toArray(), JSON_THROW_ON_ERROR);
         }
 
-        throw new InvalidArgumentException("The [{$key}] attribute must be a Price instance, Money instance, or price payload.");
+        throw new InvalidArgumentException("The [{$key}] attribute must be a Price instance or price payload.");
     }
 }

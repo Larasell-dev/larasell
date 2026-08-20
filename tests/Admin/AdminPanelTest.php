@@ -5,13 +5,43 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Larasell\Larasell\Admin\Models\AdminUser;
+use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\ProductOptionType;
+use Larasell\Larasell\Enums\OrderStatus;
+use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Models\Order;
+use Larasell\Larasell\Models\OrderItem;
+use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Price;
+
+function orderAttributes(array $overrides = []): array
+{
+    $address = [
+        'country' => 'DE',
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
+        'street' => ['Main Street 1'],
+        'city' => 'Berlin',
+        'postcode' => '10115',
+    ];
+
+    return array_merge([
+        'number' => 'ORDER-TEST',
+        'currency' => Currency::EUR,
+        'customer_email' => 'grace@example.com',
+        'customer_name' => 'Grace Hopper',
+        'billing_address' => $address,
+        'shipping_address' => $address,
+        'status' => OrderStatus::PendingPayment,
+        'subtotal' => Price::of(1000),
+        'total' => Price::of(1000),
+    ], $overrides);
+}
 
 it('registers the admin login route when the admin provider is registered', function () {
     expect(route('larasell.admin.login'))->toContain('/admin/login');
@@ -23,6 +53,87 @@ it('redirects guest admin users to the larasell admin login route', function () 
 
 it('redirects guest admin users away from the products page', function () {
     $this->get('/admin/products')->assertRedirect(route('larasell.admin.login'));
+});
+
+it('redirects guest admin users away from the orders page', function () {
+    $this->get('/admin/orders')->assertRedirect(route('larasell.admin.login'));
+});
+
+it('shows newest orders in the admin order index', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+
+    Order::query()->create(orderAttributes(['number' => 'ORDER-0001']));
+    $newest = Order::query()->create(orderAttributes([
+        'number' => 'ORDER-0002',
+        'customer_name' => 'Ada Lovelace',
+        'customer_email' => 'ada@example.com',
+        'status' => OrderStatus::Paid,
+        'total' => Price::of(1299),
+    ]));
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.orders.index'))
+        ->assertOk()
+        ->assertJsonPath('component', 'Orders/Index')
+        ->assertJsonPath('props.orders.0.id', $newest->getKey())
+        ->assertJsonPath('props.orders.0.number', 'ORDER-0002')
+        ->assertJsonPath('props.orders.0.customerEmail', 'ada@example.com')
+        ->assertJsonPath('props.orders.0.status', 'paid')
+        ->assertJsonPath('props.orders.0.total.amount', '1299')
+        ->assertJsonPath('props.orders.0.currency', 'EUR')
+        ->assertJsonPath('props.orders.0.url', route('larasell.admin.orders.show', $newest))
+        ->assertJsonPath('props.pagination.currentPage', 1)
+        ->assertJsonPath('props.pagination.total', 2)
+        ->assertJsonPath('props.ordersUrl', route('larasell.admin.orders.index'));
+});
+
+it('shows an order with its snapshots and payments in the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $order = Order::query()->create(orderAttributes([
+        'number' => 'ORDER-0042',
+        'customer_name' => 'Ada Lovelace',
+        'customer_email' => 'ada@example.com',
+    ]));
+    OrderItem::query()->create([
+        'order_id' => $order->getKey(),
+        'product_name' => 'Desk lamp',
+        'product_slug' => 'desk-lamp',
+        'unit_price' => Price::of(500),
+        'quantity' => 2,
+        'total' => Price::of(1000),
+    ]);
+    Payment::query()->create([
+        'order_id' => $order->getKey(),
+        'provider' => 'stripe',
+        'reference' => 'pi_123',
+        'status' => PaymentStatus::Succeeded,
+        'amount' => Price::of(1000),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->withHeader('X-Inertia', 'true')
+        ->get(route('larasell.admin.orders.show', $order))
+        ->assertOk()
+        ->assertJsonPath('component', 'Orders/Show')
+        ->assertJsonPath('props.order.number', 'ORDER-0042')
+        ->assertJsonPath('props.order.currency', 'EUR')
+        ->assertJsonPath('props.order.customerName', 'Ada Lovelace')
+        ->assertJsonPath('props.order.shippingAddress.city', 'Berlin')
+        ->assertJsonPath('props.order.items.0.name', 'Desk lamp')
+        ->assertJsonPath('props.order.items.0.quantity', 2)
+        ->assertJsonPath('props.order.items.0.total.amount', '1000')
+        ->assertJsonPath('props.order.payments.0.provider', 'stripe')
+        ->assertJsonPath('props.order.payments.0.reference', 'pi_123')
+        ->assertJsonPath('props.order.payments.0.status', 'succeeded');
 });
 
 it('redirects guest admin users away from the product options page', function () {
@@ -50,6 +161,7 @@ it('shows settings and members to authenticated admin users', function () {
         ->get(route('larasell.admin.settings.index'))
         ->assertOk()
         ->assertJsonPath('component', 'Settings/Index')
+        ->assertJsonPath('props.currenciesUrl', route('larasell.admin.settings.currencies.index'))
         ->assertJsonPath('props.membersUrl', route('larasell.admin.settings.members.index'));
 
     $this->actingAs($admin, 'larasell-admin')
@@ -328,7 +440,7 @@ it('shows products in the admin product index', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
         'stock' => 12,
         'status' => Visibility::Visible,
     ]);
@@ -340,7 +452,7 @@ it('shows products in the admin product index', function () {
         ->assertJsonPath('component', 'Products/Index')
         ->assertJsonPath('props.products.0.name', 'Desk lamp')
         ->assertJsonPath('props.products.0.price.amount', '4999')
-        ->assertJsonPath('props.products.0.price.currency', 'EUR')
+        ->assertJsonMissingPath('props.products.0.price.currency')
         ->assertJsonPath('props.products.0.stock', 12)
         ->assertJsonPath('props.products.0.status', 'visible')
         ->assertJsonPath('props.products.0.url', route('larasell.admin.products.show', $product))
@@ -360,7 +472,7 @@ it('deletes a product', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
     ]);
 
     $this->actingAs($admin, 'larasell-admin')
@@ -402,12 +514,15 @@ it('creates a product in the admin panel', function () {
     Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(1000, 'EUR'),
+        'price' => Price::of(1000),
     ]);
     $category = Category::query()->create([
         'name' => 'Lighting',
         'slug' => 'lighting',
         'status' => Visibility::Visible,
+    ]);
+    \Larasell\Larasell\Models\Setting::query()->where('key', 'currencies')->update([
+        'value' => ['enabled' => ['USD', 'EUR']],
     ]);
 
     $response = $this->actingAs($admin, 'larasell-admin')
@@ -419,8 +534,7 @@ it('creates a product in the admin panel', function () {
             'max_quantity' => 6,
             'allow_backorders' => false,
             'status' => 'hidden',
-            'price_amount' => 49.99,
-            'price_currency' => 'EUR',
+            'price_amount' => 4999,
             'category_ids' => [(string) $category->id],
         ]);
 
@@ -435,7 +549,7 @@ it('creates a product in the admin panel', function () {
         ->max_quantity->toBe(6)
         ->allow_backorders->toBeFalse()
         ->status->toBe(Visibility::Hidden)
-        ->price->toEqual(Price::of(4999, 'EUR'));
+        ->price->toEqual(Price::of(4999));
     expect($product->categories()->pluck('larasell_categories.id')->all())->toBe([$category->id]);
 });
 
@@ -456,11 +570,10 @@ it('validates product creation', function () {
             'allow_backorders' => false,
             'status' => 'unknown',
             'price_amount' => -1,
-            'price_currency' => 'BTC',
             'category_ids' => ['999999'],
         ])
         ->assertRedirect(route('larasell.admin.products.create'))
-        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'price_currency', 'category_ids.0']);
+        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'category_ids.0']);
 
     expect(Product::query()->count())->toBe(0);
 });
@@ -675,7 +788,7 @@ it('paginates the admin product index from the page query parameter', function (
         Product::query()->create([
             'slug' => "product-$number",
             'name' => "Product $number",
-            'price' => Price::of(1000, 'EUR'),
+            'price' => Price::of(1000),
             'status' => Visibility::Visible,
         ]);
     }
@@ -705,7 +818,7 @@ it('defers product images on the admin product index', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
         'status' => Visibility::Visible,
     ]);
     $image = ProductImage::query()->create([
@@ -744,7 +857,7 @@ it('shows a product in the admin panel', function () {
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
         'description' => 'A focused task light.',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
         'stock' => 12,
         'min_quantity' => 2,
         'max_quantity' => 6,
@@ -777,7 +890,7 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.allowBackorders', false)
         ->assertJsonPath('props.product.status', 'visible')
         ->assertJsonPath('props.product.price.amount', '4999')
-        ->assertJsonPath('props.product.price.currency', 'EUR')
+        ->assertJsonMissingPath('props.product.price.currency')
         ->assertJsonPath('props.product.categoryIds.0', (string) $category->id)
         ->assertJsonPath('props.categories.0.label', 'Lighting')
         ->assertJsonPath('props.product.updateUrl', route('larasell.admin.products.update', $product))
@@ -794,7 +907,7 @@ it('uploads an image without attaching it to a product', function () {
     config()->set('larasell.images.disk', 'product-images');
 
     $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
-    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999, 'EUR')]);
+    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999)]);
     $existingImage = ProductImage::query()->create(['path' => 'products/existing.jpg']);
     $product->images()->attach($existingImage, ['position' => 0]);
 
@@ -819,7 +932,7 @@ it('defers ordered images on the admin product page', function () {
     config()->set('larasell.images.disk', 'product-images');
 
     $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
-    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999, 'EUR')]);
+    $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999)]);
     $first = ProductImage::query()->create(['path' => 'products/first.jpg', 'alt' => 'First']);
     $second = ProductImage::query()->create(['path' => 'products/second.jpg', 'alt' => 'Second']);
     $product->images()->attach($first, ['position' => 1]);
@@ -843,7 +956,7 @@ it('updates all product settings in the admin panel', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
     ]);
     $oldCategory = Category::query()->create(['name' => 'Old', 'slug' => 'old', 'status' => Visibility::Visible]);
     $newCategory = Category::query()->create(['name' => 'Lighting', 'slug' => 'lighting', 'status' => Visibility::Visible]);
@@ -864,8 +977,7 @@ it('updates all product settings in the admin panel', function () {
             'max_quantity' => 8,
             'allow_backorders' => false,
             'status' => 'hidden',
-            'price_amount' => 59.95,
-            'price_currency' => 'USD',
+            'price_amount' => 5995,
             'image_order' => [$secondImage->id, $uploadedImage->id, $firstImage->id],
             'new_image_ids' => [$uploadedImage->id],
             'category_ids' => [(string) $newCategory->id],
@@ -881,7 +993,7 @@ it('updates all product settings in the admin panel', function () {
         ->max_quantity->toBe(8)
         ->allow_backorders->toBeFalse()
         ->status->toBe(Visibility::Hidden)
-        ->price->toEqual(Price::of(5995, 'USD'));
+        ->price->toEqual(Price::of(5995));
 
     expect($product->images()->pluck('larasell_product_images.id')->all())->toBe([$secondImage->id, $uploadedImage->id, $firstImage->id])
         ->and($product->categories()->pluck('larasell_categories.id')->all())->toBe([$newCategory->id])
@@ -897,7 +1009,7 @@ it('updates product general information in the admin panel', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
     ]);
 
     $this->actingAs($admin, 'larasell-admin')
@@ -923,7 +1035,7 @@ it('updates product stock settings in the admin panel', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
     ]);
 
     $this->actingAs($admin, 'larasell-admin')
@@ -951,7 +1063,7 @@ it('validates product stock quantity boundaries', function () {
     $product = Product::query()->create([
         'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
-        'price' => Price::of(4999, 'EUR'),
+        'price' => Price::of(4999),
     ]);
 
     $this->actingAs($admin, 'larasell-admin')

@@ -6,7 +6,7 @@ description: Create carts, add products, update quantities, and calculate totals
 # Cart API
 
 The cart model provides a small API for collecting products before
-checkout.
+checkout. Each cart has one currency, supplied when the cart is created.
 
 Cart items store the selected product and quantity. Totals are calculated
 from the product's current price.
@@ -14,8 +14,11 @@ from the product's current price.
 ```php
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Price;
 
 $cart = Cart::create([
+    'currency' => Currency::USD,
     'session_id' => session()->getId(),
 ]);
 
@@ -67,6 +70,7 @@ You can also get the total quantity and price for the cart.
 ```php
 $quantity = $cart->quantity();
 $total = $cart->total();
+$formattedTotal = $total === null ? null : Price::format($total, $cart->currency);
 ```
 
 Empty carts return `null` from `total()`.

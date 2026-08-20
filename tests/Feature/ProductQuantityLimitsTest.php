@@ -117,6 +117,6 @@ function makeProduct(array $attributes = []): Product
     return Product::create(array_merge([
         'slug' => fake()->unique()->slug(),
         'name' => fake()->words(3, true),
-        'price' => Price::of(1000, Currency::USD),
+        'price' => Price::of(1000),
     ], $attributes));
 }

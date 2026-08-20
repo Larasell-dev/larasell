@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
+use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Price;
 
 /**
  * @property int $id
+ * @property Currency $currency
  * @property string|null $session_id
  * @property int|null $user_id
  *
@@ -25,6 +27,7 @@ class Cart extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'currency' => Currency::class,
         'user_id' => 'integer',
     ];
 
@@ -89,13 +92,13 @@ class Cart extends Model
             return null;
         }
 
-        $total = $items->first()->total()->money();
+        $total = $items->first()->total();
 
         foreach ($items->skip(1) as $item) {
-            $total = $total->add($item->total()->money());
+            $total = $total->add($item->total());
         }
 
-        return Price::fromMoney($total);
+        return $total;
     }
 
     protected function cartItemModel(): string

@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\Visibility;
@@ -46,21 +47,23 @@ it('checks out a guest cart and records a successful fake payment', function () 
     $product = Product::query()->create([
         'slug' => 'coffee',
         'name' => 'Coffee',
-        'price' => Price::of(1299, 'EUR'),
+        'price' => Price::of(1299),
         'stock' => 5,
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['session_id' => 'guest-session']);
+    $cart = Cart::query()->create(['currency' => Currency::EUR, 'session_id' => 'guest-session']);
     $cart->add($product, 2);
 
     $order = app(Checkout::class)->create($cart, checkoutData());
 
     expect($order->number)->toBe('LS-000001')
+        ->and($order->currency)->toBe(Currency::EUR)
         ->and($order->status)->toBe(OrderStatus::Paid)
         ->and($order->customer_id)->toBeNull()
         ->and($order->customer_email)->toBe('buyer@example.com')
         ->and($order->total->amount())->toBe('2598')
+        ->and($order->total->toArray())->toBe(['amount' => '2598'])
         ->and($order->items)->toHaveCount(1)
         ->and($order->items->first()->product_name)->toBe('Coffee')
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Succeeded)
@@ -72,15 +75,15 @@ it('keeps snapshots after the source product changes', function () {
     $product = Product::query()->create([
         'slug' => 'tea',
         'name' => 'Tea',
-        'price' => Price::of(500, 'EUR'),
+        'price' => Price::of(500),
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['user_id' => 42]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 42]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData(42));
-    $product->update(['name' => 'Changed Tea', 'price' => Price::of(900, 'EUR')]);
+    $product->update(['name' => 'Changed Tea', 'price' => Price::of(900)]);
     $product->delete();
 
     $item = $order->items()->first();
@@ -98,11 +101,11 @@ it('records declined payments and marks the order as failed', function () {
     $product = Product::query()->create([
         'slug' => 'mug',
         'name' => 'Mug',
-        'price' => Price::of(1500, 'EUR'),
+        'price' => Price::of(1500),
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create();
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData());
@@ -119,7 +122,8 @@ it('prevents fake payments outside local and testing environments', function () 
 
     expect(fn () => $provider->pay(new PaymentRequest(
         orderNumber: 'LS-000001',
-        amount: Price::of(1000, 'EUR'),
+        amount: Price::of(1000),
+        currency: Currency::EUR,
         customerEmail: 'buyer@example.com',
     )))->toThrow(LogicException::class, 'The fake payment provider may only run in local or testing environments.');
 });
@@ -128,11 +132,11 @@ it('rejects invalid order status transitions', function () {
     $product = Product::query()->create([
         'slug' => 'plate',
         'name' => 'Plate',
-        'price' => Price::of(1000, 'EUR'),
+        'price' => Price::of(1000),
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create();
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
     $order = app(Checkout::class)->create($cart, checkoutData());
 

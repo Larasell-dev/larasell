@@ -9,6 +9,9 @@ Checkout creates an order from a cart, snapshots its customer, address,
 product, and price data, reserves finite stock, and asks the configured
 payment provider to collect the total.
 
+The cart's currency becomes the order currency and is passed to the payment
+provider alongside the currency-independent price amount.
+
 Call the checkout action from your application's controller after validating
 the request:
 
@@ -93,4 +96,5 @@ use App\Payments\StripePaymentProvider;
 
 The provider must implement
 `Larasell\Larasell\Contracts\PaymentProvider` and return a
-`Larasell\Larasell\Payments\PaymentResult`.
+`Larasell\Larasell\Payments\PaymentResult`. Its `PaymentRequest` contains
+both `amount` and `currency`.

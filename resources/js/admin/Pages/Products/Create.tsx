@@ -6,7 +6,7 @@ import BackLink from '../../Components/BackLink'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
-import ProductForm, { type Currency, type ProductCategory, type ProductFormData } from './ProductForm'
+import ProductForm, { type ProductCategory, type ProductFormData } from './ProductForm'
 
 type Props = AdminLayoutProps & { categories: ProductCategory[]; productStoreUrl: string }
 
@@ -20,7 +20,6 @@ export default function ProductCreate({ categories, productStoreUrl, ...layoutPr
     allow_backorders: true,
     status: 'visible' as 'visible' | 'hidden',
     price_amount: 0,
-    price_currency: 'EUR' as Currency,
     category_ids: [],
   })
 

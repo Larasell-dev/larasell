@@ -11,6 +11,7 @@ import useBreakpoint from '../Hooks/useBreakpoint'
 export type AdminLayoutProps = {
   homeUrl: string
   mediaUrl: string
+  ordersUrl: string
   productsUrl: string
   productOptionsUrl: string
   settingsUrl: string
@@ -19,11 +20,11 @@ export type AdminLayoutProps = {
 }
 
 type Props = AdminLayoutProps & {
-  active: 'home' | 'media' | 'product-options' | 'products' | 'settings'
+  active: 'home' | 'media' | 'orders' | 'product-options' | 'products' | 'settings'
   children?: ReactNode
 }
 
-export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, productOptionsUrl, productsUrl, settingsUrl, user }: Props) {
+export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, ordersUrl, productOptionsUrl, productsUrl, settingsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   useBreakpoint({ onBreakpointExceeded: { lg: () => setMenuOpen(false) } })
@@ -56,6 +57,14 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
           >
             <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
             Products
+          </Link>
+          <Link
+            aria-current={active === 'orders' ? 'page' : undefined}
+            href={ordersUrl}
+            {...stylex.props(styles.navLink, active === 'orders' && styles.navLinkActive)}
+          >
+            <Icon name={active === 'orders' ? 'orders-filled' : 'orders'} width={18} height={18} />
+            Orders
           </Link>
           <Link
             aria-current={active === 'media' ? 'page' : undefined}
@@ -132,6 +141,15 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
                   >
                     <Icon name={active === 'products' ? 'products-filled' : 'products'} width={18} height={18} />
                     Products
+                  </Link>
+                  <Link
+                    aria-current={active === 'orders' ? 'page' : undefined}
+                    href={ordersUrl}
+                    onClick={() => setMenuOpen(false)}
+                    {...stylex.props(styles.navLink, active === 'orders' && styles.navLinkActive)}
+                  >
+                    <Icon name={active === 'orders' ? 'orders-filled' : 'orders'} width={18} height={18} />
+                    Orders
                   </Link>
                   <Link
                     aria-current={active === 'media' ? 'page' : undefined}

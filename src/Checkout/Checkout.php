@@ -14,7 +14,6 @@ use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
-use Larasell\Larasell\Price;
 
 class Checkout
 {
@@ -48,7 +47,6 @@ class Checkout
                 throw new InvalidArgumentException('Cannot checkout an empty cart.');
             }
 
-            $currency = $items->first()->product->price->currencyCode();
             $total = null;
 
             foreach ($items as $item) {
@@ -57,29 +55,25 @@ class Checkout
                 $item->setRelation('product', $product);
                 $lockedCart->assertProductCanBePurchased($product, $item->quantity);
 
-                if ($product->price->currencyCode() !== $currency) {
-                    throw new InvalidArgumentException('All cart items must use the same currency.');
-                }
-
                 $lineTotal = $item->total();
                 $total = $total === null
-                    ? $lineTotal->money()
-                    : $total->add($lineTotal->money());
+                    ? $lineTotal
+                    : $total->add($lineTotal);
             }
 
-            $price = Price::fromMoney($total);
             /** @var class-string<Order> $orderModel */
             $orderModel = config('larasell.models.order', Order::class);
             $order = $orderModel::query()->create([
                 'number' => $this->orderNumbers->generate(),
+                'currency' => $lockedCart->currency,
                 'customer_id' => $data['customer_id'] ?? null,
                 'customer_email' => $data['customer_email'],
                 'customer_name' => $data['customer_name'],
                 'billing_address' => $data['billing_address'],
                 'shipping_address' => $data['shipping_address'],
                 'status' => OrderStatus::PendingPayment,
-                'subtotal' => $price,
-                'total' => $price,
+                'subtotal' => $total,
+                'total' => $total,
             ]);
 
             foreach ($items as $item) {
@@ -106,6 +100,7 @@ class Checkout
             $result = $this->payments->pay(new PaymentRequest(
                 $order->number,
                 $order->total,
+                $order->currency,
                 $order->customer_email,
             ));
         } catch (\Throwable $exception) {

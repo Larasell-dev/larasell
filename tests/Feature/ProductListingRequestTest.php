@@ -109,7 +109,7 @@ function productForListing(array $attributes, Category $category): Product
 
     $product = Product::create(array_merge([
         'name' => $attributes['slug'],
-        'price' => Price::of(1000, Currency::USD),
+        'price' => Price::of(1000),
     ], $attributes));
 
     $product->categories()->attach($category);

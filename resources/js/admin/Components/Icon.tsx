@@ -14,6 +14,8 @@ import PhotoFilledIcon from '~icons/tabler/photo-filled'
 import MenuIcon from '~icons/tabler/menu-2'
 import DotsIcon from '~icons/tabler/dots'
 import PlusIcon from '~icons/tabler/plus'
+import ReceiptIcon from '~icons/tabler/receipt'
+import ReceiptFilledIcon from '~icons/tabler/receipt-filled'
 import ShoppingCartIcon from '~icons/tabler/shopping-cart'
 import ShoppingCartFilledIcon from '~icons/tabler/shopping-cart-filled'
 import TrashIcon from '~icons/tabler/trash'
@@ -40,6 +42,8 @@ const icons = {
   logout: LogoutIcon,
   mail: MailIcon,
   plus: PlusIcon,
+  orders: ReceiptIcon,
+  'orders-filled': ReceiptFilledIcon,
   products: ShoppingCartIcon,
   'products-filled': ShoppingCartFilledIcon,
   trash: TrashIcon,
