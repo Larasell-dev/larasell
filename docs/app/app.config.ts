@@ -29,6 +29,11 @@ export default defineAppConfig({
       'to': 'https://github.com/larasell-dev/larasell',
       'target': '_blank',
       'aria-label': 'GitHub'
+    }, {
+      'icon': 'i-simple-icons-discord',
+      'to': 'https://discord.gg/MJyYuj2EBG',
+      'target': '_blank',
+      'aria-label': 'Discord'
     }]
   },
   footer: {
@@ -44,6 +49,11 @@ export default defineAppConfig({
       'to': 'https://github.com/larasell-dev/larasell',
       'target': '_blank',
       'aria-label': 'Nuxt UI on GitHub'
+    }, {
+      'icon': 'i-simple-icons-discord',
+      'to': 'https://discord.gg/MJyYuj2EBG',
+      'target': '_blank',
+      'aria-label': 'Discord'
     }]
   }
 })
