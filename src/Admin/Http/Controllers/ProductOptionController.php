@@ -16,6 +16,10 @@ use Larasell\Larasell\Models\ProductOption;
 
 class ProductOptionController extends Controller
 {
+    private const BOOLEAN_FALSE_VALUE_SLUG = '__boolean_false';
+
+    private const BOOLEAN_TRUE_VALUE_SLUG = '__boolean_true';
+
     public function index(Request $request): Response
     {
         /** @var class-string<Model> $productOptionModel */
@@ -232,6 +236,23 @@ class ProductOptionController extends Controller
     /** @param array{name: string, type: string, options?: array<int, array{id?: mixed, value: mixed}>} $data */
     private function syncValues(Model $productOption, array $data): void
     {
+        if ($data['type'] === ProductOptionType::Boolean->value) {
+            $trueValue = $productOption->values()->updateOrCreate(
+                ['slug' => self::BOOLEAN_TRUE_VALUE_SLUG],
+                ['name' => 'Yes', 'value' => true, 'position' => 0],
+            );
+            $falseValue = $productOption->values()->updateOrCreate(
+                ['slug' => self::BOOLEAN_FALSE_VALUE_SLUG],
+                ['name' => 'No', 'value' => false, 'position' => 1],
+            );
+
+            $productOption->values()
+                ->whereNotIn($productOption->values()->getRelated()->getKeyName(), [$trueValue->getKey(), $falseValue->getKey()])
+                ->delete();
+
+            return;
+        }
+
         $keptIds = [];
 
         foreach ($data['options'] ?? [] as $position => $option) {

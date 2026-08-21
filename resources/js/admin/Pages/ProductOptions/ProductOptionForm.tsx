@@ -16,7 +16,7 @@ import Select from '../../Components/Select'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
 
 export type ProductOptionType = 'boolean' | 'number' | 'text'
-export type ProductOptionValue = { id?: number | string; value: number | null | string }
+export type ProductOptionValue = { id?: number | string; value: boolean | number | null | string }
 export type ProductOption = {
   name: string
   type: ProductOptionType

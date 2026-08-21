@@ -86,7 +86,7 @@ export default function ProductOptionIndex({ pagination, productOptionCreateUrl,
                       </Link>
                     </Table.Cell>
                     <Table.Cell>{formatType(productOption.type)}</Table.Cell>
-                    <Table.Cell numeric selectable>{productOption.valuesCount}</Table.Cell>
+                    <Table.Cell numeric selectable>{productOption.type === 'boolean' ? null : productOption.valuesCount}</Table.Cell>
                     <Table.Cell>
                       <div onClick={(event) => event.stopPropagation()} {...stylex.props(styles.actions)}>
                         <DropdownMenu

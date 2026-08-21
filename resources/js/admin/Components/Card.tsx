@@ -1,6 +1,11 @@
 import * as stylex from '@stylexjs/stylex'
 import type { ComponentProps, JSX } from 'react'
 
+export const cardBodySpacing = {
+  paddingBlock: 'var(--card-body-padding-block, 20px)',
+  paddingInline: 'var(--card-body-padding-inline, 20px)',
+} as const
+
 type ElementProps<T extends keyof JSX.IntrinsicElements> = ComponentProps<T>
 
 function CardRoot(props: ElementProps<'section'>) {
@@ -53,6 +58,7 @@ const styles = stylex.create({
     boxShadow: '0 1px 2px oklch(14.5% 0.008 326 / 0.05)',
     display: 'grid',
     gap: 16,
-    padding: 20,
+    paddingBlock: cardBodySpacing.paddingBlock,
+    paddingInline: cardBodySpacing.paddingInline,
   },
 })

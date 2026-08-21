@@ -13,7 +13,7 @@ import Field from '../../Components/Field'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
-import ProductForm, { type ProductCategory, type ProductFormData } from './ProductForm'
+import ProductForm, { type ProductCategory, type ProductFormData, type ProductOption } from './ProductForm'
 
 type Product = {
   id: number | string
@@ -31,16 +31,17 @@ type Product = {
   generalUpdateUrl: string
   stockUpdateUrl: string
   categoryIds: string[]
+  optionValueIds: string[]
 }
 
 type ProductImage = { alt: string | null; id: number | string; uploading?: boolean; url: string }
-type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product }
+type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product; productOptions: ProductOption[] }
 
 export default function ProductShow({ images, product, ...layoutProps }: Props) {
   return <ProductEditor images={images} product={product} {...layoutProps} />
 }
 
-function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
+function ProductEditor({ categories, images, product, productOptions, ...layoutProps }: Props) {
   const form = useForm<ProductFormData>({
     name: product.name,
     slug: product.slug,
@@ -54,6 +55,7 @@ function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
     image_order: [] as ProductImage['id'][],
     new_image_ids: [] as ProductImage['id'][],
     category_ids: product.categoryIds,
+    option_value_ids: product.optionValueIds,
   })
   const initializedImageProduct = useRef<Product['id'] | null>(null)
   const initializedImageSignature = useRef<string | null>(null)
@@ -164,7 +166,7 @@ function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
         </header>
 
         <Form id="product-form" onSubmit={handleSubmit}>
-          <ProductForm categories={categories} form={form}>
+          <ProductForm categories={categories} form={form} productOptions={productOptions}>
             <div {...stylex.props(styles.cards)}>
             <ProductForm.General includeSlug />
 
@@ -194,6 +196,7 @@ function ProductEditor({ categories, images, product, ...layoutProps }: Props) {
             <ProductForm.Pricing />
             <ProductForm.Stock />
             <ProductForm.Categories />
+            <ProductForm.Options />
             </div>
           </ProductForm>
         </Form>
