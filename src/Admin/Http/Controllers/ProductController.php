@@ -379,14 +379,23 @@ class ProductController extends Controller
     /** @param class-string<Model> $productModel */
     private function categoryOptions(string $productModel): array
     {
-        return $productModel::query()->getModel()->categories()->getRelated()->newQuery()
+        $categories = $productModel::query()->getModel()->categories()->getRelated()->newQuery()
             ->orderBy('name')
             ->get()
-            ->map(fn (Model $category): array => [
-                'label' => $category->getAttribute('name'),
-                'value' => (string) $category->getKey(),
-            ])
-            ->all();
+            ->groupBy(fn (Model $category): string => (string) ($category->getAttribute('parent_id') ?? 'root'));
+
+        $buildTree = function (string $parentId = 'root') use (&$buildTree, $categories): array {
+            return $categories->get($parentId, collect())
+                ->map(fn (Model $category): array => [
+                    'label' => $category->getAttribute('name'),
+                    'value' => (string) $category->getKey(),
+                    'children' => $buildTree((string) $category->getKey()),
+                ])
+                ->values()
+                ->all();
+        };
+
+        return $buildTree();
     }
 
     private function categoryTable(): string

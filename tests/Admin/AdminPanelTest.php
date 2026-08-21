@@ -889,6 +889,12 @@ it('shows a product in the admin panel', function () {
         'slug' => 'lighting',
         'status' => Visibility::Visible,
     ]);
+    $childCategory = Category::query()->create([
+        'name' => 'Desk lamps',
+        'slug' => 'desk-lamps',
+        'parent_id' => $category->id,
+        'status' => Visibility::Visible,
+    ]);
     $product->categories()->attach($category);
     $option = ProductOption::query()->create(['name' => 'Color', 'slug' => 'color', 'type' => ProductOptionType::Text]);
     $black = $option->values()->create(['name' => 'Black', 'slug' => 'black', 'value' => 'black']);
@@ -920,6 +926,9 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.categoryIds.0', (string) $category->id)
         ->assertJsonPath('props.product.optionValueIds.0', (string) $black->id)
         ->assertJsonPath('props.categories.0.label', 'Lighting')
+        ->assertJsonPath('props.categories.0.children.0.label', 'Desk lamps')
+        ->assertJsonPath('props.categories.0.children.0.value', (string) $childCategory->id)
+        ->assertJsonPath('props.categories.0.children.0.children', [])
         ->assertJsonPath('props.productOptions.0.name', 'Color')
         ->assertJsonPath('props.productOptions.0.type', 'text')
         ->assertJsonPath('props.productOptions.0.values.0.name', 'Black')

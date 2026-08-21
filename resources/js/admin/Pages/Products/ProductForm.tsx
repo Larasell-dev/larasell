@@ -10,8 +10,8 @@ import Inset from '../../Components/Inset'
 import Label from '../../Components/Label'
 import NumberInput from '../../Components/NumberInput'
 import RadioGroup from '../../Components/RadioGroup'
-import Select from '../../Components/Select'
 import Toggle from '../../Components/Toggle'
+import CategoryTree, { type CategoryTreeItem } from './CategoryTree'
 
 export type ProductFormData = {
   name: string
@@ -36,7 +36,7 @@ type ProductFormProps = {
   form: InertiaFormProps<ProductFormData>
 }
 
-export type ProductCategory = { label: string; value: string }
+export type ProductCategory = CategoryTreeItem
 export type ProductOptionValue = { id: string; name: string; value: boolean | number | string }
 export type ProductOption = { id: string; name: string; type: 'boolean' | 'number' | 'text'; values: ProductOptionValue[] }
 
@@ -153,16 +153,18 @@ function CategoriesSection() {
       </Card.Header>
       <Card.Body>
         <Field invalid={Boolean(form.errors.category_ids)}>
-          <Label htmlFor="category_ids">Product categories</Label>
-          <Select
-            id="category_ids"
-            items={categories}
-            multiple
-            name="category_ids[]"
-            onValueChange={(value) => form.setData('category_ids', value)}
-            placeholder="No categories"
-            value={form.data.category_ids}
-          />
+          <Inset
+            bottom={cardBodySpacing.paddingBlock}
+            left={cardBodySpacing.paddingInline}
+            right={cardBodySpacing.paddingInline}
+            top={cardBodySpacing.paddingBlock}
+          >
+            <CategoryTree
+              categories={categories}
+              onValueChange={(value) => form.setData('category_ids', value)}
+              value={form.data.category_ids}
+            />
+          </Inset>
           <Error>{form.errors.category_ids}</Error>
         </Field>
       </Card.Body>
