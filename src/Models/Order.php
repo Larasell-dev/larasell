@@ -56,13 +56,13 @@ class Order extends Model
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
-        return $this->hasMany(config('larasell.models.order_item', OrderItem::class));
+        return $this->hasMany(app(ModelRegistry::class)->orderItem->class());
     }
 
     /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
-        return $this->hasMany(config('larasell.models.payment', Payment::class));
+        return $this->hasMany(app(ModelRegistry::class)->payment->class());
     }
 
     public function transitionTo(OrderStatus $status): void

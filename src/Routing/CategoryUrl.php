@@ -3,7 +3,7 @@
 namespace Larasell\Larasell\Routing;
 
 use Illuminate\Database\Eloquent\Model;
-use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class CategoryUrl
 {
@@ -41,16 +41,6 @@ class CategoryUrl
             return null;
         }
 
-        return $this->categoryModel()::query()->find($category->parent_id);
-    }
-
-    /**
-     * @return class-string<Category>
-     */
-    private function categoryModel(): string
-    {
-        return app()->bound('config')
-            ? config('larasell.models.category', Category::class)
-            : Category::class;
+        return app(ModelRegistry::class)->category->query()->find($category->parent_id);
     }
 }

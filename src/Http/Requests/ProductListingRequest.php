@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ModelRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductListingRequest extends FormRequest
@@ -41,7 +40,7 @@ class ProductListingRequest extends FormRequest
             throw new NotFoundHttpException;
         }
 
-        return $this->resolvedCategory = $this->categoryModel()::query()
+        return $this->resolvedCategory = app(ModelRegistry::class)->category->query()
             ->where('slug', $slug)
             ->firstOrFail();
     }
@@ -53,7 +52,7 @@ class ProductListingRequest extends FormRequest
             ->pluck('id')
             ->push($category->id);
 
-        $products = $this->productModel()::query()
+        $products = app(ModelRegistry::class)->product->query()
             ->visible()
             ->whereHas(
                 'categories',
@@ -119,17 +118,4 @@ class ProductListingRequest extends FormRequest
         };
     }
 
-    protected function categoryModel(): string
-    {
-        return app()->bound('config')
-            ? config('larasell.models.category', Category::class)
-            : Category::class;
-    }
-
-    protected function productModel(): string
-    {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
-    }
 }

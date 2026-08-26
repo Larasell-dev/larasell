@@ -9,6 +9,7 @@ use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Models\Cart;
+use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
@@ -19,6 +20,7 @@ class Checkout
 {
     public function __construct(
         private readonly ConnectionInterface $database,
+        private readonly ModelRegistry $models,
         private readonly OrderNumberFactory $orderNumbers,
         private readonly PaymentProvider $payments,
     ) {}
@@ -67,9 +69,7 @@ class Checkout
                     : $total->add($lineTotal);
             }
 
-            /** @var class-string<Order> $orderModel */
-            $orderModel = config('larasell.models.order', Order::class);
-            $order = $orderModel::query()->create([
+            $order = $this->models->order->query()->create([
                 'number' => $this->orderNumbers->generate(),
                 'currency' => $lockedCart->currency,
                 'customer_id' => $data['customer_id'] ?? null,

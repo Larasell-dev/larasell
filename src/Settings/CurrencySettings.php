@@ -3,19 +3,20 @@
 namespace Larasell\Larasell\Settings;
 
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Enums\Currency;
-use Larasell\Larasell\Models\Setting;
+use Larasell\Larasell\Models\ModelRegistry;
 use InvalidArgumentException;
 
 final class CurrencySettings
 {
     private const KEY = 'currencies';
 
+    public function __construct(private readonly ModelRegistry $models) {}
+
     /** @return list<Currency> */
     public function enabled(): array
     {
-        $codes = $this->model()::query()->where('key', self::KEY)->first()?->getAttribute('value')['enabled'] ?? [Currency::USD->value];
+        $codes = $this->models->setting->query()->where('key', self::KEY)->first()?->getAttribute('value')['enabled'] ?? [Currency::USD->value];
 
         $currencies = collect($codes)
             ->map(fn (mixed $code): ?Currency => is_string($code) ? Currency::tryFrom($code) : null)
@@ -46,15 +47,10 @@ final class CurrencySettings
             ->values()
             ->all();
 
-        $this->model()::query()->updateOrCreate(
+        $this->models->setting->query()->updateOrCreate(
             ['key' => self::KEY],
             ['value' => ['enabled' => $enabled]],
         );
     }
 
-    /** @return class-string<Model> */
-    private function model(): string
-    {
-        return config('larasell.models.setting', Setting::class);
-    }
 }

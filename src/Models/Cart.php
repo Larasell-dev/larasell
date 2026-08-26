@@ -153,9 +153,7 @@ class Cart extends Model
 
     protected function cartItemModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.cart_item', CartItem::class)
-            : CartItem::class;
+        return app(ModelRegistry::class)->cartItem->class();
     }
 
     private function assertValidQuantity(int $quantity): void

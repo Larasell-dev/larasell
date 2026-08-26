@@ -7,14 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Inertia\Inertia;
 use Inertia\Response;
-use Larasell\Larasell\Models\Order;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class OrderController extends Controller
 {
     public function __invoke(Request $request): Response
     {
         /** @var class-string<Model> $orderModel */
-        $orderModel = config('larasell.models.order', Order::class);
+        $orderModel = app(ModelRegistry::class)->order->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         $orders = $orderModel::query()
@@ -60,7 +60,7 @@ class OrderController extends Controller
     public function show(Request $request, string $adminOrder): Response
     {
         /** @var class-string<Model> $orderModel */
-        $orderModel = config('larasell.models.order', Order::class);
+        $orderModel = app(ModelRegistry::class)->order->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
         $order = $orderModel::query()->with(['items', 'payments'])->findOrFail($adminOrder);
 

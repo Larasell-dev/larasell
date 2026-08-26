@@ -38,8 +38,6 @@ class ProductOption extends Model
 
     protected function productOptionValueModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product_option_value', ProductOptionValue::class)
-            : ProductOptionValue::class;
+        return app(ModelRegistry::class)->productOptionValue->class();
     }
 }

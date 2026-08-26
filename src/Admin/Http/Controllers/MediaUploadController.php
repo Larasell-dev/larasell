@@ -7,7 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
-use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class MediaUploadController extends Controller
 {
@@ -21,7 +21,7 @@ class MediaUploadController extends Controller
 
         try {
             /** @var class-string<Model> $imageModel */
-            $imageModel = config('larasell.models.product_image', ProductImage::class);
+            $imageModel = app(ModelRegistry::class)->productImage->class();
             $imageModel::query()->create([
                 'path' => $path,
                 'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),

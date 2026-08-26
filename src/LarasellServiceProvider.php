@@ -5,6 +5,7 @@ namespace Larasell\Larasell;
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PaymentProvider;
+use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\FakePaymentProvider;
 use Larasell\Larasell\Shipping\ShippingManager;
@@ -16,6 +17,7 @@ class LarasellServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
 
         $this->app->singleton(ShippingManager::class);
+        $this->app->singleton(ModelRegistry::class);
 
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)

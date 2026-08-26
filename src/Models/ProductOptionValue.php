@@ -75,16 +75,12 @@ class ProductOptionValue extends Model
 
     protected function productOptionModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product_option', ProductOption::class)
-            : ProductOption::class;
+        return app(ModelRegistry::class)->productOption->class();
     }
 
     protected function productModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
+        return app(ModelRegistry::class)->product->class();
     }
 
     private function assertValueMatchesOptionType(): void

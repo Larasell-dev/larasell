@@ -49,15 +49,11 @@ class CartItem extends Model
 
     protected function cartModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.cart', Cart::class)
-            : Cart::class;
+        return app(ModelRegistry::class)->cart->class();
     }
 
     protected function productModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
+        return app(ModelRegistry::class)->product->class();
     }
 }

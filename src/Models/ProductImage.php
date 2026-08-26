@@ -45,8 +45,6 @@ class ProductImage extends Model
 
     protected function productModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
+        return app(ModelRegistry::class)->product->class();
     }
 }

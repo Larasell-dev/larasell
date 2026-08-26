@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Enums\ProductOptionType;
-use Larasell\Larasell\Models\ProductOption;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class ProductOptionController extends Controller
 {
@@ -23,7 +23,7 @@ class ProductOptionController extends Controller
     public function index(Request $request): Response
     {
         /** @var class-string<Model> $productOptionModel */
-        $productOptionModel = config('larasell.models.product_option', ProductOption::class);
+        $productOptionModel = app(ModelRegistry::class)->productOption->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         $productOptions = $productOptionModel::query()
@@ -91,7 +91,7 @@ class ProductOptionController extends Controller
         $data = $this->validatedData($request);
 
         /** @var class-string<Model> $productOptionModel */
-        $productOptionModel = config('larasell.models.product_option', ProductOption::class);
+        $productOptionModel = app(ModelRegistry::class)->productOption->class();
 
         $productOption = DB::transaction(function () use ($data, $productOptionModel): Model {
             $productOption = $productOptionModel::query()->create([
@@ -111,7 +111,7 @@ class ProductOptionController extends Controller
     public function show(Request $request, string $adminProductOption): Response
     {
         /** @var class-string<Model> $productOptionModel */
-        $productOptionModel = config('larasell.models.product_option', ProductOption::class);
+        $productOptionModel = app(ModelRegistry::class)->productOption->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
         $productOption = $productOptionModel::query()->with(['values' => fn ($query) => $query->orderBy('position')])->findOrFail($adminProductOption);
 
@@ -142,7 +142,7 @@ class ProductOptionController extends Controller
     public function update(Request $request, string $adminProductOption): RedirectResponse
     {
         /** @var class-string<Model> $productOptionModel */
-        $productOptionModel = config('larasell.models.product_option', ProductOption::class);
+        $productOptionModel = app(ModelRegistry::class)->productOption->class();
         $productOption = $productOptionModel::query()->findOrFail($adminProductOption);
         $data = $this->validatedData($request, $productOption);
 
@@ -159,7 +159,7 @@ class ProductOptionController extends Controller
     public function destroy(string $adminProductOption): RedirectResponse
     {
         /** @var class-string<Model> $productOptionModel */
-        $productOptionModel = config('larasell.models.product_option', ProductOption::class);
+        $productOptionModel = app(ModelRegistry::class)->productOption->class();
         $productOptionModel::query()->findOrFail($adminProductOption)->delete();
 
         return redirect()->route('larasell.admin.product-options.index');

@@ -4,7 +4,7 @@ namespace Larasell\Larasell\Http\Requests;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class ProductDetailRequest extends FormRequest
 {
@@ -32,15 +32,9 @@ class ProductDetailRequest extends FormRequest
             return $this->resolvedProduct = $product;
         }
 
-        return $this->resolvedProduct = $this->productModel()::query()
+        return $this->resolvedProduct = app(ModelRegistry::class)->product->query()
             ->where('slug', $product)
             ->firstOrFail();
     }
 
-    protected function productModel(): string
-    {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
-    }
 }

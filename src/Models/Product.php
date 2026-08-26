@@ -148,22 +148,16 @@ class Product extends Model
 
     protected function categoryModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.category', Category::class)
-            : Category::class;
+        return app(ModelRegistry::class)->category->class();
     }
 
     protected function productImageModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product_image', ProductImage::class)
-            : ProductImage::class;
+        return app(ModelRegistry::class)->productImage->class();
     }
 
     protected function productOptionValueModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product_option_value', ProductOptionValue::class)
-            : ProductOptionValue::class;
+        return app(ModelRegistry::class)->productOptionValue->class();
     }
 }

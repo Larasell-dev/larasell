@@ -96,21 +96,17 @@ class Category extends Model
 
     protected function categoryModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.category', self::class)
-            : self::class;
+        return app(ModelRegistry::class)->category->class();
     }
 
     protected function productModel(): string
     {
-        return app()->bound('config')
-            ? config('larasell.models.product', Product::class)
-            : Product::class;
+        return app(ModelRegistry::class)->product->class();
     }
 
     protected function newRelatedCategoryQuery(): Builder
     {
-        return (new ($this->categoryModel()))->newQuery();
+        return app(ModelRegistry::class)->category->query();
     }
 
     /**

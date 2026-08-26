@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Price;
 
 class ProductController extends Controller
@@ -23,7 +23,7 @@ class ProductController extends Controller
     public function index(Request $request): Response
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         $products = $productModel::query()
@@ -86,7 +86,7 @@ class ProductController extends Controller
     public function create(Request $request): Response
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         return Inertia::render('Products/Create', [
@@ -110,7 +110,7 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
         $data = $this->validatedProductData($request);
         $data['slug'] = $this->uniqueSlug($productModel, $data['name']);
         $categoryIds = $data['category_ids'];
@@ -131,7 +131,7 @@ class ProductController extends Controller
     public function show(Request $request, string $adminProduct): Response
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
         $product = $productModel::query()->findOrFail($adminProduct);
 
@@ -332,7 +332,7 @@ class ProductController extends Controller
     private function findProduct(string $id): Model
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->findOrFail($id);
     }
@@ -401,7 +401,7 @@ class ProductController extends Controller
     private function categoryTable(): string
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel()->categories()->getRelated()->getTable();
     }
@@ -409,7 +409,7 @@ class ProductController extends Controller
     private function categoryKeyName(): string
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel()->categories()->getRelated()->getKeyName();
     }
@@ -450,7 +450,7 @@ class ProductController extends Controller
     private function productModelInstance(): Model
     {
         /** @var class-string<Model> $productModel */
-        $productModel = config('larasell.models.product', Product::class);
+        $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel();
     }

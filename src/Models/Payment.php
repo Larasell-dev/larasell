@@ -23,6 +23,6 @@ class Payment extends Model
     /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(config('larasell.models.order', Order::class));
+        return $this->belongsTo(app(ModelRegistry::class)->order->class());
     }
 }

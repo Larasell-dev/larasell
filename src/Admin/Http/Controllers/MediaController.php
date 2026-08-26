@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class MediaController extends Controller
 {
     public function index(Request $request): Response
     {
         /** @var class-string<Model> $imageModel */
-        $imageModel = config('larasell.models.product_image', ProductImage::class);
+        $imageModel = app(ModelRegistry::class)->productImage->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
         $images = $imageModel::query()
@@ -64,7 +64,7 @@ class MediaController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         /** @var class-string<Model> $imageModel */
-        $imageModel = config('larasell.models.product_image', ProductImage::class);
+        $imageModel = app(ModelRegistry::class)->productImage->class();
         $ids = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['required', 'integer', 'distinct'],
