@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
@@ -11,6 +12,7 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Payments\FakePaymentProvider;
 use Larasell\Larasell\Payments\PaymentRequest;
+use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
 
 uses(RefreshDatabase::class);
@@ -113,6 +115,31 @@ it('records declined payments and marks the order as failed', function () {
     expect($order->status)->toBe(OrderStatus::PaymentFailed)
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Failed)
         ->and($order->payments->first()->failure_message)->toBe('The fake payment was declined.');
+});
+
+it('keeps an order pending when payment is deferred', function () {
+    app()->bind(PaymentProvider::class, fn () => new class implements PaymentProvider
+    {
+        public function pay(PaymentRequest $request): PaymentResult
+        {
+            return PaymentResult::pending();
+        }
+    });
+
+    $product = Product::query()->create([
+        'slug' => 'cash-coffee',
+        'name' => 'Cash coffee',
+        'price' => Price::of(500),
+        'allow_backorders' => true,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($product);
+
+    $order = app(Checkout::class)->create($cart, checkoutData());
+
+    expect($order->status)->toBe(OrderStatus::PendingPayment)
+        ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending);
 });
 
 it('prevents fake payments outside local and testing environments', function () {

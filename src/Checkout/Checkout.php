@@ -118,12 +118,16 @@ class Checkout
         $order->payments()->create([
             'provider' => $this->payments::class,
             'reference' => $result->reference,
-            'status' => $result->successful ? PaymentStatus::Succeeded : PaymentStatus::Failed,
+            'status' => $result->status === PaymentStatus::Pending
+                ? PaymentStatus::Pending
+                : ($result->successful ? PaymentStatus::Succeeded : PaymentStatus::Failed),
             'amount' => $order->total,
             'failure_message' => $result->failureMessage,
         ]);
 
-        $order->transitionTo($result->successful ? OrderStatus::Paid : OrderStatus::PaymentFailed);
+        if ($result->status !== PaymentStatus::Pending) {
+            $order->transitionTo($result->successful ? OrderStatus::Paid : OrderStatus::PaymentFailed);
+        }
 
         return $order->load(['items', 'payments']);
     }
