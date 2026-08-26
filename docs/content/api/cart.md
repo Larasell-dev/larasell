@@ -75,6 +75,54 @@ $formattedTotal = $total === null ? null : Price::format($total, $cart->currency
 
 Empty carts return `null` from `total()`.
 
+## Shipping methods
+
+Shipping methods receive the cart and may register one or more options. Each
+option needs a unique handle, a customer-facing name, and a price.
+
+```php
+use Larasell\Larasell\Models\Cart;
+use Larasell\Larasell\Price;
+use Larasell\Larasell\Shipping\ShippingMethod;
+
+class ParcelShipping extends ShippingMethod
+{
+    public function handle(Cart $cart): void
+    {
+        $this->register('standard', 'Standard shipping', Price::of(500));
+
+        if ($cart->quantity() < 10) {
+            $this->register('express', 'Express shipping', Price::of(1200));
+        }
+    }
+}
+```
+
+Register the method in your application's service provider:
+
+```php
+use Larasell\Larasell\Shipping\ShippingManager;
+
+public function boot(ShippingManager $shipping): void
+{
+    $shipping->register(ParcelShipping::class);
+}
+```
+
+Read the available options and persist the customer's selection on the cart:
+
+```php
+$options = $cart->shippingOptions();
+$cart->selectShippingOption('express');
+
+$cart->shippingOption(); // The selected ShippingOption
+$cart->subtotal();       // Products only
+$cart->total();          // Products and selected shipping
+```
+
+The selected option is resolved again whenever totals are calculated. Checkout
+stores a snapshot of its method, handle, name, and price on the order.
+
 ## Stock and backorders
 
 Products allow backorders by default. When a product has

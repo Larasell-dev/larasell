@@ -26,6 +26,10 @@ use Larasell\Larasell\Price;
  * @property OrderStatus $status
  * @property Price $subtotal
  * @property Price $total
+ * @property string|null $shipping_method
+ * @property string|null $shipping_option
+ * @property string|null $shipping_option_name
+ * @property Price|null $shipping_price
  * @property Collection<int, OrderItem> $items
  * @property Collection<int, Payment> $payments
  */
@@ -45,6 +49,7 @@ class Order extends Model
         'status' => OrderStatus::class,
         'subtotal' => PriceCast::class,
         'total' => PriceCast::class,
+        'shipping_price' => PriceCast::class,
     ];
 
     /** @return HasMany<OrderItem, $this> */

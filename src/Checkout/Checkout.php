@@ -42,6 +42,7 @@ class Checkout
             /** @var Cart $lockedCart */
             $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
             $items = $lockedCart->items()->with('product')->lockForUpdate()->get();
+            $shippingOption = $lockedCart->shippingOption();
 
             if ($items->isEmpty()) {
                 throw new InvalidArgumentException('Cannot checkout an empty cart.');
@@ -73,7 +74,11 @@ class Checkout
                 'shipping_address' => $data['shipping_address'],
                 'status' => OrderStatus::PendingPayment,
                 'subtotal' => $total,
-                'total' => $total,
+                'shipping_method' => $shippingOption?->method,
+                'shipping_option' => $shippingOption?->handle,
+                'shipping_option_name' => $shippingOption?->name,
+                ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
+                'total' => $shippingOption === null ? $total : $total->add($shippingOption->price),
             ]);
 
             foreach ($items as $item) {

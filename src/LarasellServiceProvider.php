@@ -7,12 +7,15 @@ use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\FakePaymentProvider;
+use Larasell\Larasell\Shipping\ShippingManager;
 
 class LarasellServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
+
+        $this->app->singleton(ShippingManager::class);
 
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)

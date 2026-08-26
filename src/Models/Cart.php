@@ -9,12 +9,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Shipping\ShippingManager;
+use Larasell\Larasell\Shipping\ShippingOption;
 
 /**
  * @property int $id
  * @property Currency $currency
  * @property string|null $session_id
  * @property int|null $user_id
+ * @property string|null $shipping_option
  *
  * @property Collection<int, CartItem> $items
  */
@@ -84,7 +87,7 @@ class Cart extends Model
         return (int) $this->items()->sum('quantity');
     }
 
-    public function total(): ?Price
+    public function subtotal(): ?Price
     {
         $items = $this->items()->with('product')->get();
 
@@ -99,6 +102,53 @@ class Cart extends Model
         }
 
         return $total;
+    }
+
+    /** @return \Illuminate\Support\Collection<int, ShippingOption> */
+    public function shippingOptions(): \Illuminate\Support\Collection
+    {
+        return app(ShippingManager::class)->options($this);
+    }
+
+    public function selectShippingOption(ShippingOption|string $option): self
+    {
+        $handle = $option instanceof ShippingOption ? $option->handle : $option;
+
+        if ($this->shippingOptions()->firstWhere('handle', $handle) === null) {
+            throw new InvalidArgumentException("Shipping option [{$handle}] is not available for this cart.");
+        }
+
+        $this->update(['shipping_option' => $handle]);
+
+        return $this;
+    }
+
+    public function shippingOption(): ?ShippingOption
+    {
+        if ($this->shipping_option === null) {
+            return null;
+        }
+
+        $option = $this->shippingOptions()->firstWhere('handle', $this->shipping_option);
+
+        if ($option === null) {
+            throw new InvalidArgumentException("Selected shipping option [{$this->shipping_option}] is no longer available for this cart.");
+        }
+
+        return $option;
+    }
+
+    public function total(): ?Price
+    {
+        $subtotal = $this->subtotal();
+
+        if ($subtotal === null) {
+            return null;
+        }
+
+        $shippingOption = $this->shippingOption();
+
+        return $shippingOption === null ? $subtotal : $subtotal->add($shippingOption->price);
     }
 
     protected function cartItemModel(): string
