@@ -27,22 +27,27 @@ class Checkout
      * @param array{
      *     customer_email: string,
      *     customer_name: string,
-     *     billing_address: Address|array<string, mixed>,
-     *     shipping_address: Address|array<string, mixed>,
+     *     customer_phone?: string|null,
+     *     billing_address?: Address|array<string, mixed>|null,
+     *     shipping_address?: Address|array<string, mixed>|null,
      *     customer_id?: int|null
      * } $data
      */
     public function create(Cart $cart, array $data): Order
     {
         $this->validate($data);
-        $data['billing_address'] = $this->address($data['billing_address']);
-        $data['shipping_address'] = $this->address($data['shipping_address']);
+        $data['billing_address'] = $this->address($data['billing_address'] ?? null);
+        $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
 
         $order = $this->database->transaction(function () use ($cart, $data): Order {
             /** @var Cart $lockedCart */
             $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
             $items = $lockedCart->items()->with('product')->lockForUpdate()->get();
             $shippingOption = $lockedCart->shippingOption();
+
+            if ($shippingOption?->requiresAddress && $data['shipping_address'] === null) {
+                throw new InvalidArgumentException('A shipping_address is required for the selected shipping option.');
+            }
 
             if ($items->isEmpty()) {
                 throw new InvalidArgumentException('Cannot checkout an empty cart.');
@@ -149,8 +154,12 @@ class Checkout
         }
 
         foreach (['billing_address', 'shipping_address'] as $type) {
-            if (! isset($data[$type]) || (! is_array($data[$type]) && ! $data[$type] instanceof Address)) {
-                throw new InvalidArgumentException("A {$type} is required.");
+            if (! isset($data[$type])) {
+                continue;
+            }
+
+            if (! is_array($data[$type]) && ! $data[$type] instanceof Address) {
+                throw new InvalidArgumentException("The {$type} must be an address or null.");
             }
 
             $this->address($data[$type]);
@@ -161,9 +170,13 @@ class Checkout
         }
     }
 
-    /** @param Address|array<string, mixed> $address */
-    private function address(Address|array $address): Address
+    /** @param Address|array<string, mixed>|null $address */
+    private function address(Address|array|null $address): ?Address
     {
+        if ($address === null) {
+            return null;
+        }
+
         return $address instanceof Address ? $address : Address::fromArray($address);
     }
 }

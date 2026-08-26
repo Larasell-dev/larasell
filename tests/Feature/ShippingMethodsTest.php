@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
@@ -25,6 +25,14 @@ class TestShippingMethod extends ShippingMethod
     }
 }
 
+class TestPickupMethod extends ShippingMethod
+{
+    public function handle(Cart $cart): void
+    {
+        $this->register('pickup', 'Pickup', Price::of(0), requiresAddress: false);
+    }
+}
+
 beforeEach(function () {
     app(ShippingManager::class)->register(TestShippingMethod::class);
 });
@@ -40,6 +48,44 @@ it('gets multiple shipping options with access to the cart', function () {
         ->and($options->first())->toBeInstanceOf(ShippingOption::class)
         ->and($options->pluck('handle')->all())->toBe(['standard', 'express'])
         ->and($options->first()->price->amount())->toBe('500');
+});
+
+it('exposes whether a shipping option requires an address', function () {
+    $cart = Cart::create(['currency' => Currency::EUR]);
+    app(ShippingManager::class)->register(TestPickupMethod::class);
+
+    $options = $cart->shippingOptions()->keyBy('handle');
+
+    expect($options['standard']->requiresAddress)->toBeTrue()
+        ->and($options['standard']->toArray()['requires_address'])->toBeTrue()
+        ->and($options['pickup']->requiresAddress)->toBeFalse()
+        ->and($options['pickup']->toArray()['requires_address'])->toBeFalse();
+});
+
+it('requires a shipping address when the selected option requires one', function () {
+    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart->add(shippingProduct());
+    $cart->selectShippingOption('standard');
+    $data = shippingCheckoutData();
+    unset($data['shipping_address']);
+
+    expect(fn () => app(Checkout::class)->create($cart, $data))
+        ->toThrow(InvalidArgumentException::class, 'A shipping_address is required for the selected shipping option.');
+});
+
+it('checks out without addresses when the selected option does not require one', function () {
+    app(ShippingManager::class)->register(TestPickupMethod::class);
+    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart->add(shippingProduct());
+    $cart->selectShippingOption('pickup');
+
+    $order = app(Checkout::class)->create($cart, [
+        'customer_email' => 'buyer@example.com',
+        'customer_name' => 'Buyer Name',
+    ]);
+
+    expect($order->billing_address)->toBeNull()
+        ->and($order->shipping_address)->toBeNull();
 });
 
 it('persists a selected shipping option and includes it in the cart total', function () {

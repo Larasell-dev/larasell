@@ -23,8 +23,12 @@ abstract class ShippingMethod
         return $this->options;
     }
 
-    final protected function register(string $handle, string $name, Price $price): ShippingOption
-    {
+    final protected function register(
+        string $handle,
+        string $name,
+        Price $price,
+        bool $requiresAddress = true,
+    ): ShippingOption {
         if (trim($handle) === '') {
             throw new InvalidArgumentException('A shipping option handle is required.');
         }
@@ -33,7 +37,7 @@ abstract class ShippingMethod
             throw new InvalidArgumentException('A shipping option name is required.');
         }
 
-        $option = new ShippingOption($handle, $name, $price, static::class);
+        $option = new ShippingOption($handle, $name, $price, static::class, $requiresAddress);
         $this->options->push($option);
 
         return $option;

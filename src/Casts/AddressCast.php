@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 
-/** @implements CastsAttributes<Address, Address|array<string, mixed>> */
+/** @implements CastsAttributes<Address|null, Address|array<string, mixed>|null> */
 class AddressCast implements CastsAttributes
 {
-    public function get(Model $model, string $key, mixed $value, array $attributes): Address
+    public function get(Model $model, string $key, mixed $value, array $attributes): ?Address
     {
+        if ($value === null) {
+            return null;
+        }
+
         $address = json_decode($value, true);
 
         if (! is_array($address)) {
@@ -21,8 +25,12 @@ class AddressCast implements CastsAttributes
         return Address::fromArray($address);
     }
 
-    public function set(Model $model, string $key, mixed $value, array $attributes): string
+    public function set(Model $model, string $key, mixed $value, array $attributes): ?string
     {
+        if ($value === null) {
+            return null;
+        }
+
         if (is_array($value)) {
             $value = Address::fromArray($value);
         }

@@ -20,7 +20,7 @@ type Address = {
 }
 
 type Order = {
-  billingAddress: Address
+  billingAddress: Address | null
   createdAt: string
   currency: string
   customerEmail: string
@@ -44,7 +44,7 @@ type Order = {
     reference: string | null
     status: 'succeeded' | 'failed'
   }>
-  shippingAddress: Address
+  shippingAddress: Address | null
   status: 'pending_payment' | 'paid' | 'payment_failed' | 'fulfilled' | 'cancelled'
   subtotal: Price
   total: Price
@@ -99,8 +99,8 @@ export default function OrderShow({ order, ...layoutProps }: Props) {
                   <Detail label="Email" value={order.customerEmail} />
                 </dl>
                 <div {...stylex.props(styles.addressGrid)}>
-                  <AddressBlock address={order.shippingAddress} title="Shipping address" />
-                  <AddressBlock address={order.billingAddress} title="Billing address" />
+                  {order.shippingAddress && <AddressBlock address={order.shippingAddress} title="Shipping address" />}
+                  {order.billingAddress && <AddressBlock address={order.billingAddress} title="Billing address" />}
                 </div>
               </Card.Body>
             </Card>

@@ -10,8 +10,8 @@ use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\PriceCast;
-use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Price;
 
 /**
@@ -21,8 +21,9 @@ use Larasell\Larasell\Price;
  * @property int|null $customer_id
  * @property string $customer_email
  * @property string $customer_name
- * @property Address $billing_address
- * @property Address $shipping_address
+ * @property string|null $customer_phone
+ * @property Address|null $billing_address
+ * @property Address|null $shipping_address
  * @property OrderStatus $status
  * @property Price $subtotal
  * @property Price $total

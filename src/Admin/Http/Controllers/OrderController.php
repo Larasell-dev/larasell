@@ -85,8 +85,8 @@ class OrderController extends Controller
                 'status' => $order->getAttribute('status')->value,
                 'subtotal' => $order->getAttribute('subtotal')->toArray(),
                 'total' => $order->getAttribute('total')->toArray(),
-                'billingAddress' => $order->getAttribute('billing_address')->toArray(),
-                'shippingAddress' => $order->getAttribute('shipping_address')->toArray(),
+                'billingAddress' => $order->getAttribute('billing_address')?->toArray(),
+                'shippingAddress' => $order->getAttribute('shipping_address')?->toArray(),
                 'createdAt' => $order->getAttribute('created_at')->toIso8601String(),
                 'items' => $order->getRelation('items')->map(fn (Model $item): array => [
                     'id' => $item->getKey(),
