@@ -14,9 +14,9 @@ export default function ProductCreate({ categories, productOptions, productStore
   const form = useForm<ProductFormData>({
     name: '',
     description: '',
-    stock: null as number | null,
-    min_quantity: null as number | null,
-    max_quantity: null as number | null,
+    stock: null,
+    min_quantity: null,
+    max_quantity: null,
     allow_backorders: true,
     status: 'visible' as 'visible' | 'hidden',
     price_amount: 0,
