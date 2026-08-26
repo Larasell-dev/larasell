@@ -70,6 +70,7 @@ class Checkout
                 'customer_id' => $data['customer_id'] ?? null,
                 'customer_email' => $data['customer_email'],
                 'customer_name' => $data['customer_name'],
+                'customer_phone' => $data['customer_phone'] ?? null,
                 'billing_address' => $data['billing_address'],
                 'shipping_address' => $data['shipping_address'],
                 'status' => OrderStatus::PendingPayment,
@@ -141,6 +142,10 @@ class Checkout
 
         if (! isset($data['customer_name']) || trim((string) $data['customer_name']) === '') {
             throw new InvalidArgumentException('A customer name is required.');
+        }
+
+        if (isset($data['customer_phone']) && ! is_string($data['customer_phone'])) {
+            throw new InvalidArgumentException('The customer phone must be a string or null.');
         }
 
         foreach (['billing_address', 'shipping_address'] as $type) {
