@@ -8,7 +8,7 @@ description: Install Larasell in a Laravel application.
 Install Larasell with Composer:
 
 ```bash
-composer require larasell/larasell
+composer require larasell-dev/larasell
 ```
 
 Larasell registers its service provider through Laravel package
