@@ -90,7 +90,7 @@ class Checkout
             foreach ($items as $item) {
                 $order->items()->create([
                     'product_id' => $item->product->getKey(),
-                    'product_name' => $item->product->name,
+                    'product_name' => $item->product->name->get(),
                     'product_slug' => $item->product->slug,
                     'unit_price' => $item->product->price,
                     'quantity' => $item->quantity,

@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ use Inertia\Response;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Translatable;
 
 class ProductController extends Controller
 {
@@ -32,7 +34,7 @@ class ProductController extends Controller
             ->withQueryString()
             ->through(fn (Model $product): array => [
                 'id' => $product->getKey(),
-                'name' => $product->getAttribute('name'),
+                'name' => $this->productName($product)->get(),
                 'price' => $product->getAttribute('price')->toArray(),
                 'stock' => $product->getAttribute('stock'),
                 'status' => $product->getAttribute('status')->value,
@@ -149,7 +151,7 @@ class ProductController extends Controller
             ],
             'product' => [
                 'id' => $product->getKey(),
-                'name' => $product->getAttribute('name'),
+                'name' => $this->productName($product)->get(),
                 'slug' => $product->getAttribute('slug'),
                 'description' => $product->getAttribute('description'),
                 'stock' => $product->getAttribute('stock'),
@@ -221,6 +223,7 @@ class ProductController extends Controller
         }
 
         $data['price'] = Price::of($data['price_amount']);
+        $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
         unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids'], $data['option_value_ids']);
 
         DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $optionValueIds, $product): void {
@@ -305,11 +308,13 @@ class ProductController extends Controller
     public function updateGeneral(Request $request, string $adminProduct): RedirectResponse
     {
         $product = $this->findProduct($adminProduct);
-        $product->fill($request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
             'description' => ['nullable', 'string'],
-        ]))->save();
+        ]);
+        $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
+        $product->fill($data)->save();
 
         return back();
     }
@@ -335,6 +340,17 @@ class ProductController extends Controller
         $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->findOrFail($id);
+    }
+
+    private function productName(Model $product): Translatable
+    {
+        $name = $product->getAttribute('name');
+
+        if (! $name instanceof Translatable) {
+            throw new \LogicException('Product models must cast the name attribute to Translatable.');
+        }
+
+        return $name;
     }
 
     /** @param class-string<Model> $model */

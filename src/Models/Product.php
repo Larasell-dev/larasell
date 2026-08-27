@@ -10,13 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 use Larasell\Larasell\Casts\PriceCast;
+use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Translatable;
 
 /**
  * @property int $id
  * @property string $slug
- * @property string $name
+ * @property Translatable $name
  * @property string|null $description
  * @property Price $price
  * @property int|null $stock
@@ -37,6 +39,7 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'name' => TranslatableCast::class,
         'price' => PriceCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',

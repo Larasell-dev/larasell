@@ -549,8 +549,8 @@ it('creates a product in the admin panel', function () {
     $product = Product::query()->where('slug', 'desk-lamp-2')->sole();
 
     $response->assertRedirect(route('larasell.admin.products.show', $product));
+    expect($product->name->get())->toBe('Desk lamp');
     expect($product)
-        ->name->toBe('Desk lamp')
         ->description->toBe('A focused task light.')
         ->stock->toBe(12)
         ->min_quantity->toBe(2)
@@ -1037,8 +1037,9 @@ it('updates all product settings in the admin panel', function () {
         ])
         ->assertRedirect();
 
-    expect($product->refresh())
-        ->name->toBe('Reading lamp')
+    $product->refresh();
+    expect($product->name->get())->toBe('Reading lamp');
+    expect($product)
         ->slug->toBe('reading-lamp')
         ->description->toBe('Warm, adjustable light.')
         ->stock->toBe(20)
@@ -1074,8 +1075,9 @@ it('updates product general information in the admin panel', function () {
         ])
         ->assertRedirect();
 
-    expect($product->refresh())
-        ->name->toBe('Reading lamp')
+    $product->refresh();
+    expect($product->name->get())->toBe('Reading lamp');
+    expect($product)
         ->slug->toBe('reading-lamp')
         ->description->toBe('Warm, adjustable light.');
 });
