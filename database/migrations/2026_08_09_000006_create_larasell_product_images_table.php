@@ -18,13 +18,17 @@ return new class extends Migration
 
         Schema::create('larasell_product_product_image', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('larasell_products')->cascadeOnDelete();
-            $table->foreignId('product_image_id')->constrained('larasell_product_images')->cascadeOnDelete();
+            $table->foreignId('product_id')
+                ->constrained('larasell_products', indexName: 'product_image_product_fk')
+                ->cascadeOnDelete();
+            $table->foreignId('product_image_id')
+                ->constrained('larasell_product_images', indexName: 'product_image_image_fk')
+                ->cascadeOnDelete();
             $table->unsignedInteger('position')->nullable();
             $table->timestamps();
 
-            $table->unique(['product_id', 'product_image_id']);
-            $table->index(['product_id', 'position']);
+            $table->unique(['product_id', 'product_image_id'], 'product_image_unique');
+            $table->index(['product_id', 'position'], 'product_image_position_idx');
         });
     }
 

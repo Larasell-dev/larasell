@@ -31,11 +31,15 @@ return new class extends Migration
 
         Schema::create('larasell_product_product_option_value', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('larasell_products')->cascadeOnDelete();
-            $table->foreignId('product_option_value_id')->constrained('larasell_product_option_values')->cascadeOnDelete();
+            $table->foreignId('product_id')
+                ->constrained('larasell_products', indexName: 'product_option_value_product_fk')
+                ->cascadeOnDelete();
+            $table->foreignId('product_option_value_id')
+                ->constrained('larasell_product_option_values', indexName: 'product_option_value_value_fk')
+                ->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['product_id', 'product_option_value_id']);
+            $table->unique(['product_id', 'product_option_value_id'], 'product_option_value_unique');
         });
     }
 
