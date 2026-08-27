@@ -3,7 +3,6 @@
   "description": "A e-commerce package built on top of Laravel",
   "type": "library",
   "license": "MIT",
-  "version": "1.0.0",	
   "authors": [
     {
       "name": "Nils Haberkamp",
