@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/Larasell-dev/larasell/compare/v1.0.1...v1.0.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* make fk and index names shorter ([1ab721f](https://github.com/Larasell-dev/larasell/commit/1ab721f655678290074f25f7a0186ce6661a8827))
+
 ## [1.0.1](https://github.com/Larasell-dev/larasell/compare/larasell-v1.0.0...larasell-v1.0.1) (2026-08-27)
 
 
