@@ -29,7 +29,8 @@
   },
   "require-dev": {
     "orchestra/testbench": "^11.0",
-    "pestphp/pest": "^5.1"
+    "pestphp/pest": "^5.1",
+    "laravel/pint": "^1.0"
   },
   "require": {
     "ext-bcmath": "*",
@@ -37,7 +38,9 @@
     "inertiajs/inertia-laravel": "^3.0"
   },
   "scripts": {
-    "test": "pest tests/Feature tests/Admin"
+    "pest": "pest tests/Unit tests/Feature tests/Admin",
+    "pint": "pint",
+    "test": "@pest"
   },
   "config": {
     "allow-plugins": {
