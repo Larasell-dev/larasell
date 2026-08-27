@@ -3,9 +3,9 @@
 namespace Larasell\Larasell\Settings;
 
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\ModelRegistry;
-use InvalidArgumentException;
 
 final class CurrencySettings
 {
@@ -52,5 +52,4 @@ final class CurrencySettings
             ['value' => ['enabled' => $enabled]],
         );
     }
-
 }

@@ -1,16 +1,16 @@
 <?php
 
-use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
+use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Models\Order;
+use Larasell\Larasell\Models\OrderItem;
+use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Models\ProductOptionValue;
 use Larasell\Larasell\Models\Setting;
-use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\OrderItem;
-use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\FakePaymentProvider;
 

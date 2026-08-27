@@ -1,14 +1,14 @@
 <?php
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 use Larasell\Larasell\Admin\Models\AdminUser;
 use Larasell\Larasell\Enums\Currency;
-use Larasell\Larasell\Enums\ProductOptionType;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\ProductOptionType;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Order;
@@ -17,6 +17,7 @@ use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
+use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\Price;
 
 function orderAttributes(array $overrides = []): array
@@ -528,7 +529,7 @@ it('creates a product in the admin panel', function () {
     ]);
     $option = ProductOption::query()->create(['name' => 'Size', 'slug' => 'size', 'type' => ProductOptionType::Text]);
     $large = $option->values()->create(['name' => 'Large', 'slug' => 'large', 'value' => 'large']);
-    \Larasell\Larasell\Models\Setting::query()->where('key', 'currencies')->update([
+    Setting::query()->where('key', 'currencies')->update([
         'value' => ['enabled' => ['USD', 'EUR']],
     ]);
 

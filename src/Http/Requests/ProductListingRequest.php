@@ -117,5 +117,4 @@ class ProductListingRequest extends FormRequest
             default => "CAST(json_extract({$wrappedColumn}, '$.amount') AS INTEGER)",
         };
     }
-
 }

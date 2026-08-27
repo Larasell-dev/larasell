@@ -23,7 +23,9 @@ class OrderItem extends Model
     use HasFactory;
 
     protected $table = 'larasell_order_items';
+
     protected $guarded = [];
+
     protected $casts = [
         'product_id' => 'integer',
         'quantity' => 'integer',

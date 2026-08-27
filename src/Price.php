@@ -4,9 +4,9 @@ namespace Larasell\Larasell;
 
 use InvalidArgumentException;
 use JsonSerializable;
+use Larasell\Larasell\Enums\Currency as LarasellCurrency;
 use NumberFormatter;
 use RuntimeException;
-use Larasell\Larasell\Enums\Currency as LarasellCurrency;
 
 final readonly class Price implements JsonSerializable
 {
@@ -25,7 +25,7 @@ final readonly class Price implements JsonSerializable
     }
 
     /**
-     * @param array{amount: int|string} $value
+     * @param  array{amount: int|string}  $value
      */
     public static function fromArray(array $value): self
     {
@@ -93,5 +93,4 @@ final readonly class Price implements JsonSerializable
 
         return $negative && $normalized !== '0' ? '-'.$normalized : $normalized;
     }
-
 }

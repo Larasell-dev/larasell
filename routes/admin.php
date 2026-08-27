@@ -2,16 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Admin\Http\Authenticate as AdminAuthenticate;
+use Larasell\Larasell\Admin\Http\Controllers\CurrencySettingsController;
 use Larasell\Larasell\Admin\Http\Controllers\HomeController;
 use Larasell\Larasell\Admin\Http\Controllers\LoginController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaUploadController;
+use Larasell\Larasell\Admin\Http\Controllers\MemberController;
 use Larasell\Larasell\Admin\Http\Controllers\OrderController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
-use Larasell\Larasell\Admin\Http\Controllers\MemberController;
 use Larasell\Larasell\Admin\Http\Controllers\SettingsController;
-use Larasell\Larasell\Admin\Http\Controllers\CurrencySettingsController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
 
 $guard = config('larasell-admin.guard', 'larasell-admin');

@@ -36,5 +36,4 @@ class ProductDetailRequest extends FormRequest
             ->where('slug', $product)
             ->firstOrFail();
     }
-
 }
