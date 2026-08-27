@@ -1,6 +1,6 @@
 {
   "name": "larasell-dev/larasell",
-  "description": "A e-commerce package built on top of Laravel",
+  "description": "An e-commerce package built on top of Laravel",
   "type": "library",
   "license": "MIT",
   "authors": [
