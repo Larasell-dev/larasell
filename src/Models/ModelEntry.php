@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 final readonly class ModelEntry
 {
     /**
-     * @param class-string<TModel> $default
+     * @param  class-string<TModel>  $default
      */
     public function __construct(
         private Repository $config,

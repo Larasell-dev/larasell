@@ -18,7 +18,6 @@ use Larasell\Larasell\Shipping\ShippingOption;
  * @property string|null $session_id
  * @property int|null $user_id
  * @property string|null $shipping_option
- *
  * @property Collection<int, CartItem> $items
  */
 class Cart extends Model

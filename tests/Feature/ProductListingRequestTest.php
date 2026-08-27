@@ -1,6 +1,5 @@
 <?php
 
-use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Product;

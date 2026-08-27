@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\PaymentStatus;
-use Larasell\Larasell\Price;
 
 class Payment extends Model
 {
     use HasFactory;
 
     protected $table = 'larasell_payments';
+
     protected $guarded = [];
+
     protected $casts = [
         'amount' => PriceCast::class,
         'status' => PaymentStatus::class,

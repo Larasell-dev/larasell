@@ -2,9 +2,9 @@
 
 namespace Larasell\Larasell\Routing;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
-use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class ProductDetailRoute

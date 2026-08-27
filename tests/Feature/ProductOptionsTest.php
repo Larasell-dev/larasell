@@ -1,7 +1,6 @@
 <?php
 
 use InvalidArgumentException;
-use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\ProductOptionType;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductOption;

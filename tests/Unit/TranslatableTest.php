@@ -89,7 +89,7 @@ it('accepts valid locale strings', function () {
 it('rejects invalid locale identifiers', function (string $locale) {
     new Translatable([$locale => 'Desk lamp']);
 })->with(['hyphenated territory' => ['de-DE'], 'lowercase territory' => ['de_de']])
-    ->throws(\InvalidArgumentException::class);
+    ->throws(InvalidArgumentException::class);
 
 it('requires at least one non-empty translation', function (array $translations) {
     new Translatable($translations);
@@ -97,4 +97,4 @@ it('requires at least one non-empty translation', function (array $translations)
     'empty payload' => [[]],
     'empty locale' => [['' => 'Desk lamp']],
     'empty value' => [['en' => '']],
-])->throws(\InvalidArgumentException::class);
+])->throws(InvalidArgumentException::class);
