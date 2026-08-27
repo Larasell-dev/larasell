@@ -8,8 +8,8 @@ description: Fetch visible products and their attached categories.
 The product model exposes relationships and query helpers for building
 storefront product listing and detail pages.
 
-Products include a nullable `description` text field for longer
-plain-text product copy.
+Products include a nullable, translatable `description` field for longer
+plain-text product copy. Like `name`, it is cast to `Translatable` when set.
 
 Products must also include a currency-independent `price` field. Price values
 are integer strings in minor units and are cast to `Larasell\Larasell\Price`
@@ -253,8 +253,8 @@ $product = Product::query()
     ->firstOrFail();
 ```
 
-You can render the product description directly from the model.
+Resolve the product description for the current locale with `get()`.
 
 ```php
-$description = $product->description;
+$description = $product->description?->get();
 ```

@@ -64,6 +64,14 @@ it('creates updated immutable translations', function () {
         ->and($translated->get('de'))->toBe('Schreibtischlampe');
 });
 
+it('removes translations immutably', function () {
+    $translations = new Translatable(['en' => 'English', 'de' => 'Deutsch']);
+
+    expect($translations->without('de')?->all())->toBe(['en' => 'English'])
+        ->and($translations->all())->toBe(['en' => 'English', 'de' => 'Deutsch'])
+        ->and($translations->without('en')?->without('de'))->toBeNull();
+});
+
 it('supports Laravel territory locale identifiers', function () {
     $title = new Translatable(['de_DE' => 'Schreibtischlampe']);
 

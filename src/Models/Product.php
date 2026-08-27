@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 use Larasell\Larasell\Casts\PriceCast;
+use Larasell\Larasell\Casts\NullableTranslatableCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
@@ -19,7 +20,7 @@ use Larasell\Larasell\Translatable;
  * @property int $id
  * @property string $slug
  * @property Translatable $name
- * @property string|null $description
+ * @property Translatable|null $description
  * @property Price $price
  * @property int|null $stock
  * @property int|null $min_quantity
@@ -40,6 +41,7 @@ class Product extends Model
 
     protected $casts = [
         'name' => TranslatableCast::class,
+        'description' => NullableTranslatableCast::class,
         'price' => PriceCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',

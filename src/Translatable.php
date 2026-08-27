@@ -68,6 +68,14 @@ final readonly class Translatable implements JsonSerializable
         return new self([...$this->translations, self::locale($locale) => $value]);
     }
 
+    public function without(string $locale): ?self
+    {
+        $translations = $this->translations;
+        unset($translations[self::locale($locale)]);
+
+        return $translations === [] ? null : new self($translations);
+    }
+
     /** @return non-empty-array<string, string> */
     public function jsonSerialize(): array
     {

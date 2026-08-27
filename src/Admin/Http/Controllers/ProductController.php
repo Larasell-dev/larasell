@@ -153,7 +153,7 @@ class ProductController extends Controller
                 'id' => $product->getKey(),
                 'name' => $this->productName($product)->get(),
                 'slug' => $product->getAttribute('slug'),
-                'description' => $product->getAttribute('description'),
+                'description' => $this->productDescription($product)?->get(),
                 'stock' => $product->getAttribute('stock'),
                 'minQuantity' => $product->getAttribute('min_quantity'),
                 'maxQuantity' => $product->getAttribute('max_quantity'),
@@ -224,6 +224,7 @@ class ProductController extends Controller
 
         $data['price'] = Price::of($data['price_amount']);
         $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
+        $data['description'] = $this->translatedDescription($product, $data['description']);
         unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids'], $data['option_value_ids']);
 
         DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $optionValueIds, $product): void {
@@ -314,6 +315,7 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
         ]);
         $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
+        $data['description'] = $this->translatedDescription($product, $data['description']);
         $product->fill($data)->save();
 
         return back();
@@ -351,6 +353,29 @@ class ProductController extends Controller
         }
 
         return $name;
+    }
+
+    private function productDescription(Model $product): ?Translatable
+    {
+        $description = $product->getAttribute('description');
+
+        if ($description !== null && ! $description instanceof Translatable) {
+            throw new \LogicException('Product models must cast the description attribute to a nullable Translatable.');
+        }
+
+        return $description;
+    }
+
+    private function translatedDescription(Model $product, ?string $description): ?Translatable
+    {
+        $translations = $this->productDescription($product);
+
+        if ($description === null) {
+            return $translations?->without(App::currentLocale());
+        }
+
+        return $translations?->with(App::currentLocale(), $description)
+            ?? Translatable::fromString($description);
     }
 
     /** @param class-string<Model> $model */
