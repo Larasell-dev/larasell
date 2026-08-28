@@ -52,7 +52,7 @@ function orderEvents(): array
 it('dispatches events through the placed, paid, and fulfilled order lifecycle', function () {
     Event::fake(orderEvents());
 
-    $order = app(Checkout::class)->create(orderEventCart('successful-order-events'), orderEventData());
+    $order = app(Checkout::class)->create(orderEventCart('successful-order-events'), orderEventData())->order;
 
     Event::assertDispatched(OrderPlaced::class, fn ($event) => $event->order->is($order));
 
@@ -69,7 +69,7 @@ it('dispatches events through the placed, paid, and fulfilled order lifecycle', 
 it('dispatches the order cancelled event once', function () {
     Event::fake(orderEvents());
 
-    $order = app(Checkout::class)->create(orderEventCart('cancelled-order-events'), orderEventData());
+    $order = app(Checkout::class)->create(orderEventCart('cancelled-order-events'), orderEventData())->order;
     $order->cancel();
     $order->cancel();
 

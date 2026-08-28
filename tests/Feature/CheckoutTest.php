@@ -10,9 +10,11 @@ use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
+use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
+use Larasell\Larasell\Payments\RedirectPaymentAction;
 use Larasell\Larasell\Price;
 
 uses(RefreshDatabase::class);
@@ -21,7 +23,22 @@ class DecliningCheckoutPaymentProvider implements PaymentProvider
 {
     public function initiate(PaymentRequest $request): PaymentResult
     {
-        return new PaymentResult(false, failureMessage: 'The payment was declined.');
+        return PaymentResult::failed('The payment was declined.');
+    }
+}
+
+class RedirectingCheckoutPaymentProvider implements PaymentProvider
+{
+    public static ?PaymentRequest $request = null;
+
+    public function initiate(PaymentRequest $request): PaymentResult
+    {
+        self::$request = $request;
+
+        return PaymentResult::pending(
+            reference: 'checkout-session-123',
+            action: new RedirectPaymentAction('https://payments.example.com/session/123'),
+        );
     }
 }
 
@@ -65,7 +82,8 @@ it('checks out a guest cart with the default cash payment method', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR, 'session_id' => 'guest-session']);
     $cart->add($product, 2);
 
-    $order = app(Checkout::class)->create($cart, checkoutData());
+    $result = app(Checkout::class)->create($cart, checkoutData());
+    $order = $result->order;
 
     expect($order->number)->toBe('LS-000001')
         ->and($order->currency)->toBe(Currency::EUR)
@@ -80,6 +98,9 @@ it('checks out a guest cart with the default cash payment method', function () {
         ->and($order->payments->first()->method)->toBe('cash')
         ->and($order->payments->first()->provider)->toBe('offline')
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending)
+        ->and($result->payment->is($order->payments->first()))->toBeTrue()
+        ->and($result->action)->toBeNull()
+        ->and($result->requiresRedirect())->toBeFalse()
         ->and($cart->fresh()->items)->toHaveCount(0)
         ->and($product->fresh()->stock)->toBe(3);
 });
@@ -95,7 +116,7 @@ it('keeps snapshots after the source product changes', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 42]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData(42));
+    $order = app(Checkout::class)->create($cart, checkoutData(42))->order;
     $product->update(['name' => 'Changed Tea', 'price' => Price::of(900)]);
     $product->delete();
 
@@ -125,7 +146,7 @@ it('records declined payments and marks the order as failed', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData(), 'declining');
+    $order = app(Checkout::class)->create($cart, checkoutData(), 'declining')->order;
 
     expect($order->status)->toBe(OrderStatus::PaymentFailed)
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Failed)
@@ -143,12 +164,45 @@ it('supports the bank transfer payment method', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData(), 'bank_transfer');
+    $order = app(Checkout::class)->create($cart, checkoutData(), 'bank_transfer')->order;
 
     expect($order->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->payments->first()->method)->toBe('bank_transfer')
         ->and($order->payments->first()->provider)->toBe('offline')
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending);
+});
+
+it('passes persisted models and options to a redirecting payment provider', function () {
+    config()->set('larasell.payments.methods.redirecting', [
+        'driver' => 'redirecting',
+        'provider' => RedirectingCheckoutPaymentProvider::class,
+    ]);
+    $product = Product::query()->create([
+        'slug' => 'redirect-product',
+        'name' => 'Redirect product',
+        'price' => Price::of(2000),
+        'allow_backorders' => true,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($product);
+
+    $result = app(Checkout::class)->create(
+        $cart,
+        checkoutData(),
+        'redirecting',
+        ['success_url' => 'https://shop.example.com/success'],
+    );
+
+    expect(RedirectingCheckoutPaymentProvider::$request?->order->exists)->toBeTrue()
+        ->and(RedirectingCheckoutPaymentProvider::$request?->payment->exists)->toBeTrue()
+        ->and(RedirectingCheckoutPaymentProvider::$request?->payment->order_id)->toBe($result->order->id)
+        ->and(RedirectingCheckoutPaymentProvider::$request?->option('success_url'))->toBe('https://shop.example.com/success')
+        ->and($result->payment->reference)->toBe('checkout-session-123')
+        ->and(Payment::findByProviderReference('redirecting', 'checkout-session-123')->is($result->payment))->toBeTrue()
+        ->and($result->action)->toBeInstanceOf(RedirectPaymentAction::class)
+        ->and($result->requiresRedirect())->toBeTrue()
+        ->and($result->redirect()->getTargetUrl())->toBe('https://payments.example.com/session/123');
 });
 
 it('rejects an unknown payment method before modifying the cart', function () {
@@ -181,7 +235,7 @@ it('rejects invalid order status transitions', function () {
     ]);
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
-    $order = app(Checkout::class)->create($cart, checkoutData());
+    $order = app(Checkout::class)->create($cart, checkoutData())->order;
 
     $order->payments->first()->markAsPaid();
     $order->refresh();

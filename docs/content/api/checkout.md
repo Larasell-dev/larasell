@@ -27,7 +27,7 @@ class CheckoutController
 
     public function __invoke(Request $request, Cart $cart)
     {
-        $order = $this->checkout->create($cart, [
+        $result = $this->checkout->create($cart, [
             'customer_email' => $request->string('email')->toString(),
             'customer_name' => $request->string('name')->toString(),
             'billing_address' => new Address(
@@ -42,7 +42,11 @@ class CheckoutController
             'customer_id' => $request->user()?->getKey(),
         ], paymentMethod: 'bank_transfer');
 
-        // Return your application's confirmation response.
+        if ($result->requiresRedirect()) {
+            return $result->redirect();
+        }
+
+        return redirect()->route('orders.show', $result->order);
     }
 }
 ```
@@ -56,12 +60,12 @@ address requires `country`, `first_name`, `last_name`, `street`, `city`, and
 `postcode`. `street` may be a string or an ordered array of lines. `title`,
 `state`, `email`, and `phone` are optional.
 
-Orders always return `Address` value objects, regardless of which input form
+Order addresses always return `Address` value objects, regardless of which input form
 was used:
 
 ```php
-$order->shipping_address->street;
-$order->shipping_address->country;
+$result->order->shipping_address->street;
+$result->order->shipping_address->country;
 ```
 
 ## Order status
@@ -88,11 +92,13 @@ Cash is the default method. Pass `cash` or `bank_transfer` as the third checkout
 argument to select a method explicitly:
 
 ```php
-$order = $checkout->create($cart, $data, paymentMethod: 'cash');
+$result = $checkout->create($cart, $data, paymentMethod: 'cash');
 ```
 
 Both built-in methods use the offline driver and create a pending payment. They
-do not collect money or expose customer-facing payment instructions.
+do not collect money or expose customer-facing payment instructions. The result
+contains the created `$result->order`, `$result->payment`, and an optional
+`$result->action`.
 
 The available methods and default can be changed in the published configuration:
 
@@ -178,3 +184,66 @@ Event::listen(OrderPaid::class, function (OrderPaid $event) {
 
 Custom providers must implement `Larasell\Larasell\Contracts\PaymentProvider`
 and return a `Larasell\Larasell\Payments\PaymentResult` from `initiate()`.
+
+## Custom payment providers
+
+Checkout creates the local order and pending payment before invoking a provider.
+The provider therefore receives stable models that can be included in provider
+metadata and idempotency keys:
+
+```php
+use Larasell\Larasell\Contracts\PaymentProvider;
+use Larasell\Larasell\Models\Payment;
+use Larasell\Larasell\Payments\PaymentRequest;
+use Larasell\Larasell\Payments\PaymentResult;
+use Larasell\Larasell\Payments\RedirectPaymentAction;
+
+final class HostedPaymentProvider implements PaymentProvider
+{
+    public function initiate(PaymentRequest $request): PaymentResult
+    {
+        $session = $this->client->createSession([
+            'amount' => $request->payment->amount->amount(),
+            'currency' => $request->order->currency->value,
+            'success_url' => $request->option('success_url'),
+            'metadata' => [
+                'order_id' => $request->order->getKey(),
+                'payment_id' => $request->payment->getKey(),
+            ],
+            'idempotency_key' => 'payment-'.$request->payment->getKey(),
+        ]);
+
+        return PaymentResult::pending(
+            reference: $session->id,
+            action: new RedirectPaymentAction($session->url),
+        );
+    }
+}
+```
+
+Provider-specific checkout values can be passed as the fourth argument:
+
+```php
+$result = $checkout->create(
+    $cart,
+    $data,
+    paymentMethod: 'hosted',
+    paymentOptions: [
+        'success_url' => route('checkout.success'),
+        'cancel_url' => route('checkout.cancel'),
+    ],
+);
+```
+
+Providers return `PaymentResult::pending()`, `PaymentResult::succeeded()`, or
+`PaymentResult::failed()`. Provider exceptions are recorded as failed payments.
+For asynchronous providers, use the provider reference from a verified webhook:
+
+```php
+$payment = Payment::findByProviderReference('hosted', $providerReference);
+$payment->markAsPaid();
+// or: $payment->markAsFailed($message);
+```
+
+Return and cancellation URLs are storefront navigation only. They must not mark
+a payment as paid; asynchronous provider webhooks are authoritative.

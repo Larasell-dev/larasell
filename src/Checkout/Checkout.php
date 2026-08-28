@@ -10,7 +10,6 @@ use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
-use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentManager;
@@ -35,9 +34,14 @@ class Checkout
      *     shipping_address?: Address|array<string, mixed>|null,
      *     customer_id?: int|null
      * } $data
+     * @param  array<string, mixed>  $paymentOptions
      */
-    public function create(Cart $cart, array $data, ?string $paymentMethod = null): Order
-    {
+    public function create(
+        Cart $cart,
+        array $data,
+        ?string $paymentMethod = null,
+        array $paymentOptions = [],
+    ): CheckoutResult {
         $this->validate($data);
         $method = $paymentMethod === null
             ? $this->payments->default()
@@ -46,7 +50,7 @@ class Checkout
         $data['billing_address'] = $this->address($data['billing_address'] ?? null);
         $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
 
-        $order = $this->database->transaction(function () use ($cart, $data): Order {
+        [$order, $payment] = $this->database->transaction(function () use ($cart, $data, $method): array {
             /** @var Cart $lockedCart */
             $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
             $items = $lockedCart->items()->with('product')->lockForUpdate()->get();
@@ -110,43 +114,46 @@ class Checkout
 
             $lockedCart->clear();
 
-            return $order;
+            $payment = $order->payments()->create([
+                'method' => $method->handle,
+                'provider' => $method->driver,
+                'status' => PaymentStatus::Pending,
+                'amount' => $order->total,
+            ]);
+
+            return [$order, $payment];
         });
 
         try {
             $result = $provider->initiate(new PaymentRequest(
                 $method->handle,
-                $order->number,
-                $order->total,
-                $order->currency,
-                $order->customer_email,
+                $order,
+                $payment,
+                $paymentOptions,
             ));
         } catch (\Throwable $exception) {
-            $result = new PaymentResult(
-                false,
-                failureMessage: $exception->getMessage(),
-            );
+            $result = PaymentResult::failed($exception->getMessage());
         }
 
-        $order->payments()->create([
-            'method' => $method->handle,
-            'provider' => $method->driver,
-            'reference' => $result->reference,
-            'status' => $result->status === PaymentStatus::Pending
-                ? PaymentStatus::Pending
-                : ($result->successful ? PaymentStatus::Succeeded : PaymentStatus::Failed),
-            'amount' => $order->total,
-            'failure_message' => $result->failureMessage,
-        ]);
+        if ($result->reference !== null) {
+            $payment->update(['reference' => $result->reference]);
+        }
 
-        if ($result->status !== PaymentStatus::Pending) {
-            $order->transitionTo($result->successful ? OrderStatus::Paid : OrderStatus::PaymentFailed);
+        $payment = match ($result->status) {
+            PaymentStatus::Pending => $payment->refresh(),
+            PaymentStatus::Succeeded => $payment->markAsPaid(),
+            PaymentStatus::Failed => $payment->markAsFailed($result->failureMessage),
+            PaymentStatus::Cancelled => $payment->cancel(),
+        };
+
+        if ($result->status === PaymentStatus::Cancelled) {
+            $order->cancel();
         }
 
         $order->load(['items', 'payments']);
         OrderPlaced::dispatch($order);
 
-        return $order;
+        return new CheckoutResult($order->refresh()->load(['items', 'payments']), $payment, $result->action);
     }
 
     /** @param array<string, mixed> $data */

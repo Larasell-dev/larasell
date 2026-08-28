@@ -6,15 +6,25 @@ use Larasell\Larasell\Enums\PaymentStatus;
 
 final readonly class PaymentResult
 {
-    public function __construct(
-        public bool $successful,
+    private function __construct(
+        public PaymentStatus $status,
         public ?string $reference = null,
+        public ?PaymentAction $action = null,
         public ?string $failureMessage = null,
-        public PaymentStatus $status = PaymentStatus::Succeeded,
     ) {}
 
-    public static function pending(?string $reference = null): self
+    public static function pending(?string $reference = null, ?PaymentAction $action = null): self
     {
-        return new self(false, $reference, status: PaymentStatus::Pending);
+        return new self(PaymentStatus::Pending, $reference, $action);
+    }
+
+    public static function succeeded(?string $reference = null): self
+    {
+        return new self(PaymentStatus::Succeeded, $reference);
+    }
+
+    public static function failed(?string $failureMessage = null, ?string $reference = null): self
+    {
+        return new self(PaymentStatus::Failed, $reference, failureMessage: $failureMessage);
     }
 }

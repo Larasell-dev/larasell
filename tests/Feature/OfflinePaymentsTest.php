@@ -84,3 +84,16 @@ it('does not cancel a succeeded payment', function () {
     expect(fn () => $payment->cancel())
         ->toThrow(InvalidArgumentException::class, 'Payment cannot be cancelled from [succeeded].');
 });
+
+it('marks a pending payment and its order as failed', function () {
+    $order = offlinePaymentOrder();
+    $payment = offlinePayment($order);
+
+    $failed = $payment->markAsFailed('Provider declined the payment.');
+    $failedAgain = $payment->markAsFailed('Ignored duplicate message.');
+
+    expect($failed->status)->toBe(PaymentStatus::Failed)
+        ->and($failed->failure_message)->toBe('Provider declined the payment.')
+        ->and($failedAgain->failure_message)->toBe('Provider declined the payment.')
+        ->and($order->fresh()->status)->toBe(OrderStatus::PaymentFailed);
+});

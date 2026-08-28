@@ -19,7 +19,7 @@ class FailedPaymentEventProvider implements PaymentProvider
 {
     public function initiate(PaymentRequest $request): PaymentResult
     {
-        return new PaymentResult(false, failureMessage: 'Failed.');
+        return PaymentResult::failed('Failed.');
     }
 }
 
@@ -62,7 +62,7 @@ function paymentEvents(): array
 it('dispatches pending and succeeded payment events once', function () {
     Event::fake(paymentEvents());
 
-    $order = app(Checkout::class)->create(paymentEventCart('successful-payment-events'), paymentEventData());
+    $order = app(Checkout::class)->create(paymentEventCart('successful-payment-events'), paymentEventData())->order;
 
     Event::assertDispatched(PaymentPending::class, fn ($event) => $event->payment->order_id === $order->id);
 
@@ -76,7 +76,7 @@ it('dispatches pending and succeeded payment events once', function () {
 it('dispatches the payment cancelled event once', function () {
     Event::fake(paymentEvents());
 
-    $order = app(Checkout::class)->create(paymentEventCart('cancelled-payment-events'), paymentEventData());
+    $order = app(Checkout::class)->create(paymentEventCart('cancelled-payment-events'), paymentEventData())->order;
     $order->cancel();
     $order->cancel();
 
@@ -94,7 +94,7 @@ it('dispatches an event when a payment fails', function () {
         paymentEventCart('failed-payment-events'),
         paymentEventData(),
         'failed_events',
-    );
+    )->order;
 
     Event::assertDispatched(PaymentFailed::class, fn ($event) => $event->payment->order_id === $order->id);
 });
