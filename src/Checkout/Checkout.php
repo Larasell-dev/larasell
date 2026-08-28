@@ -98,6 +98,7 @@ class Checkout
                     'product_slug' => $item->product->slug,
                     'unit_price' => $item->product->price,
                     'quantity' => $item->quantity,
+                    'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,
                     'total' => $item->total(),
                 ]);
 

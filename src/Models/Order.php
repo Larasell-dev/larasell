@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
+use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Price;
 
 /**
@@ -25,6 +27,8 @@ use Larasell\Larasell\Price;
  * @property Address|null $billing_address
  * @property Address|null $shipping_address
  * @property OrderStatus $status
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $inventory_restocked_at
  * @property Price $subtotal
  * @property Price $total
  * @property string|null $shipping_method
@@ -48,6 +52,8 @@ class Order extends Model
         'billing_address' => AddressCast::class,
         'shipping_address' => AddressCast::class,
         'status' => OrderStatus::class,
+        'cancelled_at' => 'datetime',
+        'inventory_restocked_at' => 'datetime',
         'subtotal' => PriceCast::class,
         'total' => PriceCast::class,
         'shipping_price' => PriceCast::class,
@@ -72,5 +78,61 @@ class Order extends Model
         }
 
         $this->update(['status' => $status]);
+    }
+
+    public function cancel(bool $restock = true): self
+    {
+        return $this->getConnection()->transaction(function () use ($restock): self {
+            /** @var self $order */
+            $order = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+
+            if ($order->status === OrderStatus::Cancelled) {
+                return $order;
+            }
+
+            if (! in_array($order->status, [OrderStatus::PendingPayment, OrderStatus::PaymentFailed], true)) {
+                throw new InvalidArgumentException("Order cannot be cancelled from [{$order->status->value}].");
+            }
+
+            $payments = $order->payments()->lockForUpdate()->get();
+
+            if ($payments->contains('status', PaymentStatus::Succeeded)) {
+                throw new InvalidArgumentException('An order with a successful payment cannot be cancelled before it is refunded.');
+            }
+
+            foreach ($payments->where('status', PaymentStatus::Pending) as $payment) {
+                $payment->transitionTo(PaymentStatus::Cancelled);
+            }
+
+            $restockedAt = null;
+
+            if ($restock) {
+                $items = $order->items()->where('inventory_quantity', '>', 0)->get();
+
+                foreach ($items->sortBy('product_id') as $item) {
+                    if ($item->product_id === null) {
+                        continue;
+                    }
+
+                    $product = app(ModelRegistry::class)->product->query()
+                        ->lockForUpdate()
+                        ->find($item->product_id);
+
+                    if ($product !== null && $product->stock !== null) {
+                        $product->increment('stock', $item->inventory_quantity);
+                    }
+                }
+
+                $restockedAt = now();
+            }
+
+            $order->update([
+                'status' => OrderStatus::Cancelled,
+                'cancelled_at' => now(),
+                'inventory_restocked_at' => $restockedAt,
+            ]);
+
+            return $order->refresh();
+        });
     }
 }
