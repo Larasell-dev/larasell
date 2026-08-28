@@ -53,6 +53,8 @@ class Payment extends Model
     public function markAsPaid(): self
     {
         return $this->getConnection()->transaction(function (): self {
+            $order = $this->order()->lockForUpdate()->firstOrFail();
+
             /** @var self $payment */
             $payment = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
 
@@ -63,8 +65,6 @@ class Payment extends Model
             if ($payment->status !== PaymentStatus::Pending) {
                 throw new InvalidArgumentException("Payment cannot be marked as paid from [{$payment->status->value}].");
             }
-
-            $order = $payment->order()->lockForUpdate()->firstOrFail();
 
             if ($order->status !== OrderStatus::PendingPayment) {
                 throw new InvalidArgumentException("Payment cannot be marked as paid for an order with status [{$order->status->value}].");

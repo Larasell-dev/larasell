@@ -76,6 +76,7 @@ it('checks out a guest cart with the default cash payment method', function () {
         ->and($order->total->toArray())->toBe(['amount' => '2598'])
         ->and($order->items)->toHaveCount(1)
         ->and($order->items->first()->product_name)->toBe('Coffee')
+        ->and($order->items->first()->inventory_quantity)->toBe(2)
         ->and($order->payments->first()->method)->toBe('cash')
         ->and($order->payments->first()->provider)->toBe('offline')
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending)
@@ -105,6 +106,7 @@ it('keeps snapshots after the source product changes', function () {
         ->and($order->billing_address->street)->toBe(['Main Street 1'])
         ->and($order->shipping_address->street)->toBe(['Shipping Street 2', 'Second floor'])
         ->and($item->product_name)->toBe('Tea')
+        ->and($item->inventory_quantity)->toBe(0)
         ->and($item->unit_price->amount())->toBe('500');
 });
 

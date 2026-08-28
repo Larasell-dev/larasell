@@ -132,5 +132,24 @@ A pending attempt can instead be cancelled with `$payment->cancel()`. Cancellati
 only changes the payment to `cancelled`; it does not cancel the order or restore
 stock.
 
+## Cancelling an order
+
+Unpaid orders can be cancelled directly. Pending payments are cancelled and
+inventory deducted during checkout is restored by default.
+
+```php
+$order->cancel();
+```
+
+Pass `restock: false` when the inventory should remain deducted:
+
+```php
+$order->cancel(restock: false);
+```
+
+Paid orders cannot be cancelled until the application has handled their refund.
+Order items store the quantity actually deducted from finite inventory, so
+cancellation does not infer restocking from the product's current settings.
+
 Custom providers must implement `Larasell\Larasell\Contracts\PaymentProvider`
 and return a `Larasell\Larasell\Payments\PaymentResult` from `initiate()`.
