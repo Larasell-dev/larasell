@@ -14,6 +14,9 @@ use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\OrderCancelled;
+use Larasell\Larasell\Events\OrderFulfilled;
+use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Price;
 
 /**
@@ -73,11 +76,23 @@ class Order extends Model
 
     public function transitionTo(OrderStatus $status): void
     {
+        if ($status === OrderStatus::Cancelled) {
+            $this->cancel();
+
+            return;
+        }
+
         if (! $this->status->canTransitionTo($status)) {
             throw new InvalidArgumentException("Order cannot transition from [{$this->status->value}] to [{$status->value}].");
         }
 
         $this->update(['status' => $status]);
+
+        match ($status) {
+            OrderStatus::Paid => OrderPaid::dispatch($this),
+            OrderStatus::Fulfilled => OrderFulfilled::dispatch($this),
+            default => null,
+        };
     }
 
     public function cancel(bool $restock = true): self
@@ -131,6 +146,8 @@ class Order extends Model
                 'cancelled_at' => now(),
                 'inventory_restocked_at' => $restockedAt,
             ]);
+
+            OrderCancelled::dispatch($order);
 
             return $order->refresh();
         });

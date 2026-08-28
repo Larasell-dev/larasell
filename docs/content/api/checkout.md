@@ -151,5 +151,30 @@ Paid orders cannot be cancelled until the application has handled their refund.
 Order items store the quantity actually deducted from finite inventory, so
 cancellation does not infer restocking from the product's current settings.
 
+## Lifecycle events
+
+Larasell dispatches dedicated events after their database transaction commits:
+
+- `Larasell\Larasell\Events\OrderPlaced`
+- `Larasell\Larasell\Events\OrderPaid`
+- `Larasell\Larasell\Events\OrderFulfilled`
+- `Larasell\Larasell\Events\OrderCancelled`
+- `Larasell\Larasell\Events\PaymentPending`
+- `Larasell\Larasell\Events\PaymentSucceeded`
+- `Larasell\Larasell\Events\PaymentFailed`
+- `Larasell\Larasell\Events\PaymentCancelled`
+
+Each order event exposes an `$order` property and each payment event exposes a
+`$payment` property. Idempotent operations do not dispatch duplicate events.
+
+```php
+use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Events\OrderPaid;
+
+Event::listen(OrderPaid::class, function (OrderPaid $event) {
+    // Handle the paid order through $event->order.
+});
+```
+
 Custom providers must implement `Larasell\Larasell\Contracts\PaymentProvider`
 and return a `Larasell\Larasell\Payments\PaymentResult` from `initiate()`.
