@@ -5,7 +5,6 @@ namespace Larasell\Larasell\Checkout;
 use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
-use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Models\Cart;
@@ -13,6 +12,7 @@ use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
+use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 
@@ -22,7 +22,7 @@ class Checkout
         private readonly ConnectionInterface $database,
         private readonly ModelRegistry $models,
         private readonly OrderNumberFactory $orderNumbers,
-        private readonly PaymentProvider $payments,
+        private readonly PaymentManager $payments,
     ) {}
 
     /**
@@ -35,9 +35,13 @@ class Checkout
      *     customer_id?: int|null
      * } $data
      */
-    public function create(Cart $cart, array $data): Order
+    public function create(Cart $cart, array $data, ?string $paymentMethod = null): Order
     {
         $this->validate($data);
+        $method = $paymentMethod === null
+            ? $this->payments->default()
+            : $this->payments->method($paymentMethod);
+        $provider = $this->payments->provider($method);
         $data['billing_address'] = $this->address($data['billing_address'] ?? null);
         $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
 
@@ -108,7 +112,8 @@ class Checkout
         });
 
         try {
-            $result = $this->payments->pay(new PaymentRequest(
+            $result = $provider->initiate(new PaymentRequest(
+                $method->handle,
                 $order->number,
                 $order->total,
                 $order->currency,
@@ -122,7 +127,8 @@ class Checkout
         }
 
         $order->payments()->create([
-            'provider' => $this->payments::class,
+            'method' => $method->handle,
+            'provider' => $method->driver,
             'reference' => $result->reference,
             'status' => $result->status === PaymentStatus::Pending
                 ? PaymentStatus::Pending

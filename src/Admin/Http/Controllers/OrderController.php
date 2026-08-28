@@ -3,10 +3,12 @@
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class OrderController extends Controller
@@ -98,14 +100,30 @@ class OrderController extends Controller
                 ])->all(),
                 'payments' => $order->getRelation('payments')->map(fn (Model $payment): array => [
                     'id' => $payment->getKey(),
+                    'method' => $payment->getAttribute('method'),
                     'provider' => $payment->getAttribute('provider'),
                     'reference' => $payment->getAttribute('reference'),
                     'status' => $payment->getAttribute('status')->value,
                     'amount' => $payment->getAttribute('amount')->toArray(),
                     'failureMessage' => $payment->getAttribute('failure_message'),
+                    'paidAt' => $payment->getAttribute('paid_at')?->toIso8601String(),
+                    'markPaidUrl' => $payment->getAttribute('status') === PaymentStatus::Pending
+                        ? route('larasell.admin.orders.payments.paid', [$order->getKey(), $payment->getKey()])
+                        : null,
                     'createdAt' => $payment->getAttribute('created_at')->toIso8601String(),
                 ])->all(),
             ],
         ])->rootView('larasell-admin::admin');
+    }
+
+    public function markPaymentAsPaid(string $adminOrder, string $adminPayment): RedirectResponse
+    {
+        $payment = app(ModelRegistry::class)->payment->query()
+            ->where('order_id', $adminOrder)
+            ->findOrFail($adminPayment);
+
+        $payment->markAsPaid();
+
+        return back();
     }
 }

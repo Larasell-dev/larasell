@@ -7,7 +7,7 @@ description: Turn a cart into an immutable order and collect payment.
 
 Checkout creates an order from a cart, snapshots its customer, address,
 product, and price data, reserves finite stock, and asks the configured
-payment provider to collect the total.
+payment provider to initiate payment for the total.
 
 The cart's currency becomes the order currency and is passed to the payment
 provider alongside the currency-independent price amount.
@@ -40,7 +40,7 @@ class CheckoutController
             ),
             'shipping_address' => $request->array('shipping_address'),
             'customer_id' => $request->user()?->getKey(),
-        ]);
+        ], paymentMethod: 'bank_transfer');
 
         // Return your application's confirmation response.
     }
@@ -66,8 +66,9 @@ $order->shipping_address->country;
 
 ## Order status
 
-New orders start as `pending_payment`. Checkout moves them to `paid` or
-`payment_failed` based on the payment result. Supported transitions are:
+New orders start as `pending_payment`. The built-in cash and bank transfer
+methods remain pending until payment is recorded manually. Supported order
+transitions are:
 
 - `pending_payment` to `paid`, `payment_failed`, or `cancelled`
 - `payment_failed` to `pending_payment` or `cancelled`
@@ -81,20 +82,55 @@ use Larasell\Larasell\Enums\OrderStatus;
 $order->transitionTo(OrderStatus::Fulfilled);
 ```
 
-## Replacing the payment provider
+## Payment methods
 
-Implement the payment contract and set the provider class in the published
-configuration:
+Cash is the default method. Pass `cash` or `bank_transfer` as the third checkout
+argument to select a method explicitly:
 
 ```php
-use App\Payments\StripePaymentProvider;
+$order = $checkout->create($cart, $data, paymentMethod: 'cash');
+```
+
+Both built-in methods use the offline driver and create a pending payment. They
+do not collect money or expose customer-facing payment instructions.
+
+The available methods and default can be changed in the published configuration:
+
+```php
+use Larasell\Larasell\Payments\OfflinePaymentProvider;
 
 'payments' => [
-    'provider' => StripePaymentProvider::class,
+    'default' => 'cash',
+    'methods' => [
+        'cash' => [
+            'driver' => 'offline',
+            'provider' => OfflinePaymentProvider::class,
+        ],
+        'bank_transfer' => [
+            'driver' => 'offline',
+            'provider' => OfflinePaymentProvider::class,
+        ],
+    ],
 ],
 ```
 
-The provider must implement
-`Larasell\Larasell\Contracts\PaymentProvider` and return a
-`Larasell\Larasell\Payments\PaymentResult`. Its `PaymentRequest` contains
-both `amount` and `currency`.
+## Recording payment
+
+Use the payment model when an offline payment is received:
+
+```php
+$payment = $order->payments()->where('status', 'pending')->firstOrFail();
+$payment->markAsPaid();
+```
+
+This atomically marks the payment as `succeeded`, records `paid_at`, and moves
+the order to `paid`. Repeating the action is safe and does not replace the
+original payment timestamp. The Larasell admin order page exposes the same
+operation for pending payments.
+
+A pending attempt can instead be cancelled with `$payment->cancel()`. Cancellation
+only changes the payment to `cancelled`; it does not cancel the order or restore
+stock.
+
+Custom providers must implement `Larasell\Larasell\Contracts\PaymentProvider`
+and return a `Larasell\Larasell\Payments\PaymentResult` from `initiate()`.

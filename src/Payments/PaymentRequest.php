@@ -8,6 +8,7 @@ use Larasell\Larasell\Price;
 final readonly class PaymentRequest
 {
     public function __construct(
+        public string $method,
         public string $orderNumber,
         public Price $amount,
         public Currency $currency,

@@ -37,6 +37,7 @@ Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::delete('media', [MediaController::class, 'destroy'])->name('media.destroy');
     Route::get('orders', OrderController::class)->name('orders.index');
     Route::get('orders/{adminOrder}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('orders/{adminOrder}/payments/{adminPayment}/paid', [OrderController::class, 'markPaymentAsPaid'])->name('orders.payments.paid');
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('products', [ProductController::class, 'store'])->name('products.store');
