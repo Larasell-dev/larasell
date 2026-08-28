@@ -7,6 +7,11 @@ use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function defineDatabaseMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/admin-migrations');
+    }
+
     /**
      * @return array<int, class-string>
      */
