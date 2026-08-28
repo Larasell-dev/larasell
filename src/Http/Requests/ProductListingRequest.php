@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Http\Requests;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
 use Larasell\Larasell\Models\ModelRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -72,7 +73,7 @@ class ProductListingRequest extends FormRequest
         }
 
         return match ($this->sort()) {
-            'name' => $products->orderBy('name'),
+            'name' => $products->orderByRaw($this->translatedNameExpression($products).' asc'),
             'price_asc' => $products->orderByRaw($this->priceAmountExpression($products).' asc'),
             'price_desc' => $products->orderByRaw($this->priceAmountExpression($products).' desc'),
             default => $products,
@@ -115,6 +116,21 @@ class ProductListingRequest extends FormRequest
             'pgsql' => "CAST({$wrappedColumn}->>'amount' AS BIGINT)",
             'sqlsrv' => "CAST(JSON_VALUE({$wrappedColumn}, '$.amount') AS BIGINT)",
             default => "CAST(json_extract({$wrappedColumn}, '$.amount') AS INTEGER)",
+        };
+    }
+
+    private function translatedNameExpression(Builder $query): string
+    {
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        $column = $query->getModel()->qualifyColumn('name');
+        $wrappedColumn = $query->getModel()->getConnection()->getQueryGrammar()->wrap($column);
+        $locale = str_replace("'", "''", App::currentLocale());
+
+        return match ($driver) {
+            'mysql', 'mariadb' => "JSON_UNQUOTE(JSON_EXTRACT({$wrappedColumn}, '$.\"{$locale}\"'))",
+            'pgsql' => "{$wrappedColumn}->>'{$locale}'",
+            'sqlsrv' => "JSON_VALUE({$wrappedColumn}, '$.\"{$locale}\"')",
+            default => "json_extract({$wrappedColumn}, '$.\"{$locale}\"')",
         };
     }
 }
