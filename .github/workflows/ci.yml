@@ -29,8 +29,68 @@ jobs:
         run: composer pint -- --test
 
   pest:
-    name: Pest
+    name: Pest (${{ matrix.database.name }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: SQLite
+            connection: sqlite
+            port: 0
+            username: ''
+            password: ''
+            mysql_image: ''
+            postgres_image: ''
+          - name: MySQL
+            connection: mysql
+            port: 3306
+            username: root
+            password: password
+            mysql_image: mysql:8.4
+            postgres_image: ''
+          - name: PostgreSQL
+            connection: pgsql
+            port: 5432
+            username: postgres
+            password: password
+            mysql_image: ''
+            postgres_image: postgres:17
+
+    services:
+      mysql:
+        image: ${{ matrix.database.mysql_image }}
+        env:
+          MYSQL_DATABASE: larasell
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      postgres:
+        image: ${{ matrix.database.postgres_image }}
+        env:
+          POSTGRES_DB: larasell
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready --username=postgres --dbname=larasell"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_CONNECTION: ${{ matrix.database.connection }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_DATABASE: ${{ matrix.database.connection == 'sqlite' && ':memory:' || 'larasell' }}
+      DB_USERNAME: ${{ matrix.database.username }}
+      DB_PASSWORD: ${{ matrix.database.password }}
 
     steps:
       - name: Check out repository
@@ -40,7 +100,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: bcmath, intl
+          extensions: bcmath, intl, pdo_mysql, pdo_pgsql, pdo_sqlite
           tools: composer:v2
           coverage: none
 
