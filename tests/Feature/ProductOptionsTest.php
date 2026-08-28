@@ -27,7 +27,7 @@ it('defines option values for a product option', function () {
         'position' => 1,
     ]);
 
-    expect($option->values()->pluck('name')->all())->toBe(['Small', 'Large'])
+    expect($option->values()->orderBy('position')->pluck('name')->all())->toBe(['Small', 'Large'])
         ->and($small->product_option_id)->toBe($option->id)
         ->and($large->position)->toBe(1);
 });

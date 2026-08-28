@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\App;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Product;
@@ -90,6 +91,17 @@ it('ignores empty option filters', function () {
     $this->getJson('/c/shirts?options[size]=')
         ->assertOk()
         ->assertExactJson(['shirt']);
+});
+
+it('sorts products by their name in the current locale', function () {
+    App::setLocale('de');
+    $category = categoryForListing();
+    productForListing(['slug' => 'lamp', 'name' => ['en' => 'Lamp', 'de' => 'Z Lampe']], $category);
+    productForListing(['slug' => 'table', 'name' => ['en' => 'Table', 'de' => 'A Tisch']], $category);
+
+    $this->getJson('/c/shirts')
+        ->assertOk()
+        ->assertExactJson(['table', 'lamp']);
 });
 
 function categoryForListing(array $attributes = []): Category

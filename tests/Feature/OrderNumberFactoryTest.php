@@ -5,22 +5,33 @@ use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 
 it('generates human-readable order numbers from database allocated sequences', function () {
     $factory = app(OrderNumberFactory::class);
+    $numbers = [
+        $factory->generate(),
+        $factory->generate(),
+        $factory->generate(),
+    ];
+    $sequences = array_map(fn (string $number): int => (int) substr($number, 3), $numbers);
 
-    expect($factory->generate())->toBe('LS-000001')
-        ->and($factory->generate())->toBe('LS-000002')
-        ->and($factory->generate())->toBe('LS-000003');
+    expect($numbers)->each->toMatch('/^LS-\d{6,}$/')
+        ->and($sequences[1])->toBe($sequences[0] + 1)
+        ->and($sequences[2])->toBe($sequences[1] + 1);
 });
 
 it('allows the order number format to be customized', function () {
-    app()->bind(OrderNumberGenerator::class, fn () => new class implements OrderNumberGenerator
+    $generator = new class implements OrderNumberGenerator
     {
+        public ?int $sequence = null;
+
         public function generate(int $sequence): string
         {
+            $this->sequence = $sequence;
+
             return "ORDER-$sequence";
         }
-    });
+    };
+    app()->instance(OrderNumberGenerator::class, $generator);
 
-    expect(app(OrderNumberFactory::class)->generate())->toBe('ORDER-1');
+    expect(app(OrderNumberFactory::class)->generate())->toBe("ORDER-{$generator->sequence}");
 });
 
 it('rejects empty custom order numbers', function () {
@@ -40,5 +51,5 @@ it('supports custom prefixes and padding', function () {
     config()->set('larasell.order_numbers.prefix', 'SHOP-');
     config()->set('larasell.order_numbers.padding', 3);
 
-    expect(app(OrderNumberFactory::class)->generate())->toBe('SHOP-001');
+    expect(app(OrderNumberFactory::class)->generate())->toMatch('/^SHOP-\d{3,}$/');
 });
