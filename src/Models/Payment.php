@@ -10,6 +10,10 @@ use InvalidArgumentException;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\PaymentCancelled;
+use Larasell\Larasell\Events\PaymentFailed;
+use Larasell\Larasell\Events\PaymentPending;
+use Larasell\Larasell\Events\PaymentSucceeded;
 use Larasell\Larasell\Price;
 
 /**
@@ -35,6 +39,13 @@ class Payment extends Model
         'paid_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (self $payment): void {
+            self::dispatchStatusEvent($payment);
+        });
+    }
+
     /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
@@ -48,6 +59,8 @@ class Payment extends Model
         }
 
         $this->update(['status' => $status]);
+
+        self::dispatchStatusEvent($this);
     }
 
     public function markAsPaid(): self
@@ -75,6 +88,7 @@ class Payment extends Model
                 'paid_at' => now(),
                 'failure_message' => null,
             ]);
+            PaymentSucceeded::dispatch($payment);
             $order->transitionTo(OrderStatus::Paid);
 
             return $payment->refresh();
@@ -99,5 +113,15 @@ class Payment extends Model
 
             return $payment->refresh();
         });
+    }
+
+    private static function dispatchStatusEvent(self $payment): void
+    {
+        match ($payment->status) {
+            PaymentStatus::Pending => PaymentPending::dispatch($payment),
+            PaymentStatus::Succeeded => PaymentSucceeded::dispatch($payment),
+            PaymentStatus::Failed => PaymentFailed::dispatch($payment),
+            PaymentStatus::Cancelled => PaymentCancelled::dispatch($payment),
+        };
     }
 }

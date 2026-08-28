@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
@@ -142,7 +143,10 @@ class Checkout
             $order->transitionTo($result->successful ? OrderStatus::Paid : OrderStatus::PaymentFailed);
         }
 
-        return $order->load(['items', 'payments']);
+        $order->load(['items', 'payments']);
+        OrderPlaced::dispatch($order);
+
+        return $order;
     }
 
     /** @param array<string, mixed> $data */
