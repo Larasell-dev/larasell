@@ -7,5 +7,5 @@ use Larasell\Larasell\Payments\PaymentResult;
 
 interface PaymentProvider
 {
-    public function pay(PaymentRequest $request): PaymentResult;
+    public function initiate(PaymentRequest $request): PaymentResult;
 }

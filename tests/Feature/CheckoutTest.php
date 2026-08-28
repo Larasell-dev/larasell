@@ -9,13 +9,21 @@ use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
+use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Payments\FakePaymentProvider;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
 
 uses(RefreshDatabase::class);
+
+class DecliningCheckoutPaymentProvider implements PaymentProvider
+{
+    public function initiate(PaymentRequest $request): PaymentResult
+    {
+        return new PaymentResult(false, failureMessage: 'The payment was declined.');
+    }
+}
 
 /** @return array<string, mixed> */
 function checkoutData(?int $customerId = null): array
@@ -45,7 +53,7 @@ function checkoutData(?int $customerId = null): array
     ];
 }
 
-it('checks out a guest cart and records a successful fake payment', function () {
+it('checks out a guest cart with the default cash payment method', function () {
     $product = Product::query()->create([
         'slug' => 'coffee',
         'name' => 'Coffee',
@@ -61,14 +69,16 @@ it('checks out a guest cart and records a successful fake payment', function () 
 
     expect($order->number)->toBe('LS-000001')
         ->and($order->currency)->toBe(Currency::EUR)
-        ->and($order->status)->toBe(OrderStatus::Paid)
+        ->and($order->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->customer_id)->toBeNull()
         ->and($order->customer_email)->toBe('buyer@example.com')
         ->and($order->total->amount())->toBe('2598')
         ->and($order->total->toArray())->toBe(['amount' => '2598'])
         ->and($order->items)->toHaveCount(1)
         ->and($order->items->first()->product_name)->toBe('Coffee')
-        ->and($order->payments->first()->status)->toBe(PaymentStatus::Succeeded)
+        ->and($order->payments->first()->method)->toBe('cash')
+        ->and($order->payments->first()->provider)->toBe('offline')
+        ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending)
         ->and($cart->fresh()->items)->toHaveCount(0)
         ->and($product->fresh()->stock)->toBe(3);
 });
@@ -99,7 +109,10 @@ it('keeps snapshots after the source product changes', function () {
 });
 
 it('records declined payments and marks the order as failed', function () {
-    config()->set('larasell.payments.fake.succeeds', false);
+    config()->set('larasell.payments.methods.declining', [
+        'driver' => 'declining',
+        'provider' => DecliningCheckoutPaymentProvider::class,
+    ]);
     $product = Product::query()->create([
         'slug' => 'mug',
         'name' => 'Mug',
@@ -110,22 +123,14 @@ it('records declined payments and marks the order as failed', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData());
+    $order = app(Checkout::class)->create($cart, checkoutData(), 'declining');
 
     expect($order->status)->toBe(OrderStatus::PaymentFailed)
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Failed)
-        ->and($order->payments->first()->failure_message)->toBe('The fake payment was declined.');
+        ->and($order->payments->first()->failure_message)->toBe('The payment was declined.');
 });
 
-it('keeps an order pending when payment is deferred', function () {
-    app()->bind(PaymentProvider::class, fn () => new class implements PaymentProvider
-    {
-        public function pay(PaymentRequest $request): PaymentResult
-        {
-            return PaymentResult::pending();
-        }
-    });
-
+it('supports the bank transfer payment method', function () {
     $product = Product::query()->create([
         'slug' => 'cash-coffee',
         'name' => 'Cash coffee',
@@ -136,23 +141,32 @@ it('keeps an order pending when payment is deferred', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData());
+    $order = app(Checkout::class)->create($cart, checkoutData(), 'bank_transfer');
 
     expect($order->status)->toBe(OrderStatus::PendingPayment)
+        ->and($order->payments->first()->method)->toBe('bank_transfer')
+        ->and($order->payments->first()->provider)->toBe('offline')
         ->and($order->payments->first()->status)->toBe(PaymentStatus::Pending);
 });
 
-it('prevents fake payments outside local and testing environments', function () {
-    app()->detectEnvironment(fn () => 'production');
+it('rejects an unknown payment method before modifying the cart', function () {
+    $product = Product::query()->create([
+        'slug' => 'unknown-method',
+        'name' => 'Unknown method product',
+        'price' => Price::of(500),
+        'stock' => 2,
+        'allow_backorders' => false,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($product);
 
-    $provider = app(FakePaymentProvider::class);
+    expect(fn () => app(Checkout::class)->create($cart, checkoutData(), 'unknown'))
+        ->toThrow(InvalidArgumentException::class, 'Payment method [unknown] is not configured.');
 
-    expect(fn () => $provider->pay(new PaymentRequest(
-        orderNumber: 'LS-000001',
-        amount: Price::of(1000),
-        currency: Currency::EUR,
-        customerEmail: 'buyer@example.com',
-    )))->toThrow(LogicException::class, 'The fake payment provider may only run in local or testing environments.');
+    expect($cart->fresh()->items)->toHaveCount(1)
+        ->and($product->fresh()->stock)->toBe(2)
+        ->and(Order::query()->count())->toBe(0);
 });
 
 it('rejects invalid order status transitions', function () {
@@ -167,6 +181,8 @@ it('rejects invalid order status transitions', function () {
     $cart->add($product);
     $order = app(Checkout::class)->create($cart, checkoutData());
 
+    $order->payments->first()->markAsPaid();
+    $order->refresh();
     $order->transitionTo(OrderStatus::Fulfilled);
 
     expect(fn () => $order->transitionTo(OrderStatus::Paid))

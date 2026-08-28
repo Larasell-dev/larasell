@@ -114,6 +114,7 @@ it('shows an order with its snapshots and payments in the admin panel', function
     ]);
     Payment::query()->create([
         'order_id' => $order->getKey(),
+        'method' => 'card',
         'provider' => 'stripe',
         'reference' => 'pi_123',
         'status' => PaymentStatus::Succeeded,
@@ -132,9 +133,60 @@ it('shows an order with its snapshots and payments in the admin panel', function
         ->assertJsonPath('props.order.items.0.name', 'Desk lamp')
         ->assertJsonPath('props.order.items.0.quantity', 2)
         ->assertJsonPath('props.order.items.0.total.amount', '1000')
+        ->assertJsonPath('props.order.payments.0.method', 'card')
         ->assertJsonPath('props.order.payments.0.provider', 'stripe')
         ->assertJsonPath('props.order.payments.0.reference', 'pi_123')
         ->assertJsonPath('props.order.payments.0.status', 'succeeded');
+});
+
+it('marks a pending order payment as paid from the admin panel', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $order = Order::query()->create(orderAttributes());
+    $payment = Payment::query()->create([
+        'order_id' => $order->getKey(),
+        'method' => 'cash',
+        'provider' => 'offline',
+        'status' => PaymentStatus::Pending,
+        'amount' => Price::of(1000),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.orders.payments.paid', [$order, $payment]))
+        ->assertRedirect();
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Succeeded)
+        ->and($payment->fresh()->paid_at)->not->toBeNull()
+        ->and($order->fresh()->status)->toBe(OrderStatus::Paid);
+});
+
+it('does not mark a payment from another order as paid', function () {
+    $admin = AdminUser::query()->create([
+        'name' => 'Larasell Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password'),
+    ]);
+    $order = Order::query()->create(orderAttributes(['number' => 'ORDER-0001']));
+    $otherOrder = Order::query()->create(orderAttributes(['number' => 'ORDER-0002']));
+    $payment = Payment::query()->create([
+        'order_id' => $otherOrder->getKey(),
+        'method' => 'cash',
+        'provider' => 'offline',
+        'status' => PaymentStatus::Pending,
+        'amount' => Price::of(1000),
+    ]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.orders.payments.paid', [$order, $payment]))
+        ->assertNotFound();
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending)
+        ->and($payment->fresh()->paid_at)->toBeNull()
+        ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
+        ->and($otherOrder->fresh()->status)->toBe(OrderStatus::PendingPayment);
 });
 
 it('redirects guest admin users away from the product options page', function () {

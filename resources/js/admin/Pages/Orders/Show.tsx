@@ -1,8 +1,11 @@
-import { Head } from '@inertiajs/react'
+import { Head, router } from '@inertiajs/react'
 import * as stylex from '@stylexjs/stylex'
+import { useState } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import BackLink from '../../Components/BackLink'
+import Button from '../../Components/Button'
 import Card from '../../Components/Card'
+import Dialog from '../../Components/Dialog'
 
 type Price = { amount: string }
 
@@ -40,9 +43,12 @@ type Order = {
     createdAt: string
     failureMessage: string | null
     id: number | string
+    markPaidUrl: string | null
+    method: string
+    paidAt: string | null
     provider: string
     reference: string | null
-    status: 'succeeded' | 'failed'
+    status: 'pending' | 'succeeded' | 'failed' | 'cancelled'
   }>
   shippingAddress: Address | null
   status: 'pending_payment' | 'paid' | 'payment_failed' | 'fulfilled' | 'cancelled'
@@ -53,6 +59,17 @@ type Order = {
 type Props = AdminLayoutProps & { order: Order }
 
 export default function OrderShow({ order, ...layoutProps }: Props) {
+  const [paymentToMarkPaid, setPaymentToMarkPaid] = useState<Order['payments'][number] | null>(null)
+
+  const markPaymentAsPaid = () => {
+    if (paymentToMarkPaid === null || paymentToMarkPaid.markPaidUrl === null) return
+
+    router.patch(paymentToMarkPaid.markPaidUrl, {}, {
+      onSuccess: () => setPaymentToMarkPaid(null),
+      preserveScroll: true,
+    })
+  }
+
   return (
     <AdminLayout active="orders" {...layoutProps}>
       <Head title={`Order ${order.number}`} />
@@ -115,15 +132,26 @@ export default function OrderShow({ order, ...layoutProps }: Props) {
                     {order.payments.map((payment) => (
                       <div key={payment.id} {...stylex.props(styles.payment)}>
                         <div {...stylex.props(styles.paymentHeader)}>
-                          <span {...stylex.props(styles.itemName)}>{formatProvider(payment.provider)}</span>
-                          <span {...stylex.props(styles.paymentStatus, payment.status === 'succeeded' ? styles.paymentSucceeded : styles.paymentFailed)}>
+                          <span {...stylex.props(styles.itemName)}>{formatProvider(payment.method)}</span>
+                          <span {...stylex.props(styles.paymentStatus, paymentStatusStyle(payment.status))}>
                             {formatStatus(payment.status)}
                           </span>
                         </div>
                         <span>{formatPrice(payment.amount, order.currency)}</span>
                         {payment.reference && <span {...stylex.props(styles.secondaryText, styles.selectable)}>Reference: {payment.reference}</span>}
                         {payment.failureMessage && <span {...stylex.props(styles.failureMessage)}>{payment.failureMessage}</span>}
+                        {payment.paidAt && <span {...stylex.props(styles.secondaryText)}>Paid {formatDate(payment.paidAt)}</span>}
                         <span {...stylex.props(styles.secondaryText)}>{formatDate(payment.createdAt)}</span>
+                        {payment.markPaidUrl && (
+                          <div>
+                            <Button
+                              onClick={() => setPaymentToMarkPaid(payment)}
+                              type="button"
+                            >
+                              Mark as paid
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -133,6 +161,18 @@ export default function OrderShow({ order, ...layoutProps }: Props) {
           </div>
         </div>
       </div>
+
+      <Dialog
+        description={paymentToMarkPaid === null
+          ? ''
+          : `This confirms the ${formatProvider(paymentToMarkPaid.method)} payment of ${formatPrice(paymentToMarkPaid.amount, order.currency)} and marks the order as paid.`}
+        onOpenChange={(open) => !open && setPaymentToMarkPaid(null)}
+        open={paymentToMarkPaid !== null}
+        title="Mark payment as paid?"
+      >
+        <Button onClick={() => setPaymentToMarkPaid(null)} type="button" variant="secondary">Cancel</Button>
+        <Button onClick={markPaymentAsPaid} type="button">Mark as paid</Button>
+      </Dialog>
     </AdminLayout>
   )
 }
@@ -184,6 +224,12 @@ function orderStatusStyle(status: Order['status']) {
   return styles.statusPending
 }
 
+function paymentStatusStyle(status: Order['payments'][number]['status']) {
+  if (status === 'succeeded') return styles.paymentSucceeded
+  if (status === 'pending') return styles.paymentPending
+  return styles.paymentFailed
+}
+
 const styles = stylex.create({
   page: { backgroundColor: 'var(--color-neutral-50)', minHeight: '100vh', width: '100%' },
   pageContent: { marginInline: 'auto', maxWidth: 1120, paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 }, width: '100%' },
@@ -213,6 +259,7 @@ const styles = stylex.create({
   paymentHeader: { alignItems: 'center', display: 'flex', gap: 8 },
   paymentStatus: { borderRadius: 4, fontSize: 11, fontWeight: 600, paddingBlock: 2, paddingInline: 6 },
   paymentSucceeded: { backgroundColor: '#dcfce7', color: '#166534' },
+  paymentPending: { backgroundColor: '#fef3c7', color: '#92400e' },
   paymentFailed: { backgroundColor: '#fee2e2', color: '#991b1b' },
   failureMessage: { color: '#991b1b', fontSize: 13, overflowWrap: 'anywhere' },
   status: { borderRadius: 4, display: 'inline-block', fontSize: 12, fontWeight: 600, paddingBlock: 3, paddingInline: 7 },

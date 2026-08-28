@@ -12,7 +12,7 @@ use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Models\ProductOptionValue;
 use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
-use Larasell\Larasell\Payments\FakePaymentProvider;
+use Larasell\Larasell\Payments\OfflinePaymentProvider;
 
 return [
     'models' => [
@@ -42,9 +42,16 @@ return [
     ],
 
     'payments' => [
-        'provider' => FakePaymentProvider::class,
-        'fake' => [
-            'succeeds' => true,
+        'default' => 'cash',
+        'methods' => [
+            'cash' => [
+                'driver' => 'offline',
+                'provider' => OfflinePaymentProvider::class,
+            ],
+            'bank_transfer' => [
+                'driver' => 'offline',
+                'provider' => OfflinePaymentProvider::class,
+            ],
         ],
     ],
 ];
