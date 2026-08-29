@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\PaymentProvider;
@@ -103,6 +104,41 @@ it('checks out a guest cart with the default cash payment method', function () {
         ->and($result->requiresRedirect())->toBeFalse()
         ->and($cart->fresh()->items)->toHaveCount(0)
         ->and($product->fresh()->stock)->toBe(3);
+});
+
+it('locks products in a deterministic order', function () {
+    $firstProduct = Product::query()->create([
+        'slug' => 'first-product',
+        'name' => 'First product',
+        'price' => Price::of(500),
+        'stock' => 5,
+        'allow_backorders' => false,
+        'status' => Visibility::Visible,
+    ]);
+    $secondProduct = Product::query()->create([
+        'slug' => 'second-product',
+        'name' => 'Second product',
+        'price' => Price::of(700),
+        'stock' => 5,
+        'allow_backorders' => false,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($secondProduct);
+    $cart->add($firstProduct);
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    app(Checkout::class)->create($cart, checkoutData());
+    $queries = collect($queries)->map(
+        fn (string $query): string => str_replace(['"', '`'], '', $query)
+    );
+
+    expect($queries->contains(fn (string $query): bool => str_contains($query, 'from larasell_cart_items')
+        && str_contains($query, 'order by product_id asc')
+    ))->toBeTrue();
 });
 
 it('keeps snapshots after the source product changes', function () {
