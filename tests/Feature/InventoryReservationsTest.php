@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Carbon;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
@@ -105,3 +106,34 @@ it('releases reservations without restoring stock when restocking is disabled', 
         ->and($reservation->release_reason)->toBe('order_cancelled')
         ->and($product->fresh()->stock)->toBe(3);
 });
+
+it('snapshots the selected payment methods reservation lifetime at checkout', function () {
+    $this->travelTo(Carbon::parse('2026-08-29 12:00:00'));
+    config()->set('larasell.payments.methods.cash.inventory_reservation_minutes', 30);
+    [$cart] = inventoryReservationCart();
+
+    app(Checkout::class)->create($cart, inventoryReservationCheckoutData());
+
+    expect(InventoryReservation::query()->sole()->expires_at?->toDateTimeString())
+        ->toBe('2026-08-29 12:30:00');
+});
+
+it('allows payment methods to create reservations without expiration', function () {
+    config()->set('larasell.payments.methods.cash.inventory_reservation_minutes', null);
+    [$cart] = inventoryReservationCart();
+
+    app(Checkout::class)->create($cart, inventoryReservationCheckoutData());
+
+    expect(InventoryReservation::query()->sole()->expires_at)->toBeNull();
+});
+
+it('rejects invalid reservation lifetimes before checkout modifies inventory', function (mixed $minutes) {
+    config()->set('larasell.payments.methods.cash.inventory_reservation_minutes', $minutes);
+    [$cart, $product] = inventoryReservationCart();
+
+    expect(fn () => app(Checkout::class)->create($cart, inventoryReservationCheckoutData()))
+        ->toThrow(InvalidArgumentException::class, 'inventory_reservation_minutes must be a positive integer or null');
+
+    expect($cart->fresh()->items)->toHaveCount(1)
+        ->and($product->fresh()->stock)->toBe(5);
+})->with([0, -1, '30', 1.5, false]);

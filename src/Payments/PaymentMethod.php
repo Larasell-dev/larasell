@@ -13,5 +13,6 @@ final readonly class PaymentMethod
         public string $handle,
         public string $driver,
         public string $provider,
+        public ?int $inventoryReservationMinutes = null,
     ) {}
 }
