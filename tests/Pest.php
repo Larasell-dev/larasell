@@ -23,6 +23,9 @@ pest()->extend(AdminTestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Admin');
 
+pest()->extend(TestCase::class)
+    ->in('Concurrency');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
