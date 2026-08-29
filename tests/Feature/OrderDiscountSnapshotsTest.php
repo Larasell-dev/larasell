@@ -58,7 +58,7 @@ it('snapshots applied discounts and their permanent order line allocations', fun
         ->and($order->payments->sole()->amount->amount())->toBe('500')
         ->and($item->discount_total->amount())->toBe('500')
         ->and($item->total->amount())->toBe('1000')
-        ->and($order->discounts)->toBe([[
+        ->and($order->discounts)->toEqual([[
             'identifier' => 'order-snapshot-discount',
             'name' => 'Order snapshot discount',
             'total' => ['amount' => '500'],
@@ -81,7 +81,7 @@ it('snapshots shipping discount allocations separately from order lines', functi
         ->and($order->discount_total->amount())->toBe('300')
         ->and($order->total->amount())->toBe('1000')
         ->and($order->items->sole()->discount_total->amount())->toBe('0')
-        ->and($order->discounts[0]['allocations'])->toBe([[
+        ->and($order->discounts[0]['allocations'])->toEqual([[
             'target' => 'shipping',
             'order_item_id' => null,
             'amount' => ['amount' => '300'],
