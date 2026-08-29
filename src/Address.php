@@ -22,6 +22,8 @@ final readonly class Address implements JsonSerializable
         public ?string $state = null,
         public ?string $email = null,
         public ?string $phone = null,
+        public ?string $company = null,
+        public ?string $taxId = null,
     ) {
         $this->street = is_array($street) ? array_values($street) : [$street];
 
@@ -64,6 +66,8 @@ final readonly class Address implements JsonSerializable
      *     state?: string|null,
      *     email?: string|null,
      *     phone?: string|null
+     *     company?: string|null,
+     *     tax_id?: string|null
      * } $address
      */
     public static function fromArray(array $address): self
@@ -85,6 +89,8 @@ final readonly class Address implements JsonSerializable
             state: $address['state'] ?? null,
             email: $address['email'] ?? null,
             phone: $address['phone'] ?? null,
+            company: $address['company'] ?? null,
+            taxId: $address['tax_id'] ?? null,
         );
     }
 
@@ -102,6 +108,8 @@ final readonly class Address implements JsonSerializable
             'postcode' => $this->postcode,
             'email' => $this->email,
             'phone' => $this->phone,
+            'company' => $this->company,
+            'tax_id' => $this->taxId,
         ];
     }
 
