@@ -82,7 +82,7 @@ it('checks out without addresses when the selected option does not require one',
     $order = app(Checkout::class)->create($cart, [
         'customer_email' => 'buyer@example.com',
         'customer_name' => 'Buyer Name',
-    ]);
+    ])->order;
 
     expect($order->billing_address)->toBeNull()
         ->and($order->shipping_address)->toBeNull();
@@ -127,7 +127,7 @@ it('snapshots selected shipping details and charges them at checkout', function 
     $cart->add(shippingProduct(['price' => Price::of(1000)]));
     $cart->selectShippingOption('standard');
 
-    $order = app(Checkout::class)->create($cart, shippingCheckoutData());
+    $order = app(Checkout::class)->create($cart, shippingCheckoutData())->order;
 
     expect($order->subtotal->amount())->toBe('1000')
         ->and($order->shipping_method)->toBe(TestShippingMethod::class)

@@ -52,6 +52,14 @@ class Payment extends Model
         return $this->belongsTo(app(ModelRegistry::class)->order->class());
     }
 
+    public static function findByProviderReference(string $provider, string $reference): static
+    {
+        return static::query()
+            ->where('provider', $provider)
+            ->where('reference', $reference)
+            ->firstOrFail();
+    }
+
     public function transitionTo(PaymentStatus $status): void
     {
         if (! $this->status->canTransitionTo($status)) {
@@ -90,6 +98,37 @@ class Payment extends Model
             ]);
             PaymentSucceeded::dispatch($payment);
             $order->transitionTo(OrderStatus::Paid);
+
+            return $payment->refresh();
+        });
+    }
+
+    public function markAsFailed(?string $message = null): self
+    {
+        return $this->getConnection()->transaction(function () use ($message): self {
+            $order = $this->order()->lockForUpdate()->firstOrFail();
+
+            /** @var self $payment */
+            $payment = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+
+            if ($payment->status === PaymentStatus::Failed) {
+                return $payment;
+            }
+
+            if ($payment->status !== PaymentStatus::Pending) {
+                throw new InvalidArgumentException("Payment cannot be marked as failed from [{$payment->status->value}].");
+            }
+
+            if ($order->status !== OrderStatus::PendingPayment) {
+                throw new InvalidArgumentException("Payment cannot be marked as failed for an order with status [{$order->status->value}].");
+            }
+
+            $payment->update([
+                'status' => PaymentStatus::Failed,
+                'failure_message' => $message,
+            ]);
+            PaymentFailed::dispatch($payment);
+            $order->transitionTo(OrderStatus::PaymentFailed);
 
             return $payment->refresh();
         });

@@ -25,7 +25,7 @@ function cancellableOrder(int $stock = 5, int $quantity = 2): array
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product, $quantity);
 
-    $order = app(Checkout::class)->create($cart, checkoutData());
+    $order = app(Checkout::class)->create($cart, checkoutData())->order;
 
     return [$order, $product];
 }
