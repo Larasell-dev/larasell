@@ -15,6 +15,7 @@ use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\RefundStatus;
+use Larasell\Larasell\Events\InventoryReservationConsumed;
 use Larasell\Larasell\Events\PaymentCancelled;
 use Larasell\Larasell\Events\PaymentFailed;
 use Larasell\Larasell\Events\PaymentPending;
@@ -192,12 +193,17 @@ class Payment extends Model
                 'paid_at' => now(),
                 'failure_message' => null,
             ]);
-            $order->inventoryReservations()
+            $reservations = $order->inventoryReservations()
                 ->where('status', InventoryReservationStatus::Active->value)
-                ->update([
+                ->get();
+
+            foreach ($reservations as $reservation) {
+                $reservation->update([
                     'status' => InventoryReservationStatus::Consumed,
                     'consumed_at' => now(),
                 ]);
+                InventoryReservationConsumed::dispatch($reservation);
+            }
             PaymentSucceeded::dispatch($payment);
             $order->transitionTo(OrderStatus::Paid);
 

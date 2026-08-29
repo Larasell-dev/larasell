@@ -12,9 +12,11 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\InventoryReservationReleased;
 use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Events\OrderCancelled;
 use Larasell\Larasell\Events\OrderFulfilled;
@@ -105,9 +107,12 @@ class Order extends Model
         };
     }
 
-    public function cancel(bool $restock = true, ?string $reason = null): self
-    {
-        return $this->getConnection()->transaction(function () use ($restock, $reason): self {
+    public function cancel(
+        bool $restock = true,
+        ?string $reason = null,
+        InventoryReservationReleaseReason $inventoryReleaseReason = InventoryReservationReleaseReason::OrderCancelled,
+    ): self {
+        return $this->getConnection()->transaction(function () use ($restock, $reason, $inventoryReleaseReason): self {
             /** @var self $order */
             $order = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
 
@@ -176,8 +181,9 @@ class Order extends Model
                 $reservation->update([
                     'status' => InventoryReservationStatus::Released,
                     'released_at' => now(),
-                    'release_reason' => 'order_cancelled',
+                    'release_reason' => $inventoryReleaseReason->value,
                 ]);
+                InventoryReservationReleased::dispatch($reservation);
             }
 
             $order->update([

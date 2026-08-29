@@ -9,6 +9,7 @@ use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\InventoryDecremented;
+use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
@@ -115,7 +116,7 @@ class Checkout
 
                 if ($item->product->stock !== null) {
                     $item->product->decrement('stock', $item->quantity);
-                    $orderItem->inventoryReservation()->create([
+                    $reservation = $orderItem->inventoryReservation()->create([
                         'order_id' => $order->getKey(),
                         'product_id' => $item->product->getKey(),
                         'quantity' => $item->quantity,
@@ -125,6 +126,7 @@ class Checkout
                             : now()->addMinutes($method->inventoryReservationMinutes),
                     ]);
                     InventoryDecremented::dispatch($item->product, $order, $item->quantity);
+                    InventoryReserved::dispatch($reservation);
                 }
             }
 

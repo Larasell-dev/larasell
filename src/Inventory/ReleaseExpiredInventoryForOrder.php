@@ -2,9 +2,11 @@
 
 namespace Larasell\Larasell\Inventory;
 
+use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\InventoryReservationExpired;
 use Larasell\Larasell\Models\InventoryReservation;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
@@ -47,13 +49,14 @@ final readonly class ReleaseExpiredInventoryForOrder
                 return false;
             }
 
-            $reservationIds = $reservations->modelKeys();
+            $order->cancel(
+                reason: 'Inventory reservation expired',
+                inventoryReleaseReason: InventoryReservationReleaseReason::ReservationExpired,
+            );
 
-            $order->cancel(reason: 'Inventory reservation expired');
-
-            $this->models->inventoryReservation->query()
-                ->whereKey($reservationIds)
-                ->update(['release_reason' => 'reservation_expired']);
+            foreach ($reservations as $reservation) {
+                InventoryReservationExpired::dispatch($reservation->refresh());
+            }
 
             return true;
         });
