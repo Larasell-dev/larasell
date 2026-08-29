@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection as SupportCollection;
 use InvalidArgumentException;
+use Larasell\Larasell\Discounts\DiscountResult;
+use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
@@ -103,8 +106,8 @@ class Cart extends Model
         return $total;
     }
 
-    /** @return \Illuminate\Support\Collection<int, ShippingOption> */
-    public function shippingOptions(): \Illuminate\Support\Collection
+    /** @return SupportCollection<int, ShippingOption> */
+    public function shippingOptions(): SupportCollection
     {
         return app(ShippingManager::class)->options($this);
     }
@@ -138,6 +141,42 @@ class Cart extends Model
     }
 
     public function total(): ?Price
+    {
+        $total = $this->totalBeforeDiscounts();
+
+        if ($total === null) {
+            return null;
+        }
+
+        return $total->subtract($this->discountTotal());
+    }
+
+    /** @return SupportCollection<int, DiscountResult> */
+    public function discounts(): SupportCollection
+    {
+        if ($this->items()->doesntExist()) {
+            return collect();
+        }
+
+        return app(PromotionManager::class)->apply($this);
+    }
+
+    public function discountTotal(): Price
+    {
+        $discountTotal = $this->discounts()->reduce(
+            fn (Price $total, DiscountResult $discount): Price => $total->add($discount->total()),
+            Price::of(0),
+        );
+        $total = $this->totalBeforeDiscounts();
+
+        if ($total === null) {
+            return Price::of(0);
+        }
+
+        return $discountTotal->greaterThan($total) ? $total : $discountTotal;
+    }
+
+    private function totalBeforeDiscounts(): ?Price
     {
         $subtotal = $this->subtotal();
 
