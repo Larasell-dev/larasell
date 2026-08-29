@@ -53,7 +53,11 @@ class Checkout
         [$order, $payment] = $this->database->transaction(function () use ($cart, $data, $method): array {
             /** @var Cart $lockedCart */
             $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
-            $items = $lockedCart->items()->with('product')->lockForUpdate()->get();
+            $items = $lockedCart->items()
+                ->with('product')
+                ->orderBy('product_id')
+                ->lockForUpdate()
+                ->get();
             $shippingOption = $lockedCart->shippingOption();
 
             if ($shippingOption?->requiresAddress && $data['shipping_address'] === null) {
