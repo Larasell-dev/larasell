@@ -138,6 +138,34 @@ A pending attempt can instead be cancelled with `$payment->cancel()`. Cancellati
 only changes the payment to `cancelled`; it does not cancel the order or restore
 stock.
 
+## Refunds
+
+Successful payments can be refunded in full or in part. Omitting the amount
+refunds the remaining amount that is not already refunded or reserved by a
+pending refund:
+
+```php
+use Larasell\Larasell\Price;
+
+$refund = $payment->refund();
+$partialRefund = $payment->refund(Price::of(2500));
+```
+
+Cash and bank transfer refunds remain `pending` until their real-world transfer
+is confirmed manually:
+
+```php
+$refund->markAsSucceeded();
+// or: $refund->markAsFailed($message);
+// or: $refund->cancel();
+```
+
+`$payment->refundedAmount()`, `$payment->pendingRefundAmount()`, and
+`$payment->refundableAmount()` expose the financial totals. Pending refunds
+reserve their amount so concurrent attempts cannot exceed the successful
+payment. The original payment remains `succeeded`; refund records preserve the
+separate money movement and its history.
+
 ## Cancelling an order
 
 Unpaid orders can be cancelled directly. Pending payments are cancelled and
@@ -153,7 +181,9 @@ Pass `restock: false` when the inventory should remain deducted:
 $order->cancel(restock: false);
 ```
 
-Paid orders cannot be cancelled until the application has handled their refund.
+Paid orders can only be cancelled after every successful payment has been fully
+refunded. A refund never cancels an order automatically, and fulfilled orders
+cannot be cancelled even after a full refund.
 Order items store the quantity actually deducted from finite inventory, so
 cancellation does not infer restocking from the product's current settings.
 
@@ -169,9 +199,14 @@ Larasell dispatches dedicated events after their database transaction commits:
 - `Larasell\Larasell\Events\PaymentSucceeded`
 - `Larasell\Larasell\Events\PaymentFailed`
 - `Larasell\Larasell\Events\PaymentCancelled`
+- `Larasell\Larasell\Events\RefundPending`
+- `Larasell\Larasell\Events\RefundSucceeded`
+- `Larasell\Larasell\Events\RefundFailed`
+- `Larasell\Larasell\Events\RefundCancelled`
 
 Each order event exposes an `$order` property and each payment event exposes a
-`$payment` property. Idempotent operations do not dispatch duplicate events.
+`$payment` property. Refund events expose a `$refund` property. Idempotent
+operations do not dispatch duplicate events.
 
 ```php
 use Illuminate\Support\Facades\Event;
@@ -247,3 +282,10 @@ $payment->markAsPaid();
 
 Return and cancellation URLs are storefront navigation only. They must not mark
 a payment as paid; asynchronous provider webhooks are authoritative.
+
+Providers that support refunds additionally implement
+`Larasell\Larasell\Contracts\RefundProvider`. Its `refund()` method receives a
+persisted payment and refund through `RefundRequest` and returns
+`RefundResult::pending()`, `succeeded()`, `failed()`, or `cancelled()`. Providers
+that only implement `PaymentProvider` continue to work, but their payments
+cannot be refunded through Larasell.

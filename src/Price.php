@@ -42,6 +42,21 @@ final readonly class Price implements JsonSerializable
         return self::of(bcadd($this->amount, $price->amount, 0));
     }
 
+    public function subtract(self $price): self
+    {
+        return self::of(bcsub($this->amount, $price->amount, 0));
+    }
+
+    public function isPositive(): bool
+    {
+        return bccomp($this->amount, '0', 0) === 1;
+    }
+
+    public function greaterThan(self $price): bool
+    {
+        return bccomp($this->amount, $price->amount, 0) === 1;
+    }
+
     public function multiply(int $multiplier): self
     {
         return self::of(bcmul($this->amount, (string) $multiplier, 0));

@@ -15,7 +15,7 @@ enum OrderStatus: string
         return in_array($status, match ($this) {
             self::PendingPayment => [self::Paid, self::PaymentFailed, self::Cancelled],
             self::PaymentFailed => [self::PendingPayment, self::Cancelled],
-            self::Paid => [self::Fulfilled],
+            self::Paid => [self::Fulfilled, self::Cancelled],
             self::Fulfilled, self::Cancelled => [],
         }, true);
     }

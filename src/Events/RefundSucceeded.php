@@ -1,0 +1,14 @@
+<?php
+
+namespace Larasell\Larasell\Events;
+
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Models\Refund;
+
+class RefundSucceeded implements ShouldDispatchAfterCommit
+{
+    use Dispatchable;
+
+    public function __construct(public Refund $refund) {}
+}

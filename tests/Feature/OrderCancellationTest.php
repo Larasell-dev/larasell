@@ -68,7 +68,7 @@ it('does not cancel an order that has been paid', function () {
     $order->payments->first()->markAsPaid();
 
     expect(fn () => $order->cancel())
-        ->toThrow(InvalidArgumentException::class, 'Order cannot be cancelled from [paid].');
+        ->toThrow(InvalidArgumentException::class, 'An order with a successful payment cannot be cancelled before it is refunded.');
 
     expect($order->fresh()->status)->toBe(OrderStatus::Paid)
         ->and($product->fresh()->stock)->toBe(3);

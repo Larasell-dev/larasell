@@ -105,13 +105,15 @@ class Order extends Model
                 return $order;
             }
 
-            if (! in_array($order->status, [OrderStatus::PendingPayment, OrderStatus::PaymentFailed], true)) {
+            if (! in_array($order->status, [OrderStatus::PendingPayment, OrderStatus::PaymentFailed, OrderStatus::Paid], true)) {
                 throw new InvalidArgumentException("Order cannot be cancelled from [{$order->status->value}].");
             }
 
             $payments = $order->payments()->lockForUpdate()->get();
 
-            if ($payments->contains('status', PaymentStatus::Succeeded)) {
+            if ($payments
+                ->where('status', PaymentStatus::Succeeded)
+                ->contains(fn (Payment $payment): bool => ! $payment->isFullyRefunded())) {
                 throw new InvalidArgumentException('An order with a successful payment cannot be cancelled before it is refunded.');
             }
 
