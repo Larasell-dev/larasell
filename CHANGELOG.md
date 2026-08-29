@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Larasell-dev/larasell/compare/v1.1.0...v1.2.0) (2026-08-29)
+
+
+### Features
+
+* add refunds ([#17](https://github.com/Larasell-dev/larasell/issues/17)) ([c737f8c](https://github.com/Larasell-dev/larasell/commit/c737f8c8cc1437c039ac508003874a68e2365c88))
+
 ## [1.1.0](https://github.com/Larasell-dev/larasell/compare/v1.0.2...v1.1.0) (2026-08-29)
 
 
