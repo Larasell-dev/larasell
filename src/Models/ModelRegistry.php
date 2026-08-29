@@ -24,6 +24,9 @@ final readonly class ModelRegistry
     /** @var ModelEntry<Payment> */
     public ModelEntry $payment;
 
+    /** @var ModelEntry<Refund> */
+    public ModelEntry $refund;
+
     /** @var ModelEntry<Product> */
     public ModelEntry $product;
 
@@ -47,6 +50,7 @@ final readonly class ModelRegistry
         $this->order = new ModelEntry($config, 'larasell.models.order', Order::class);
         $this->orderItem = new ModelEntry($config, 'larasell.models.order_item', OrderItem::class);
         $this->payment = new ModelEntry($config, 'larasell.models.payment', Payment::class);
+        $this->refund = new ModelEntry($config, 'larasell.models.refund', Refund::class);
         $this->product = new ModelEntry($config, 'larasell.models.product', Product::class);
         $this->productImage = new ModelEntry($config, 'larasell.models.product_image', ProductImage::class);
         $this->productOption = new ModelEntry($config, 'larasell.models.product_option', ProductOption::class);

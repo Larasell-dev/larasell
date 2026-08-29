@@ -2,19 +2,25 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Larasell\Larasell\Casts\PriceCast;
+use Larasell\Larasell\Contracts\RefundProvider;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\RefundStatus;
 use Larasell\Larasell\Events\PaymentCancelled;
 use Larasell\Larasell\Events\PaymentFailed;
 use Larasell\Larasell\Events\PaymentPending;
 use Larasell\Larasell\Events\PaymentSucceeded;
+use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Refunds\RefundRequest;
 
 /**
  * @property string $method
@@ -24,6 +30,7 @@ use Larasell\Larasell\Price;
  * @property Price $amount
  * @property string|null $failure_message
  * @property Carbon|null $paid_at
+ * @property Collection<int, Refund> $refunds
  */
 class Payment extends Model
 {
@@ -50,6 +57,94 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(app(ModelRegistry::class)->order->class());
+    }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(app(ModelRegistry::class)->refund->class());
+    }
+
+    /** @param array<string, mixed> $options */
+    public function refund(?Price $amount = null, array $options = []): Refund
+    {
+        $method = app(PaymentManager::class)->method($this->method);
+        $provider = app(PaymentManager::class)->provider($method);
+
+        if (! $provider instanceof RefundProvider) {
+            throw new InvalidArgumentException("Payment method [{$this->method}] does not support refunds.");
+        }
+
+        $refund = $this->getConnection()->transaction(function () use ($amount): Refund {
+            /** @var self $payment */
+            $payment = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+
+            if ($payment->status !== PaymentStatus::Succeeded) {
+                throw new InvalidArgumentException("Payment cannot be refunded from [{$payment->status->value}].");
+            }
+
+            $available = $payment->refundableAmount();
+            $amount ??= $available;
+
+            if (! $amount->isPositive()) {
+                throw new InvalidArgumentException('Refund amount must be greater than zero.');
+            }
+
+            if ($amount->greaterThan($available)) {
+                throw new InvalidArgumentException('Refund amount exceeds the refundable payment amount.');
+            }
+
+            /** @var Refund $refund */
+            $refund = $payment->refunds()->create([
+                'provider' => $payment->provider,
+                'status' => RefundStatus::Pending,
+                'amount' => $amount,
+            ]);
+
+            return $refund;
+        });
+
+        $result = $provider->refund(new RefundRequest($this->refresh(), $refund, $options));
+
+        if ($result->reference !== null) {
+            $refund->update(['reference' => $result->reference]);
+        }
+
+        return match ($result->status) {
+            RefundStatus::Pending => $refund->refresh(),
+            RefundStatus::Succeeded => $refund->markAsSucceeded(),
+            RefundStatus::Failed => $refund->markAsFailed($result->failureMessage),
+            RefundStatus::Cancelled => $refund->cancel(),
+        };
+    }
+
+    public function refundedAmount(): Price
+    {
+        return $this->refundAmountFor([RefundStatus::Succeeded]);
+    }
+
+    public function pendingRefundAmount(): Price
+    {
+        return $this->refundAmountFor([RefundStatus::Pending]);
+    }
+
+    public function refundableAmount(): Price
+    {
+        return $this->amount
+            ->subtract($this->refundedAmount())
+            ->subtract($this->pendingRefundAmount());
+    }
+
+    public function isPartiallyRefunded(): bool
+    {
+        $refunded = $this->refundedAmount();
+
+        return $refunded->isPositive() && $this->amount->greaterThan($refunded);
+    }
+
+    public function isFullyRefunded(): bool
+    {
+        return ! $this->amount->greaterThan($this->refundedAmount());
     }
 
     public static function findByProviderReference(string $provider, string $reference): static
@@ -162,5 +257,17 @@ class Payment extends Model
             PaymentStatus::Failed => PaymentFailed::dispatch($payment),
             PaymentStatus::Cancelled => PaymentCancelled::dispatch($payment),
         };
+    }
+
+    /** @param array<int, RefundStatus> $statuses */
+    private function refundAmountFor(array $statuses): Price
+    {
+        return $this->refunds()
+            ->whereIn('status', array_map(fn (RefundStatus $status): string => $status->value, $statuses))
+            ->get()
+            ->reduce(
+                fn (Price $total, Refund $refund): Price => $total->add($refund->amount),
+                Price::of(0),
+            );
     }
 }

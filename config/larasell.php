@@ -10,6 +10,7 @@ use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Models\ProductOptionValue;
+use Larasell\Larasell\Models\Refund;
 use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\OfflinePaymentProvider;
@@ -22,6 +23,7 @@ return [
         'order' => Order::class,
         'order_item' => OrderItem::class,
         'payment' => Payment::class,
+        'refund' => Refund::class,
         'product' => Product::class,
         'product_image' => ProductImage::class,
         'product_option' => ProductOption::class,
