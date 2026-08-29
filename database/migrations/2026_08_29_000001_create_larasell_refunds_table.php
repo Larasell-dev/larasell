@@ -22,9 +22,4 @@ return new class extends Migration
             $table->unique(['provider', 'reference']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('larasell_refunds');
-    }
 };
