@@ -161,6 +161,7 @@ class Checkout
             $order->update(['discounts' => $discounts->map(fn (DiscountResult $discount): array => [
                 'identifier' => $discount->identifier,
                 'name' => $discount->name,
+                ...($discount->code === null ? [] : ['code' => $discount->code]),
                 'total' => $discount->total()->toArray(),
                 'allocations' => collect($discount->allocations)->map(
                     fn (DiscountAllocation $allocation): array => [

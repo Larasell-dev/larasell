@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Discounts;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Larasell\Larasell\Contracts\CodedPromotion;
 use Larasell\Larasell\Contracts\Promotion;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
@@ -35,6 +36,7 @@ final class PromotionManager
     /** @return Collection<int, DiscountResult> */
     public function apply(Cart $cart): Collection
     {
+        $this->codedPromotions();
         $context = $this->context($cart);
         $results = collect();
         $identifiers = [];
@@ -45,7 +47,15 @@ final class PromotionManager
         }
 
         foreach ($this->promotions as $promotionClass) {
-            $result = $this->container->make($promotionClass)->apply($context);
+            /** @var Promotion $promotion */
+            $promotion = $this->container->make($promotionClass);
+
+            if ($promotion instanceof CodedPromotion
+                && ! in_array(self::normalizeCode($promotion->code()), $cart->promotionCodes(), true)) {
+                continue;
+            }
+
+            $result = $promotion->apply($context);
 
             if ($result === null) {
                 continue;
@@ -73,10 +83,77 @@ final class PromotionManager
                 $remaining[$allocation->target] = $remaining[$allocation->target]->subtract($amount);
             }
 
-            $results->push(new DiscountResult($result->identifier, $result->name, $allocations));
+            $results->push(new DiscountResult(
+                $result->identifier,
+                $result->name,
+                $allocations,
+                $promotion instanceof CodedPromotion ? self::normalizeCode($promotion->code()) : null,
+            ));
         }
 
         return $results;
+    }
+
+    public function attachCode(Cart $cart, string $code): Cart
+    {
+        $code = self::normalizeCode($code);
+        $promotion = $this->codedPromotions()[$code] ?? null;
+
+        if ($promotion === null) {
+            throw new InvalidArgumentException("Promotion code [{$code}] is not registered.");
+        }
+
+        $context = $this->context($cart);
+        $result = $promotion->apply($context);
+
+        if ($result === null || ! $result->total()->isPositive()) {
+            throw new InvalidArgumentException("Promotion code [{$code}] is not applicable to this cart.");
+        }
+
+        $this->validateTargets($result, $context);
+
+        $codes = $cart->promotionCodes();
+
+        if (! in_array($code, $codes, true)) {
+            $codes[] = $code;
+            $cart->update(['promotion_codes' => $codes]);
+        }
+
+        return $cart;
+    }
+
+    public static function normalizeCode(string $code): string
+    {
+        return strtoupper(trim($code));
+    }
+
+    /** @return array<string, CodedPromotion> */
+    private function codedPromotions(): array
+    {
+        $coded = [];
+
+        foreach ($this->promotions as $promotionClass) {
+            /** @var Promotion $promotion */
+            $promotion = $this->container->make($promotionClass);
+
+            if (! $promotion instanceof CodedPromotion) {
+                continue;
+            }
+
+            $code = self::normalizeCode($promotion->code());
+
+            if ($code === '') {
+                throw new InvalidArgumentException("Coded promotion [{$promotionClass}] must provide a code.");
+            }
+
+            if (isset($coded[$code])) {
+                throw new InvalidArgumentException("Promotion codes must be unique. Duplicate code [{$code}].");
+            }
+
+            $coded[$code] = $promotion;
+        }
+
+        return $coded;
     }
 
     private function context(Cart $cart): PromotionContext
