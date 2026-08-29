@@ -58,7 +58,8 @@ so later changes to customer or product records do not rewrite order history.
 Both addresses accept an `Address` value object or an associative array. An
 address requires `country`, `first_name`, `last_name`, `street`, `city`, and
 `postcode`. `street` may be a string or an ordered array of lines. `title`,
-`state`, `email`, and `phone` are optional.
+`state`, `email`, `phone`, `company`, and `tax_id` are optional. All values are
+stored in the order snapshot.
 
 Order addresses always return `Address` value objects, regardless of which input form
 was used:

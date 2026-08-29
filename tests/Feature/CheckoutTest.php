@@ -131,6 +131,37 @@ it('keeps snapshots after the source product changes', function () {
         ->and($item->unit_price->amount())->toBe('500');
 });
 
+it('snapshots company and tax identifiers from address payloads', function () {
+    $product = Product::query()->create([
+        'slug' => 'business-order',
+        'name' => 'Business order',
+        'price' => Price::of(1200),
+        'allow_backorders' => true,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($product);
+    $data = checkoutData();
+    $data['billing_address'] = [
+        'country' => 'DE',
+        'first_name' => 'Buyer',
+        'last_name' => 'Name',
+        'company' => 'Example GmbH',
+        'tax_id' => 'DE123456789',
+        'street' => 'Main Street 1',
+        'city' => 'Berlin',
+        'postcode' => '10115',
+    ];
+
+    $order = app(Checkout::class)->create($cart, $data)->order;
+    $data['billing_address']['company'] = 'Changed Company';
+    $data['billing_address']['tax_id'] = 'CHANGED';
+    $address = $order->fresh()->billing_address;
+
+    expect($address?->company)->toBe('Example GmbH')
+        ->and($address?->taxId)->toBe('DE123456789');
+});
+
 it('records declined payments and marks the order as failed', function () {
     config()->set('larasell.payments.methods.declining', [
         'driver' => 'declining',
