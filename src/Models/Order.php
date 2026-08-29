@@ -15,6 +15,7 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Events\OrderCancelled;
 use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
@@ -143,6 +144,7 @@ class Order extends Model
 
                     if ($product !== null && $product->stock !== null) {
                         $product->increment('stock', $reservation->quantity);
+                        InventoryRestocked::dispatch($product, $order, $reservation->quantity);
                     }
                 }
 
@@ -162,6 +164,7 @@ class Order extends Model
 
                     if ($product !== null && $product->stock !== null) {
                         $product->increment('stock', $item->inventory_quantity);
+                        InventoryRestocked::dispatch($product, $order, $item->inventory_quantity);
                     }
                 }
 
