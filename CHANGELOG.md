@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.0](https://github.com/Larasell-dev/larasell/compare/v1.2.0...v1.3.0) (2026-08-29)
+
+
+### Features
+
+* add expired inventory cleanup command ([76aa531](https://github.com/Larasell-dev/larasell/commit/76aa531d4b5fdbfdd3681330985d670d3d6eef63))
+* add inventory events ([2587b56](https://github.com/Larasell-dev/larasell/commit/2587b56571ae9945ef7b1de398476f2d22d6987a))
+* add inventory reservation lifecycle events ([3ee7648](https://github.com/Larasell-dev/larasell/commit/3ee76489e04fcfdaa72a476063d6289e46a939ed))
+* add optional company details to addresses ([#19](https://github.com/Larasell-dev/larasell/issues/19)) ([2114346](https://github.com/Larasell-dev/larasell/commit/21143469d6fbb3b522c4e256656e83f239ca84fe))
+* add optional company details to addresses ([#22](https://github.com/Larasell-dev/larasell/issues/22)) ([18f87af](https://github.com/Larasell-dev/larasell/commit/18f87af886b3e730ffe11fd782ca97954e36fe86))
+* add optional order cancelation reason ([1fa86da](https://github.com/Larasell-dev/larasell/commit/1fa86dafeffcb4e18faa12064796dbdb3b428f39))
+* configure inventory reservation expiration ([#26](https://github.com/Larasell-dev/larasell/issues/26)) ([0010f53](https://github.com/Larasell-dev/larasell/commit/0010f53fce28628efda627b612950199e55c3c05))
+* consume inventory reservations on payment ([9f4db0b](https://github.com/Larasell-dev/larasell/commit/9f4db0b50ca1b26c94b3f4a5b620e6ec277e620a))
+* release expired inventory reservations ([fd94539](https://github.com/Larasell-dev/larasell/commit/fd94539b57d8905210b3c6355c90ec2769ccbb14))
+* release inventory reservations on cancellation ([d814741](https://github.com/Larasell-dev/larasell/commit/d814741e911605000d3cc26d04e2c49f7b7359e1))
+* reserve inventory during checkout ([b8a2323](https://github.com/Larasell-dev/larasell/commit/b8a2323b8ddefde3ba5a633cfa7cad0c1bcebca8))
+
+
+### Bug Fixes
+
+* verify product ordering to prevent deadlock ([#23](https://github.com/Larasell-dev/larasell/issues/23)) ([125091f](https://github.com/Larasell-dev/larasell/commit/125091fa5da6c5c901b09ade677c9be065d4217f))
+
 ## [1.2.0](https://github.com/Larasell-dev/larasell/compare/v1.1.0...v1.2.0) (2026-08-29)
 
 
