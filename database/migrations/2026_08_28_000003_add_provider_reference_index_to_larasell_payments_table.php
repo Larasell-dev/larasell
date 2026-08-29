@@ -12,11 +12,4 @@ return new class extends Migration
             $table->unique(['provider', 'reference']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::table('larasell_payments', function (Blueprint $table) {
-            $table->dropUnique(['provider', 'reference']);
-        });
-    }
 };
