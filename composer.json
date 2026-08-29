@@ -37,7 +37,7 @@
     "inertiajs/inertia-laravel": "^3.0"
   },
   "scripts": {
-    "pest": "pest tests/Unit tests/Feature tests/Admin",
+    "pest": "pest tests/Unit tests/Feature tests/Admin tests/Concurrency",
     "pint": "pint",
     "test": "@pest"
   },
