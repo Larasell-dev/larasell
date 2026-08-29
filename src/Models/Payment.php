@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Contracts\RefundProvider;
+use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\RefundStatus;
@@ -191,6 +192,12 @@ class Payment extends Model
                 'paid_at' => now(),
                 'failure_message' => null,
             ]);
+            $order->inventoryReservations()
+                ->where('status', InventoryReservationStatus::Active->value)
+                ->update([
+                    'status' => InventoryReservationStatus::Consumed,
+                    'consumed_at' => now(),
+                ]);
             PaymentSucceeded::dispatch($payment);
             $order->transitionTo(OrderStatus::Paid);
 

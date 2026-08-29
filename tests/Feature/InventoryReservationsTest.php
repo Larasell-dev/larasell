@@ -60,3 +60,19 @@ it('does not reserve inventory for products without tracked stock', function () 
     expect(InventoryReservation::query()->count())->toBe(0)
         ->and($product->fresh()->stock)->toBeNull();
 });
+
+it('consumes active inventory reservations when the order is paid', function () {
+    [$cart, $product] = inventoryReservationCart();
+    $order = app(Checkout::class)->create($cart, inventoryReservationCheckoutData())->order;
+    $payment = $order->payments->sole();
+
+    $payment->markAsPaid();
+    $payment->markAsPaid();
+
+    $reservation = InventoryReservation::query()->sole();
+
+    expect($reservation->status)->toBe(InventoryReservationStatus::Consumed)
+        ->and($reservation->consumed_at)->not->toBeNull()
+        ->and($reservation->released_at)->toBeNull()
+        ->and($product->fresh()->stock)->toBe(3);
+});
