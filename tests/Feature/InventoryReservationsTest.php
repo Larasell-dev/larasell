@@ -36,6 +36,11 @@ function inventoryReservationCart(?int $stock = 5, int $quantity = 2): array
     return [$cart, $product];
 }
 
+it('configures default reservation lifetimes for offline payment methods', function () {
+    expect(config('larasell.payments.methods.cash.inventory_reservation_minutes'))->toBe(1440)
+        ->and(config('larasell.payments.methods.bank_transfer.inventory_reservation_minutes'))->toBe(4320);
+});
+
 it('creates an active inventory reservation when checkout deducts stock', function () {
     [$cart, $product] = inventoryReservationCart();
 
