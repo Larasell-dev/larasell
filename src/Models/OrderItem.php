@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Price;
 
@@ -39,5 +40,11 @@ class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(app(ModelRegistry::class)->order->class());
+    }
+
+    /** @return HasOne<InventoryReservation, $this> */
+    public function inventoryReservation(): HasOne
+    {
+        return $this->hasOne(app(ModelRegistry::class)->inventoryReservation->class());
     }
 }

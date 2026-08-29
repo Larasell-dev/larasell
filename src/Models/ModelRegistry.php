@@ -15,6 +15,9 @@ final readonly class ModelRegistry
     /** @var ModelEntry<Category> */
     public ModelEntry $category;
 
+    /** @var ModelEntry<InventoryReservation> */
+    public ModelEntry $inventoryReservation;
+
     /** @var ModelEntry<Order> */
     public ModelEntry $order;
 
@@ -47,6 +50,7 @@ final readonly class ModelRegistry
         $this->cart = new ModelEntry($config, 'larasell.models.cart', Cart::class);
         $this->cartItem = new ModelEntry($config, 'larasell.models.cart_item', CartItem::class);
         $this->category = new ModelEntry($config, 'larasell.models.category', Category::class);
+        $this->inventoryReservation = new ModelEntry($config, 'larasell.models.inventory_reservation', InventoryReservation::class);
         $this->order = new ModelEntry($config, 'larasell.models.order', Order::class);
         $this->orderItem = new ModelEntry($config, 'larasell.models.order_item', OrderItem::class);
         $this->payment = new ModelEntry($config, 'larasell.models.payment', Payment::class);

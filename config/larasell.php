@@ -3,6 +3,7 @@
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Models\InventoryReservation;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\OrderItem;
 use Larasell\Larasell\Models\Payment;
@@ -20,6 +21,7 @@ return [
         'cart' => Cart::class,
         'cart_item' => CartItem::class,
         'category' => Category::class,
+        'inventory_reservation' => InventoryReservation::class,
         'order' => Order::class,
         'order_item' => OrderItem::class,
         'payment' => Payment::class,
