@@ -132,9 +132,12 @@ it('locks products in a deterministic order', function () {
     });
 
     app(Checkout::class)->create($cart, checkoutData());
+    $queries = collect($queries)->map(
+        fn (string $query): string => str_replace(['"', '`'], '', $query)
+    );
 
-    expect(collect($queries)->contains(fn (string $query): bool => str_contains($query, 'from "larasell_cart_items"')
-        && str_contains($query, 'order by "product_id" asc')
+    expect($queries->contains(fn (string $query): bool => str_contains($query, 'from larasell_cart_items')
+        && str_contains($query, 'order by product_id asc')
     ))->toBeTrue();
 });
 
