@@ -39,6 +39,7 @@ use Larasell\Larasell\Price;
  * @property string|null $shipping_option_name
  * @property Price|null $shipping_price
  * @property Collection<int, OrderItem> $items
+ * @property Collection<int, InventoryReservation> $inventoryReservations
  * @property Collection<int, Payment> $payments
  */
 class Order extends Model
@@ -66,6 +67,12 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(app(ModelRegistry::class)->orderItem->class());
+    }
+
+    /** @return HasMany<InventoryReservation, $this> */
+    public function inventoryReservations(): HasMany
+    {
+        return $this->hasMany(app(ModelRegistry::class)->inventoryReservation->class());
     }
 
     /** @return HasMany<Payment, $this> */

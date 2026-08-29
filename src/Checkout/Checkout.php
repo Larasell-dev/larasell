@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Checkout;
 use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\OrderPlaced;
@@ -101,7 +102,7 @@ class Checkout
             ]);
 
             foreach ($items as $item) {
-                $order->items()->create([
+                $orderItem = $order->items()->create([
                     'product_id' => $item->product->getKey(),
                     'product_name' => $item->product->name->get(),
                     'product_slug' => $item->product->slug,
@@ -113,6 +114,12 @@ class Checkout
 
                 if ($item->product->stock !== null) {
                     $item->product->decrement('stock', $item->quantity);
+                    $orderItem->inventoryReservation()->create([
+                        'order_id' => $order->getKey(),
+                        'product_id' => $item->product->getKey(),
+                        'quantity' => $item->quantity,
+                        'status' => InventoryReservationStatus::Active,
+                    ]);
                 }
             }
 
