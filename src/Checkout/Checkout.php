@@ -8,6 +8,7 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
@@ -120,6 +121,7 @@ class Checkout
                         'quantity' => $item->quantity,
                         'status' => InventoryReservationStatus::Active,
                     ]);
+                    InventoryDecremented::dispatch($item->product, $order, $item->quantity);
                 }
             }
 
