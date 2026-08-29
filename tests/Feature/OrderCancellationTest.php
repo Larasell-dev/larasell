@@ -12,6 +12,15 @@ use Larasell\Larasell\Price;
 
 uses(RefreshDatabase::class);
 
+/** @return array<string, string> */
+function cancellationCheckoutData(): array
+{
+    return [
+        'customer_email' => 'cancel@example.com',
+        'customer_name' => 'Cancel Customer',
+    ];
+}
+
 function cancellableOrder(int $stock = 5, int $quantity = 2): array
 {
     $product = Product::query()->create([
@@ -25,7 +34,7 @@ function cancellableOrder(int $stock = 5, int $quantity = 2): array
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product, $quantity);
 
-    $order = app(Checkout::class)->create($cart, checkoutData())->order;
+    $order = app(Checkout::class)->create($cart, cancellationCheckoutData())->order;
 
     return [$order, $product];
 }
@@ -37,9 +46,27 @@ it('cancels an unpaid order, its pending payment, and restocks inventory', funct
 
     expect($cancelled->status)->toBe(OrderStatus::Cancelled)
         ->and($cancelled->cancelled_at)->not->toBeNull()
+        ->and($cancelled->cancellation_reason)->toBeNull()
         ->and($cancelled->inventory_restocked_at)->not->toBeNull()
         ->and($cancelled->payments->first()->status)->toBe(PaymentStatus::Cancelled)
         ->and($product->fresh()->stock)->toBe(5);
+});
+
+it('records an optional cancellation reason', function () {
+    [$order] = cancellableOrder();
+
+    $cancelled = $order->cancel(reason: 'Customer requested cancellation');
+
+    expect($cancelled->cancellation_reason)->toBe('Customer requested cancellation');
+});
+
+it('does not replace the cancellation reason when cancellation is repeated', function () {
+    [$order] = cancellableOrder();
+
+    $order->cancel(reason: 'Customer requested cancellation');
+    $cancelled = $order->cancel(reason: 'Inventory expired');
+
+    expect($cancelled->cancellation_reason)->toBe('Customer requested cancellation');
 });
 
 it('cancels idempotently without restocking inventory twice', function () {

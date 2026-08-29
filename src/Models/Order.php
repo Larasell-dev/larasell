@@ -33,6 +33,7 @@ use Larasell\Larasell\Price;
  * @property Address|null $shipping_address
  * @property OrderStatus $status
  * @property Carbon|null $cancelled_at
+ * @property string|null $cancellation_reason
  * @property Carbon|null $inventory_restocked_at
  * @property Price $subtotal
  * @property Price $total
@@ -104,9 +105,9 @@ class Order extends Model
         };
     }
 
-    public function cancel(bool $restock = true): self
+    public function cancel(bool $restock = true, ?string $reason = null): self
     {
-        return $this->getConnection()->transaction(function () use ($restock): self {
+        return $this->getConnection()->transaction(function () use ($restock, $reason): self {
             /** @var self $order */
             $order = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
 
@@ -182,6 +183,7 @@ class Order extends Model
             $order->update([
                 'status' => OrderStatus::Cancelled,
                 'cancelled_at' => now(),
+                'cancellation_reason' => $reason,
                 'inventory_restocked_at' => $restockedAt,
             ]);
 
