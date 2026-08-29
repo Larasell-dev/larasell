@@ -38,6 +38,8 @@ use Larasell\Larasell\Price;
  * @property string|null $cancellation_reason
  * @property Carbon|null $inventory_restocked_at
  * @property Price $subtotal
+ * @property Price $discount_total
+ * @property array<int, array<string, mixed>> $discounts
  * @property Price $total
  * @property string|null $shipping_method
  * @property string|null $shipping_option
@@ -55,6 +57,11 @@ class Order extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'discount_total' => '{"amount":"0"}',
+        'discounts' => '[]',
+    ];
+
     protected $casts = [
         'customer_id' => 'integer',
         'currency' => Currency::class,
@@ -64,6 +71,8 @@ class Order extends Model
         'cancelled_at' => 'datetime',
         'inventory_restocked_at' => 'datetime',
         'subtotal' => PriceCast::class,
+        'discount_total' => PriceCast::class,
+        'discounts' => 'array',
         'total' => PriceCast::class,
         'shipping_price' => PriceCast::class,
     ];

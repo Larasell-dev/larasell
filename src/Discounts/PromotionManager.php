@@ -38,6 +38,11 @@ final class PromotionManager
         $context = $this->context($cart);
         $results = collect();
         $identifiers = [];
+        $remaining = $context->eligibleAmounts();
+
+        if ($context->shippingOption !== null) {
+            $remaining['shipping'] = $context->shippingOption->price;
+        }
 
         foreach ($this->promotions as $promotionClass) {
             $result = $this->container->make($promotionClass)->apply($context);
@@ -52,7 +57,23 @@ final class PromotionManager
 
             $this->validateTargets($result, $context);
             $identifiers[$result->identifier] = true;
-            $results->push($result);
+
+            $allocations = [];
+
+            foreach ($result->allocations as $allocation) {
+                $amount = $allocation->amount->greaterThan($remaining[$allocation->target])
+                    ? $remaining[$allocation->target]
+                    : $allocation->amount;
+
+                if (! $amount->isPositive()) {
+                    continue;
+                }
+
+                $allocations[] = new DiscountAllocation($allocation->target, $amount);
+                $remaining[$allocation->target] = $remaining[$allocation->target]->subtract($amount);
+            }
+
+            $results->push(new DiscountResult($result->identifier, $result->name, $allocations));
         }
 
         return $results;
