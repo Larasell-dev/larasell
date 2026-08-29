@@ -120,6 +120,9 @@ class Checkout
                         'product_id' => $item->product->getKey(),
                         'quantity' => $item->quantity,
                         'status' => InventoryReservationStatus::Active,
+                        'expires_at' => $method->inventoryReservationMinutes === null
+                            ? null
+                            : now()->addMinutes($method->inventoryReservationMinutes),
                     ]);
                     InventoryDecremented::dispatch($item->product, $order, $item->quantity);
                 }

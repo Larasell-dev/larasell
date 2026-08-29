@@ -35,6 +35,7 @@ class PaymentManager
 
         $driver = $method['driver'] ?? null;
         $provider = $method['provider'] ?? null;
+        $inventoryReservationMinutes = $method['inventory_reservation_minutes'] ?? null;
 
         if (! is_string($driver) || $driver === '' || ! is_string($provider) || $provider === '') {
             throw new InvalidArgumentException("Payment method [{$handle}] must define a driver and provider.");
@@ -44,7 +45,14 @@ class PaymentManager
             throw new InvalidArgumentException("Payment provider [{$provider}] must implement ".PaymentProvider::class.'.');
         }
 
-        return new PaymentMethod($handle, $driver, $provider);
+        if ($inventoryReservationMinutes !== null
+            && (! is_int($inventoryReservationMinutes) || $inventoryReservationMinutes < 1)) {
+            throw new InvalidArgumentException(
+                "Payment method [{$handle}] inventory_reservation_minutes must be a positive integer or null."
+            );
+        }
+
+        return new PaymentMethod($handle, $driver, $provider, $inventoryReservationMinutes);
     }
 
     public function provider(PaymentMethod $method): PaymentProvider

@@ -51,10 +51,12 @@ return [
             'cash' => [
                 'driver' => 'offline',
                 'provider' => OfflinePaymentProvider::class,
+                'inventory_reservation_minutes' => 1440,
             ],
             'bank_transfer' => [
                 'driver' => 'offline',
                 'provider' => OfflinePaymentProvider::class,
+                'inventory_reservation_minutes' => 4320,
             ],
         ],
     ],
