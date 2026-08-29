@@ -12,6 +12,7 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\OrderCancelled;
@@ -129,9 +130,26 @@ class Order extends Model
             }
 
             $restockedAt = null;
+            $reservations = $order->inventoryReservations()
+                ->orderBy('product_id')
+                ->lockForUpdate()
+                ->get();
 
             if ($restock) {
-                $items = $order->items()->where('inventory_quantity', '>', 0)->get();
+                foreach ($reservations as $reservation) {
+                    $product = app(ModelRegistry::class)->product->query()
+                        ->lockForUpdate()
+                        ->find($reservation->product_id);
+
+                    if ($product !== null && $product->stock !== null) {
+                        $product->increment('stock', $reservation->quantity);
+                    }
+                }
+
+                $items = $order->items()
+                    ->where('inventory_quantity', '>', 0)
+                    ->whereDoesntHave('inventoryReservation')
+                    ->get();
 
                 foreach ($items->sortBy('product_id') as $item) {
                     if ($item->product_id === null) {
@@ -148,6 +166,14 @@ class Order extends Model
                 }
 
                 $restockedAt = now();
+            }
+
+            foreach ($reservations->where('status', InventoryReservationStatus::Active) as $reservation) {
+                $reservation->update([
+                    'status' => InventoryReservationStatus::Released,
+                    'released_at' => now(),
+                    'release_reason' => 'order_cancelled',
+                ]);
             }
 
             $order->update([

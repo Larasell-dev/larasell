@@ -76,3 +76,32 @@ it('consumes active inventory reservations when the order is paid', function () 
         ->and($reservation->released_at)->toBeNull()
         ->and($product->fresh()->stock)->toBe(3);
 });
+
+it('releases active inventory reservations when the order is cancelled', function () {
+    [$cart, $product] = inventoryReservationCart();
+    $order = app(Checkout::class)->create($cart, inventoryReservationCheckoutData())->order;
+
+    $order->cancel();
+    $order->cancel();
+
+    $reservation = InventoryReservation::query()->sole();
+
+    expect($reservation->status)->toBe(InventoryReservationStatus::Released)
+        ->and($reservation->released_at)->not->toBeNull()
+        ->and($reservation->release_reason)->toBe('order_cancelled')
+        ->and($reservation->consumed_at)->toBeNull()
+        ->and($product->fresh()->stock)->toBe(5);
+});
+
+it('releases reservations without restoring stock when restocking is disabled', function () {
+    [$cart, $product] = inventoryReservationCart();
+    $order = app(Checkout::class)->create($cart, inventoryReservationCheckoutData())->order;
+
+    $order->cancel(restock: false);
+
+    $reservation = InventoryReservation::query()->sole();
+
+    expect($reservation->status)->toBe(InventoryReservationStatus::Released)
+        ->and($reservation->release_reason)->toBe('order_cancelled')
+        ->and($product->fresh()->stock)->toBe(3);
+});
