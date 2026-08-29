@@ -4,6 +4,7 @@ namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
@@ -29,6 +30,10 @@ class LarasellServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         if ($this->app->runningInConsole()) {
+            $this->commands([
+                ReleaseExpiredInventoryCommand::class,
+            ]);
+
             $this->publishes([
                 __DIR__.'/../config/larasell.php' => config_path('larasell.php'),
             ], 'larasell-config');
