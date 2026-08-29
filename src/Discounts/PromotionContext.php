@@ -43,8 +43,82 @@ final readonly class PromotionContext
             ->all();
     }
 
+    /**
+     * @param  (callable(CartItem): bool)|null  $eligible
+     * @return array<int, DiscountAllocation>
+     */
+    public function fixedAmountOff(Price $amount, ?callable $eligible = null): array
+    {
+        return $this->allocator->allocate($amount, $this->eligibleAmounts($eligible));
+    }
+
+    /**
+     * @param  (callable(CartItem): bool)|null  $eligible
+     * @return array<int, DiscountAllocation>
+     */
+    public function percentageOff(int|string $percentage, ?callable $eligible = null): array
+    {
+        $eligibleAmounts = $this->eligibleAmounts($eligible);
+        $eligibleTotal = array_reduce(
+            $eligibleAmounts,
+            fn (Price $total, Price $amount): Price => $total->add($amount),
+            Price::of(0),
+        );
+
+        return $this->allocator->allocate(
+            $this->percentageAmount($eligibleTotal, $percentage),
+            $eligibleAmounts,
+        );
+    }
+
+    /** @return array<int, DiscountAllocation> */
+    public function fixedAmountOffShipping(Price $amount): array
+    {
+        return $this->allocator->allocate(
+            $amount,
+            $this->shippingOption === null ? [] : ['shipping' => $this->shippingOption->price],
+        );
+    }
+
+    /** @return array<int, DiscountAllocation> */
+    public function percentageOffShipping(int|string $percentage): array
+    {
+        return $this->fixedAmountOffShipping(
+            $this->percentageAmount($this->shippingOption?->price ?? Price::of(0), $percentage),
+        );
+    }
+
     public function shippingTarget(): ?string
     {
         return $this->shippingOption === null ? null : 'shipping';
+    }
+
+    private function percentageAmount(Price $amount, int|string $percentage): Price
+    {
+        $percentage = $this->validatePercentage($percentage);
+        $scale = str_contains($percentage, '.')
+            ? strlen(substr($percentage, strpos($percentage, '.') + 1))
+            : 0;
+
+        return Price::of(bcdiv(
+            bcmul($amount->amount(), $percentage, $scale),
+            '100',
+            0,
+        ));
+    }
+
+    private function validatePercentage(int|string $percentage): string
+    {
+        $percentage = (string) $percentage;
+        $scale = str_contains($percentage, '.')
+            ? strlen(substr($percentage, strpos($percentage, '.') + 1))
+            : 0;
+
+        if (! preg_match('/^\d+(?:\.\d+)?$/', $percentage)
+            || bccomp($percentage, '100', $scale) === 1) {
+            throw new InvalidArgumentException('A discount percentage must be between 0 and 100.');
+        }
+
+        return $percentage;
     }
 }
