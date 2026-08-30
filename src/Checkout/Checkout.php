@@ -17,6 +17,7 @@ use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Events\PromotionApplied;
+use Larasell\Larasell\Events\PromotionRedemptionReserved;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
@@ -302,7 +303,7 @@ class Checkout
             $now,
         );
 
-        $order->promotionRedemptions()->create([
+        $redemption = $order->promotionRedemptions()->create([
             'promotion_identifier' => $discount->identifier,
             'customer_identifier' => $customerIdentifier,
             'global_limit' => $discount->redemptionLimits->global,
@@ -310,5 +311,6 @@ class Checkout
             'status' => PromotionRedemptionStatus::Reserved,
             'expires_at' => $reservationMinutes === null ? null : $now->copy()->addMinutes($reservationMinutes),
         ]);
+        PromotionRedemptionReserved::dispatch($redemption);
     }
 }

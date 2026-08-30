@@ -398,6 +398,9 @@ commits:
 - `Larasell\Larasell\Events\PromotionCodeApplied`
 - `Larasell\Larasell\Events\PromotionCodeRemoved`
 - `Larasell\Larasell\Events\PromotionApplied`
+- `Larasell\Larasell\Events\PromotionRedemptionReserved`
+- `Larasell\Larasell\Events\PromotionRedemptionRedeemed`
+- `Larasell\Larasell\Events\PromotionRedemptionReleased`
 
 Code events expose the affected `$cart` and normalized `$code` properties. They
 only fire when the stored codes actually change, so applying an attached code
@@ -407,3 +410,8 @@ or removing a missing code does not dispatch a duplicate event.
 is dispatched for each promotion recorded during checkout. Reading
 `$cart->discounts()` does not dispatch events because cart promotions are
 recalculated values rather than durable state changes.
+
+Redemption events expose the affected redemption through their `$redemption`
+property. They are dispatched once when limited promotion capacity is reserved
+during checkout, permanently redeemed by successful payment, or released by
+order cancellation or expiration.

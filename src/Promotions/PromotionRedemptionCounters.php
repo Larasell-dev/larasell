@@ -6,6 +6,8 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
+use Larasell\Larasell\Events\PromotionRedemptionRedeemed;
+use Larasell\Larasell\Events\PromotionRedemptionReleased;
 use Larasell\Larasell\Models\PromotionRedemption;
 
 final readonly class PromotionRedemptionCounters
@@ -44,12 +46,14 @@ final readonly class PromotionRedemptionCounters
     {
         $this->transfer($redemption, $at, true);
         $redemption->update(['status' => PromotionRedemptionStatus::Redeemed, 'redeemed_at' => $at]);
+        PromotionRedemptionRedeemed::dispatch($redemption);
     }
 
     public function release(PromotionRedemption $redemption, Carbon $at): void
     {
         $this->transfer($redemption, $at, false);
         $redemption->update(['status' => PromotionRedemptionStatus::Released, 'released_at' => $at]);
+        PromotionRedemptionReleased::dispatch($redemption);
     }
 
     private function transfer(PromotionRedemption $redemption, Carbon $at, bool $redeem): void

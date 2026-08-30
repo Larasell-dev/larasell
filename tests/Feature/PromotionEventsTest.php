@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
+use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
@@ -12,15 +13,24 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\PromotionApplied;
 use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Events\PromotionCodeRemoved;
+use Larasell\Larasell\Events\PromotionRedemptionRedeemed;
+use Larasell\Larasell\Events\PromotionRedemptionReleased;
+use Larasell\Larasell\Events\PromotionRedemptionReserved;
 use Larasell\Larasell\Models\Cart;
+use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
-final class PromotionEventDiscount implements HasCode, Promotion
+final class PromotionEventDiscount implements HasCode, HasRedemptionLimit, Promotion
 {
     public function code(): string
     {
         return 'EVENT10';
+    }
+
+    public function limit(): int|array
+    {
+        return 10;
     }
 
     public function apply(PromotionContext $context): ?DiscountResult
@@ -74,6 +84,59 @@ it('dispatches an event for each promotion snapshotted during checkout', functio
         && $event->discount['total']['amount'] === '100'
     );
 });
+
+it('dispatches an event when promotion capacity is reserved', function () {
+    Event::fake([PromotionRedemptionReserved::class]);
+
+    $order = promotionEventOrder();
+    $redemption = $order->promotionRedemptions()->sole();
+
+    Event::assertDispatchedTimes(PromotionRedemptionReserved::class, 1);
+    Event::assertDispatched(
+        PromotionRedemptionReserved::class,
+        fn (PromotionRedemptionReserved $event): bool => $event->redemption->is($redemption),
+    );
+});
+
+it('dispatches an event once when promotion capacity is redeemed', function () {
+    Event::fake([PromotionRedemptionRedeemed::class]);
+    $order = promotionEventOrder();
+    $payment = $order->payments->sole();
+
+    $payment->markAsPaid();
+    $payment->markAsPaid();
+
+    Event::assertDispatchedTimes(PromotionRedemptionRedeemed::class, 1);
+    Event::assertDispatched(
+        PromotionRedemptionRedeemed::class,
+        fn (PromotionRedemptionRedeemed $event): bool => $event->redemption->is($order->promotionRedemptions()->sole()),
+    );
+});
+
+it('dispatches an event once when promotion capacity is released', function () {
+    Event::fake([PromotionRedemptionReleased::class]);
+    $order = promotionEventOrder();
+
+    $order->cancel();
+    $order->cancel();
+
+    Event::assertDispatchedTimes(PromotionRedemptionReleased::class, 1);
+    Event::assertDispatched(
+        PromotionRedemptionReleased::class,
+        fn (PromotionRedemptionReleased $event): bool => $event->redemption->is($order->promotionRedemptions()->sole()),
+    );
+});
+
+function promotionEventOrder(): Order
+{
+    return app(Checkout::class)->create(
+        promotionEventCart()->applyPromotionCode('EVENT10'),
+        [
+            'customer_email' => 'promotion-events@example.com',
+            'customer_name' => 'Promotion Event Customer',
+        ],
+    )->order;
+}
 
 function promotionEventCart(): Cart
 {
