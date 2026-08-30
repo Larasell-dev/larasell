@@ -14,6 +14,7 @@ use Larasell\Larasell\Contracts\RefundProvider;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Enums\RefundStatus;
 use Larasell\Larasell\Events\InventoryReservationConsumed;
 use Larasell\Larasell\Events\PaymentCancelled;
@@ -193,6 +194,7 @@ class Payment extends Model
                 'paid_at' => now(),
                 'failure_message' => null,
             ]);
+            $this->redeemPromotionRedemptions($order);
             $reservations = $order->inventoryReservations()
                 ->where('status', InventoryReservationStatus::Active->value)
                 ->get();
@@ -270,6 +272,44 @@ class Payment extends Model
             PaymentStatus::Failed => PaymentFailed::dispatch($payment),
             PaymentStatus::Cancelled => PaymentCancelled::dispatch($payment),
         };
+    }
+
+    private function redeemPromotionRedemptions(Order $order): void
+    {
+        $redemptions = $order->promotionRedemptions()
+            ->where('status', PromotionRedemptionStatus::Reserved->value)
+            ->orderBy('promotion_identifier')
+            ->lockForUpdate()
+            ->get();
+        $redeemedAt = now();
+
+        foreach ($redemptions as $redemption) {
+            $counter = $this->getConnection()
+                ->table('larasell_promotion_redemption_counters')
+                ->where('promotion_identifier', $redemption->promotion_identifier)
+                ->lockForUpdate()
+                ->first();
+
+            if ($counter === null || $counter->reserved_count < 1) {
+                throw new InvalidArgumentException(
+                    "Promotion [{$redemption->promotion_identifier}] has inconsistent redemption capacity."
+                );
+            }
+
+            $this->getConnection()
+                ->table('larasell_promotion_redemption_counters')
+                ->where('promotion_identifier', $redemption->promotion_identifier)
+                ->update([
+                    'reserved_count' => $counter->reserved_count - 1,
+                    'redeemed_count' => $counter->redeemed_count + 1,
+                    'updated_at' => $redeemedAt,
+                ]);
+
+            $redemption->update([
+                'status' => PromotionRedemptionStatus::Redeemed,
+                'redeemed_at' => $redeemedAt,
+            ]);
+        }
     }
 
     /** @param array<int, RefundStatus> $statuses */

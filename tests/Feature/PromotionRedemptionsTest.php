@@ -2,6 +2,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
@@ -9,6 +10,8 @@ use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\OrderStatus;
+use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
@@ -142,6 +145,47 @@ it('rejects invalid promotion redemption limits', function () {
 
     expect(fn () => promotionRedemptionOrder())
         ->toThrow(InvalidArgumentException::class, 'must be a positive integer');
+});
+
+it('redeems reserved promotion capacity when payment succeeds', function () {
+    $this->travelTo(Carbon::parse('2026-08-30 12:00:00'));
+    LimitedPromotion::$limit = 2;
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    $order = promotionRedemptionOrder();
+    $expiresAt = $order->promotionRedemptions()->sole()->expires_at;
+
+    $this->travelTo(Carbon::parse('2026-08-30 12:15:00'));
+    $payment = $order->payments->sole();
+    $payment->markAsPaid();
+    $payment->markAsPaid();
+
+    $redemption = $order->promotionRedemptions()->sole();
+
+    expect($redemption->status)->toBe(PromotionRedemptionStatus::Redeemed)
+        ->and($redemption->redeemed_at?->toDateTimeString())->toBe('2026-08-30 12:15:00')
+        ->and($redemption->released_at)->toBeNull()
+        ->and($redemption->expires_at?->toDateTimeString())->toBe($expiresAt?->toDateTimeString());
+
+    $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'reserved_count' => 0,
+        'redeemed_count' => 1,
+    ]);
+});
+
+it('rolls back payment when reserved promotion capacity is inconsistent', function () {
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    $order = promotionRedemptionOrder();
+    DB::table('larasell_promotion_redemption_counters')
+        ->where('promotion_identifier', 'limited-promotion')
+        ->update(['reserved_count' => 0]);
+
+    expect(fn () => $order->payments->sole()->markAsPaid())
+        ->toThrow(InvalidArgumentException::class, 'inconsistent redemption capacity');
+
+    expect($order->payments->sole()->fresh()->status)->toBe(PaymentStatus::Pending)
+        ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
+        ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
 });
 
 afterEach(function () {
