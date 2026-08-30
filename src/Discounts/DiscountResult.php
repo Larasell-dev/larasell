@@ -16,6 +16,7 @@ final readonly class DiscountResult
         public string $name,
         array $allocations,
         public ?string $code = null,
+        public ?int $redemptionLimit = null,
     ) {
         if (trim($identifier) === '') {
             throw new InvalidArgumentException('A discount identifier is required.');

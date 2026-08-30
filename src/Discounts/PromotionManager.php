@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
 use Larasell\Larasell\Contracts\Promotions\HasPriority;
+use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
 use Larasell\Larasell\Events\PromotionCodeApplied;
@@ -79,6 +80,16 @@ final class PromotionManager
 
         foreach ($selected as [$promotion, $result]) {
 
+            $redemptionLimit = $promotion instanceof HasRedemptionLimit
+                ? $promotion->limit()
+                : null;
+
+            if ($redemptionLimit !== null && $redemptionLimit < 1) {
+                throw new InvalidArgumentException(
+                    "Promotion [{$result->identifier}] redemption limit must be a positive integer."
+                );
+            }
+
             $allocations = [];
 
             foreach ($result->allocations as $allocation) {
@@ -99,6 +110,7 @@ final class PromotionManager
                 $result->name,
                 $allocations,
                 $promotion instanceof HasCode ? self::normalizeCode($promotion->code()) : null,
+                $redemptionLimit,
             ));
         }
 
