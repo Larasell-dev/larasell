@@ -23,7 +23,7 @@ class ProductListingRequest extends FormRequest
     {
         return [
             'sort' => ['nullable', Rule::in(['price_asc', 'price_desc'])],
-            'options' => ['nullable', 'array'],
+            'attributes' => ['nullable', 'array'],
         ];
     }
 
@@ -60,14 +60,14 @@ class ProductListingRequest extends FormRequest
                 fn (Builder $query) => $query->whereIn($query->getModel()->qualifyColumn('id'), $categoryIds),
             );
 
-        foreach ($this->optionFilters() as $optionSlug => $valueSlugs) {
+        foreach ($this->attributeFilters() as $attributeSlug => $valueSlugs) {
             $products->whereHas(
-                'optionValues',
+                'attributeValues',
                 fn (Builder $query) => $query
                     ->whereIn($query->getModel()->qualifyColumn('slug'), $valueSlugs)
                     ->whereHas(
-                        'option',
-                        fn (Builder $query) => $query->where($query->getModel()->qualifyColumn('slug'), $optionSlug),
+                        'attribute',
+                        fn (Builder $query) => $query->where($query->getModel()->qualifyColumn('slug'), $attributeSlug),
                     ),
             );
         }
@@ -83,16 +83,16 @@ class ProductListingRequest extends FormRequest
     /**
      * @return array<string, array<int, string>>
      */
-    public function optionFilters(): array
+    public function attributeFilters(): array
     {
-        return collect($this->query('options', []))
+        return collect($this->query('attributes', []))
             ->map(fn (mixed $values): array => is_array($values) ? $values : [$values])
             ->map(fn (array $values): array => collect($values)
                 ->filter(fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '')
                 ->map(fn (mixed $value): string => (string) $value)
                 ->values()
                 ->all())
-            ->filter(fn (array $values, mixed $option): bool => is_string($option) && $option !== '' && $values !== [])
+            ->filter(fn (array $values, mixed $attribute): bool => is_string($attribute) && $attribute !== '' && $values !== [])
             ->all();
     }
 

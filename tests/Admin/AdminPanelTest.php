@@ -8,15 +8,15 @@ use Larasell\Larasell\Admin\Models\AdminUser;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
-use Larasell\Larasell\Enums\ProductOptionType;
+use Larasell\Larasell\Enums\ProductAttributeType;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\OrderItem;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Models\ProductImage;
-use Larasell\Larasell\Models\ProductOption;
 use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\Price;
 
@@ -189,8 +189,8 @@ it('does not mark a payment from another order as paid', function () {
         ->and($otherOrder->fresh()->status)->toBe(OrderStatus::PendingPayment);
 });
 
-it('redirects guest admin users away from the product options page', function () {
-    $this->get('/admin/product-options')->assertRedirect(route('larasell.admin.login'));
+it('redirects guest admin users away from the product attributes page', function () {
+    $this->get('/admin/product-attributes')->assertRedirect(route('larasell.admin.login'));
 });
 
 it('redirects guest admin users away from the media page', function () {
@@ -546,7 +546,7 @@ it('shows the product create page', function () {
         'slug' => 'lighting',
         'status' => Visibility::Visible,
     ]);
-    $option = ProductOption::query()->create(['name' => 'Size', 'slug' => 'size', 'type' => ProductOptionType::Text]);
+    $option = ProductAttribute::query()->create(['name' => 'Size', 'slug' => 'size', 'type' => ProductAttributeType::Text]);
     $large = $option->values()->create(['name' => 'Large', 'slug' => 'large', 'value' => 'large']);
 
     $this->actingAs($admin, 'larasell-admin')
@@ -556,9 +556,9 @@ it('shows the product create page', function () {
         ->assertJsonPath('component', 'Products/Create')
         ->assertJsonPath('props.categories.0.label', 'Lighting')
         ->assertJsonPath('props.categories.0.value', (string) $category->id)
-        ->assertJsonPath('props.productOptions.0.name', 'Size')
-        ->assertJsonPath('props.productOptions.0.values.0.name', 'Large')
-        ->assertJsonPath('props.productOptions.0.values.0.id', (string) $large->id)
+        ->assertJsonPath('props.productAttributes.0.name', 'Size')
+        ->assertJsonPath('props.productAttributes.0.values.0.name', 'Large')
+        ->assertJsonPath('props.productAttributes.0.values.0.id', (string) $large->id)
         ->assertJsonPath('props.productStoreUrl', route('larasell.admin.products.store'))
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));
 });
@@ -579,7 +579,7 @@ it('creates a product in the admin panel', function () {
         'slug' => 'lighting',
         'status' => Visibility::Visible,
     ]);
-    $option = ProductOption::query()->create(['name' => 'Size', 'slug' => 'size', 'type' => ProductOptionType::Text]);
+    $option = ProductAttribute::query()->create(['name' => 'Size', 'slug' => 'size', 'type' => ProductAttributeType::Text]);
     $large = $option->values()->create(['name' => 'Large', 'slug' => 'large', 'value' => 'large']);
     Setting::query()->where('key', 'currencies')->update([
         'value' => ['enabled' => ['USD', 'EUR']],
@@ -596,7 +596,7 @@ it('creates a product in the admin panel', function () {
             'status' => 'hidden',
             'price_amount' => 4999,
             'category_ids' => [(string) $category->id],
-            'option_value_ids' => [(string) $large->id],
+            'attribute_value_ids' => [(string) $large->id],
         ]);
 
     $product = Product::query()->where('slug', 'desk-lamp-2')->sole();
@@ -612,7 +612,7 @@ it('creates a product in the admin panel', function () {
         ->status->toBe(Visibility::Hidden)
         ->price->toEqual(Price::of(4999));
     expect($product->categories()->pluck('larasell_categories.id')->all())->toBe([$category->id]);
-    expect($product->optionValues()->pluck('larasell_product_option_values.id')->all())->toBe([$large->id]);
+    expect($product->attributeValues()->pluck('larasell_product_attribute_values.id')->all())->toBe([$large->id]);
 });
 
 it('validates product creation', function () {
@@ -633,27 +633,27 @@ it('validates product creation', function () {
             'status' => 'unknown',
             'price_amount' => -1,
             'category_ids' => ['999999'],
-            'option_value_ids' => ['999999'],
+            'attribute_value_ids' => ['999999'],
         ])
         ->assertRedirect(route('larasell.admin.products.create'))
-        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'category_ids.0', 'option_value_ids.0']);
+        ->assertSessionHasErrors(['name', 'stock', 'min_quantity', 'max_quantity', 'status', 'price_amount', 'category_ids.0', 'attribute_value_ids.0']);
 
     expect(Product::query()->count())->toBe(0);
 });
 
-it('shows product options in the admin product option index', function () {
+it('shows product attributes in the admin product attribute index', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
 
-    $booleanOption = ProductOption::query()->create([
+    $booleanOption = ProductAttribute::query()->create([
         'slug' => 'featured',
         'name' => 'Featured',
-        'type' => ProductOptionType::Boolean,
+        'type' => ProductAttributeType::Boolean,
     ]);
-    $option = ProductOption::query()->create([
+    $option = ProductAttribute::query()->create([
         'slug' => 'size',
         'name' => 'Size',
         'type' => 'text',
@@ -667,29 +667,29 @@ it('shows product options in the admin product option index', function () {
 
     $this->actingAs($admin, 'larasell-admin')
         ->withHeader('X-Inertia', 'true')
-        ->get('/admin/product-options')
+        ->get('/admin/product-attributes')
         ->assertOk()
-        ->assertJsonPath('component', 'ProductOptions/Index')
-        ->assertJsonPath('props.productOptions.0.name', 'Size')
-        ->assertJsonPath('props.productOptions.0.type', 'text')
-        ->assertJsonPath('props.productOptions.0.url', route('larasell.admin.product-options.show', $option))
-        ->assertJsonPath('props.productOptions.0.deleteUrl', route('larasell.admin.product-options.destroy', $option))
-        ->assertJsonPath('props.productOptions.0.valuesCount', 1)
-        ->assertJsonPath('props.productOptions.1.id', $booleanOption->id)
-        ->assertJsonPath('props.productOptions.1.type', 'boolean')
-        ->assertJsonPath('props.productOptions.1.valuesCount', 0)
+        ->assertJsonPath('component', 'ProductAttributes/Index')
+        ->assertJsonPath('props.productAttributes.0.name', 'Size')
+        ->assertJsonPath('props.productAttributes.0.type', 'text')
+        ->assertJsonPath('props.productAttributes.0.url', route('larasell.admin.product-attributes.show', $option))
+        ->assertJsonPath('props.productAttributes.0.deleteUrl', route('larasell.admin.product-attributes.destroy', $option))
+        ->assertJsonPath('props.productAttributes.0.valuesCount', 1)
+        ->assertJsonPath('props.productAttributes.1.id', $booleanOption->id)
+        ->assertJsonPath('props.productAttributes.1.type', 'boolean')
+        ->assertJsonPath('props.productAttributes.1.valuesCount', 0)
         ->assertJsonPath('props.pagination.total', 2)
-        ->assertJsonPath('props.productOptionCreateUrl', route('larasell.admin.product-options.create'))
-        ->assertJsonPath('props.productOptionsUrl', route('larasell.admin.product-options.index'));
+        ->assertJsonPath('props.productAttributeCreateUrl', route('larasell.admin.product-attributes.create'))
+        ->assertJsonPath('props.productAttributesUrl', route('larasell.admin.product-attributes.index'));
 });
 
-it('deletes a product option', function () {
+it('deletes a product attribute', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
-    $option = ProductOption::query()->create([
+    $option = ProductAttribute::query()->create([
         'slug' => 'size',
         'name' => 'Size',
         'type' => 'text',
@@ -702,14 +702,14 @@ it('deletes a product option', function () {
     ]);
 
     $this->actingAs($admin, 'larasell-admin')
-        ->delete(route('larasell.admin.product-options.destroy', $option))
-        ->assertRedirect(route('larasell.admin.product-options.index'));
+        ->delete(route('larasell.admin.product-attributes.destroy', $option))
+        ->assertRedirect(route('larasell.admin.product-attributes.index'));
 
-    $this->assertDatabaseMissing('larasell_product_options', ['id' => $option->id]);
-    $this->assertDatabaseMissing('larasell_product_option_values', ['id' => $value->id]);
+    $this->assertDatabaseMissing('larasell_product_attributes', ['id' => $option->id]);
+    $this->assertDatabaseMissing('larasell_product_attribute_values', ['id' => $value->id]);
 });
 
-it('shows the product option create page', function () {
+it('shows the product attribute create page', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
@@ -718,61 +718,61 @@ it('shows the product option create page', function () {
 
     $this->actingAs($admin, 'larasell-admin')
         ->withHeader('X-Inertia', 'true')
-        ->get('/admin/product-options/create')
+        ->get('/admin/product-attributes/create')
         ->assertOk()
-        ->assertJsonPath('component', 'ProductOptions/Create')
-        ->assertJsonPath('props.productOptionStoreUrl', route('larasell.admin.product-options.store'))
-        ->assertJsonPath('props.productOptionsUrl', route('larasell.admin.product-options.index'));
+        ->assertJsonPath('component', 'ProductAttributes/Create')
+        ->assertJsonPath('props.productAttributeStoreUrl', route('larasell.admin.product-attributes.store'))
+        ->assertJsonPath('props.productAttributesUrl', route('larasell.admin.product-attributes.index'));
 });
 
-it('stores a product option and redirects to its show page', function () {
+it('stores a product attribute and redirects to its show page', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
 
-    $response = $this->actingAs($admin, 'larasell-admin')->post('/admin/product-options', [
+    $response = $this->actingAs($admin, 'larasell-admin')->post('/admin/product-attributes', [
         'name' => 'Size',
         'type' => 'text',
-        'options' => [
+        'values' => [
             ['value' => 'Small'],
             ['value' => 'Large'],
             ['value' => ''],
         ],
     ]);
 
-    $option = ProductOption::query()->where('slug', 'size')->firstOrFail();
+    $option = ProductAttribute::query()->where('slug', 'size')->firstOrFail();
 
-    $response->assertRedirect(route('larasell.admin.product-options.show', $option));
+    $response->assertRedirect(route('larasell.admin.product-attributes.show', $option));
     expect($option->name)->toBe('Size')
         ->and($option->type->value)->toBe('text')
         ->and($option->values()->orderBy('position')->get()->pluck('value')->all())->toBe(['Small', 'Large']);
 });
 
-it('requires a name when storing a product option', function () {
+it('requires a name when storing a product attribute', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
 
-    $this->actingAs($admin, 'larasell-admin')->post('/admin/product-options', [
+    $this->actingAs($admin, 'larasell-admin')->post('/admin/product-attributes', [
         'name' => '',
         'type' => 'text',
-        'options' => [['value' => 'Small']],
+        'values' => [['value' => 'Small']],
     ])->assertSessionHasErrors('name');
 
-    expect(ProductOption::query()->count())->toBe(0);
+    expect(ProductAttribute::query()->count())->toBe(0);
 });
 
-it('shows the product option show page', function () {
+it('shows the product attribute show page', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
-    $option = ProductOption::query()->create([
+    $option = ProductAttribute::query()->create([
         'slug' => 'size',
         'name' => 'Size',
         'type' => 'text',
@@ -786,24 +786,24 @@ it('shows the product option show page', function () {
 
     $this->actingAs($admin, 'larasell-admin')
         ->withHeader('X-Inertia', 'true')
-        ->get(route('larasell.admin.product-options.show', $option))
+        ->get(route('larasell.admin.product-attributes.show', $option))
         ->assertOk()
-        ->assertJsonPath('component', 'ProductOptions/Show')
-        ->assertJsonPath('props.productOption.name', 'Size')
-        ->assertJsonPath('props.productOption.type', 'text')
-        ->assertJsonPath('props.productOption.values.0.id', $value->getKey())
-        ->assertJsonPath('props.productOption.values.0.value', 'Small')
-        ->assertJsonPath('props.productOption.updateUrl', route('larasell.admin.product-options.update', $option))
-        ->assertJsonPath('props.productOptionsUrl', route('larasell.admin.product-options.index'));
+        ->assertJsonPath('component', 'ProductAttributes/Show')
+        ->assertJsonPath('props.productAttribute.name', 'Size')
+        ->assertJsonPath('props.productAttribute.type', 'text')
+        ->assertJsonPath('props.productAttribute.values.0.id', $value->getKey())
+        ->assertJsonPath('props.productAttribute.values.0.value', 'Small')
+        ->assertJsonPath('props.productAttribute.updateUrl', route('larasell.admin.product-attributes.update', $option))
+        ->assertJsonPath('props.productAttributesUrl', route('larasell.admin.product-attributes.index'));
 });
 
-it('updates a product option and synchronizes its values', function () {
+it('updates a product attribute and synchronizes its values', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
-    $option = ProductOption::query()->create([
+    $option = ProductAttribute::query()->create([
         'slug' => 'size',
         'name' => 'Size',
         'type' => 'text',
@@ -812,10 +812,10 @@ it('updates a product option and synchronizes its values', function () {
     $large = $option->values()->create(['slug' => 'large', 'name' => 'Large', 'value' => 'Large', 'position' => 1]);
 
     $this->actingAs($admin, 'larasell-admin')
-        ->patch(route('larasell.admin.product-options.update', $option), [
+        ->patch(route('larasell.admin.product-attributes.update', $option), [
             'name' => 'Clothing size',
             'type' => 'text',
-            'options' => [
+            'values' => [
                 ['id' => $large->getKey(), 'value' => 'Extra large'],
                 ['value' => 'Medium'],
             ],
@@ -824,27 +824,27 @@ it('updates a product option and synchronizes its values', function () {
 
     expect($option->refresh()->name)->toBe('Clothing size')
         ->and($option->values()->orderBy('position')->pluck('value')->all())->toBe(['Extra large', 'Medium']);
-    $this->assertDatabaseMissing('larasell_product_option_values', ['id' => $small->getKey()]);
+    $this->assertDatabaseMissing('larasell_product_attribute_values', ['id' => $small->getKey()]);
 });
 
-it('removes product option values when changing to boolean', function () {
+it('removes product attribute values when changing to boolean', function () {
     $admin = AdminUser::query()->create([
         'name' => 'Larasell Admin',
         'email' => 'admin@example.com',
         'password' => Hash::make('password'),
     ]);
-    $option = ProductOption::query()->create(['slug' => 'size', 'name' => 'Size', 'type' => 'text']);
+    $option = ProductAttribute::query()->create(['slug' => 'size', 'name' => 'Size', 'type' => 'text']);
     $option->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'Small', 'position' => 0]);
 
     $this->actingAs($admin, 'larasell-admin')
-        ->patch(route('larasell.admin.product-options.update', $option), [
+        ->patch(route('larasell.admin.product-attributes.update', $option), [
             'name' => 'Available',
             'type' => 'boolean',
-            'options' => [],
+            'values' => [],
         ])
         ->assertRedirect();
 
-    expect($option->refresh()->type)->toBe(ProductOptionType::Boolean)
+    expect($option->refresh()->type)->toBe(ProductAttributeType::Boolean)
         ->and($option->values()->count())->toBe(2)
         ->and($option->values()->orderBy('position')->pluck('name')->all())->toBe(['Yes', 'No'])
         ->and($option->values()->orderBy('position')->pluck('value')->all())->toBe([true, false]);
@@ -949,10 +949,10 @@ it('shows a product in the admin panel', function () {
         'status' => Visibility::Visible,
     ]);
     $product->categories()->attach($category);
-    $option = ProductOption::query()->create(['name' => 'Color', 'slug' => 'color', 'type' => ProductOptionType::Text]);
+    $option = ProductAttribute::query()->create(['name' => 'Color', 'slug' => 'color', 'type' => ProductAttributeType::Text]);
     $black = $option->values()->create(['name' => 'Black', 'slug' => 'black', 'value' => 'black']);
-    $product->optionValues()->attach($black);
-    $booleanOption = ProductOption::query()->create(['name' => 'Featured', 'slug' => 'featured', 'type' => ProductOptionType::Boolean]);
+    $product->attributeValues()->attach($black);
+    $booleanOption = ProductAttribute::query()->create(['name' => 'Featured', 'slug' => 'featured', 'type' => ProductAttributeType::Boolean]);
     $yes = $booleanOption->values()->create(['name' => 'Yes', 'slug' => '__boolean_true', 'value' => true, 'position' => 0]);
     $no = $booleanOption->values()->create(['name' => 'No', 'slug' => '__boolean_false', 'value' => false, 'position' => 1]);
 
@@ -977,23 +977,23 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.price.amount', '4999')
         ->assertJsonMissingPath('props.product.price.currency')
         ->assertJsonPath('props.product.categoryIds.0', (string) $category->id)
-        ->assertJsonPath('props.product.optionValueIds.0', (string) $black->id)
+        ->assertJsonPath('props.product.attributeValueIds.0', (string) $black->id)
         ->assertJsonPath('props.categories.0.label', 'Lighting')
         ->assertJsonPath('props.categories.0.children.0.label', 'Desk lamps')
         ->assertJsonPath('props.categories.0.children.0.value', (string) $childCategory->id)
         ->assertJsonPath('props.categories.0.children.0.children', [])
-        ->assertJsonPath('props.productOptions.0.name', 'Color')
-        ->assertJsonPath('props.productOptions.0.type', 'text')
-        ->assertJsonPath('props.productOptions.0.values.0.name', 'Black')
-        ->assertJsonPath('props.productOptions.1.id', (string) $booleanOption->id)
-        ->assertJsonPath('props.productOptions.1.name', 'Featured')
-        ->assertJsonPath('props.productOptions.1.type', 'boolean')
-        ->assertJsonPath('props.productOptions.1.values.0.id', (string) $yes->id)
-        ->assertJsonPath('props.productOptions.1.values.0.name', 'Yes')
-        ->assertJsonPath('props.productOptions.1.values.0.value', true)
-        ->assertJsonPath('props.productOptions.1.values.1.id', (string) $no->id)
-        ->assertJsonPath('props.productOptions.1.values.1.name', 'No')
-        ->assertJsonPath('props.productOptions.1.values.1.value', false)
+        ->assertJsonPath('props.productAttributes.0.name', 'Color')
+        ->assertJsonPath('props.productAttributes.0.type', 'text')
+        ->assertJsonPath('props.productAttributes.0.values.0.name', 'Black')
+        ->assertJsonPath('props.productAttributes.1.id', (string) $booleanOption->id)
+        ->assertJsonPath('props.productAttributes.1.name', 'Featured')
+        ->assertJsonPath('props.productAttributes.1.type', 'boolean')
+        ->assertJsonPath('props.productAttributes.1.values.0.id', (string) $yes->id)
+        ->assertJsonPath('props.productAttributes.1.values.0.name', 'Yes')
+        ->assertJsonPath('props.productAttributes.1.values.0.value', true)
+        ->assertJsonPath('props.productAttributes.1.values.1.id', (string) $no->id)
+        ->assertJsonPath('props.productAttributes.1.values.1.name', 'No')
+        ->assertJsonPath('props.productAttributes.1.values.1.value', false)
         ->assertJsonPath('props.product.updateUrl', route('larasell.admin.products.update', $product))
         ->assertJsonPath('props.product.imageUploadUrl', route('larasell.admin.products.images.store', $product))
         ->assertJsonPath('props.product.generalUpdateUrl', route('larasell.admin.products.general.update', $product))
@@ -1062,10 +1062,10 @@ it('updates all product settings in the admin panel', function () {
     $oldCategory = Category::query()->create(['name' => 'Old', 'slug' => 'old', 'status' => Visibility::Visible]);
     $newCategory = Category::query()->create(['name' => 'Lighting', 'slug' => 'lighting', 'status' => Visibility::Visible]);
     $product->categories()->attach($oldCategory);
-    $option = ProductOption::query()->create(['name' => 'Color', 'slug' => 'color', 'type' => ProductOptionType::Text]);
+    $option = ProductAttribute::query()->create(['name' => 'Color', 'slug' => 'color', 'type' => ProductAttributeType::Text]);
     $black = $option->values()->create(['name' => 'Black', 'slug' => 'black', 'value' => 'black']);
     $white = $option->values()->create(['name' => 'White', 'slug' => 'white', 'value' => 'white']);
-    $product->optionValues()->attach($black);
+    $product->attributeValues()->attach($black);
     $firstImage = ProductImage::query()->create(['path' => 'products/first.jpg']);
     $secondImage = ProductImage::query()->create(['path' => 'products/second.jpg']);
     $uploadedImage = ProductImage::query()->create(['path' => 'products/uploaded.jpg', 'meta' => ['pending_product_id' => (string) $product->id]]);
@@ -1086,7 +1086,7 @@ it('updates all product settings in the admin panel', function () {
             'image_order' => [$secondImage->id, $uploadedImage->id, $firstImage->id],
             'new_image_ids' => [$uploadedImage->id],
             'category_ids' => [(string) $newCategory->id],
-            'option_value_ids' => [(string) $white->id],
+            'attribute_value_ids' => [(string) $white->id],
         ])
         ->assertRedirect();
 
@@ -1104,7 +1104,7 @@ it('updates all product settings in the admin panel', function () {
 
     expect($product->images()->pluck('larasell_product_images.id')->all())->toBe([$secondImage->id, $uploadedImage->id, $firstImage->id])
         ->and($product->categories()->pluck('larasell_categories.id')->all())->toBe([$newCategory->id])
-        ->and($product->optionValues()->pluck('larasell_product_option_values.id')->all())->toBe([$white->id])
+        ->and($product->attributeValues()->pluck('larasell_product_attribute_values.id')->all())->toBe([$white->id])
         ->and($uploadedImage->refresh()->meta)->not->toHaveKey('pending_product_id');
 });
 

@@ -24,7 +24,7 @@ export type ProductFormData = {
   status: 'visible' | 'hidden'
   price_amount: number
   category_ids: string[]
-  option_value_ids: string[]
+  attribute_value_ids: string[]
   image_order?: Array<number | string>
   new_image_ids?: Array<number | string>
 }
@@ -32,24 +32,24 @@ export type ProductFormData = {
 type ProductFormProps = {
   children: ReactNode
   categories: ProductCategory[]
-  productOptions: ProductOption[]
+  productAttributes: ProductAttribute[]
   form: InertiaFormProps<ProductFormData>
 }
 
 export type ProductCategory = CategoryTreeItem
-export type ProductOptionValue = { id: string; name: string; value: boolean | number | string }
-export type ProductOption = { id: string; name: string; type: 'boolean' | 'number' | 'text'; values: ProductOptionValue[] }
+export type ProductAttributeValue = { id: string; name: string; value: boolean | number | string }
+export type ProductAttribute = { id: string; name: string; type: 'boolean' | 'number' | 'text'; values: ProductAttributeValue[] }
 
 type ProductFormContextValue = {
   categories: ProductCategory[]
-  productOptions: ProductOption[]
+  productAttributes: ProductAttribute[]
   form: InertiaFormProps<ProductFormData>
 }
 
 const ProductFormContext = createContext<ProductFormContextValue | null>(null)
 
-function ProductForm({ categories, children, form, productOptions }: ProductFormProps) {
-  return <ProductFormContext value={{ categories, form, productOptions }}>{children}</ProductFormContext>
+function ProductForm({ categories, children, form, productAttributes }: ProductFormProps) {
+  return <ProductFormContext value={{ categories, form, productAttributes }}>{children}</ProductFormContext>
 }
 
 function GeneralSection({ includeSlug = false }: { includeSlug?: boolean }) {
@@ -173,33 +173,33 @@ function CategoriesSection() {
 }
 
 function OptionsSection() {
-  const { form, productOptions } = useProductFormContext()
-  const [activeOptionId, setActiveOptionId] = useState(productOptions[0]?.id ?? null)
-  const activeOption = productOptions.find((option) => option.id === activeOptionId) ?? productOptions[0]
+  const { form, productAttributes } = useProductFormContext()
+  const [activeOptionId, setActiveOptionId] = useState(productAttributes[0]?.id ?? null)
+  const activeOption = productAttributes.find((option) => option.id === activeOptionId) ?? productAttributes[0]
 
   function toggleValue(valueId: string, checked: boolean) {
-    form.setData('option_value_ids', checked
-      ? [...form.data.option_value_ids, valueId]
-      : form.data.option_value_ids.filter((selectedId) => selectedId !== valueId))
+    form.setData('attribute_value_ids', checked
+      ? [...form.data.attribute_value_ids, valueId]
+      : form.data.attribute_value_ids.filter((selectedId) => selectedId !== valueId))
   }
 
-  function setBooleanValue(option: ProductOption, valueId: string) {
-    const optionValueIds = new Set(option.values.map((value) => value.id))
-    const otherValueIds = form.data.option_value_ids.filter((selectedId) => !optionValueIds.has(selectedId))
+  function setBooleanValue(option: ProductAttribute, valueId: string) {
+    const attributeValueIds = new Set(option.values.map((value) => value.id))
+    const otherValueIds = form.data.attribute_value_ids.filter((selectedId) => !attributeValueIds.has(selectedId))
 
-    form.setData('option_value_ids', valueId === '' ? otherValueIds : [...otherValueIds, valueId])
+    form.setData('attribute_value_ids', valueId === '' ? otherValueIds : [...otherValueIds, valueId])
   }
 
   return (
     <Card>
       <Card.Header>
-        <Card.Title>Product options</Card.Title>
+        <Card.Title>Product attributes</Card.Title>
         <Card.Description>Choose the option values that describe this product.</Card.Description>
       </Card.Header>
       <Card.Body>
-        <Field invalid={Boolean(form.errors.option_value_ids)}>
-          {productOptions.length === 0 ? (
-            <p {...stylex.props(styles.optionsEmpty)}>No product options with values are available.</p>
+        <Field invalid={Boolean(form.errors.attribute_value_ids)}>
+          {productAttributes.length === 0 ? (
+            <p {...stylex.props(styles.optionsEmpty)}>No product attributes with values are available.</p>
           ) : (
             <Inset
               bottom={cardBodySpacing.paddingBlock}
@@ -208,8 +208,8 @@ function OptionsSection() {
               top={cardBodySpacing.paddingBlock}
             >
               <div {...stylex.props(styles.optionPicker)}>
-                <div aria-label="Product options" role="tablist" {...stylex.props(styles.optionGroups)}>
-                  {productOptions.map((option) => {
+                <div aria-label="Product attributes" role="tablist" {...stylex.props(styles.optionGroups)}>
+                  {productAttributes.map((option) => {
                     const active = option.id === activeOption?.id
 
                     return (
@@ -233,7 +233,7 @@ function OptionsSection() {
                     aria-labelledby={`product-option-${activeOption.id}`}
                     id={`product-option-values-${activeOption.id}`}
                     role="tabpanel"
-                    {...stylex.props(styles.optionValues)}
+                    {...stylex.props(styles.attributeValues)}
                   >
                     {activeOption.type === 'boolean' ? (
                       <RadioGroup
@@ -243,13 +243,13 @@ function OptionsSection() {
                           value: value.id,
                         }))]}
                         onValueChange={(value) => setBooleanValue(activeOption, value)}
-                        value={activeOption.values.find((value) => form.data.option_value_ids.includes(value.id))?.id ?? ''}
+                        value={activeOption.values.find((value) => form.data.attribute_value_ids.includes(value.id))?.id ?? ''}
                       />
                     ) : activeOption.values.map((value) => (
-                        <label key={value.id} {...stylex.props(styles.optionValue)}>
+                        <label key={value.id} {...stylex.props(styles.attributeValue)}>
                           <Checkbox
-                            checked={form.data.option_value_ids.includes(value.id)}
-                            name="option_value_ids[]"
+                            checked={form.data.attribute_value_ids.includes(value.id)}
+                            name="attribute_value_ids[]"
                             onCheckedChange={(checked) => toggleValue(value.id, checked)}
                             value={value.id}
                           />
@@ -261,7 +261,7 @@ function OptionsSection() {
               </div>
             </Inset>
           )}
-          <Error>{form.errors.option_value_ids}</Error>
+          <Error>{form.errors.attribute_value_ids}</Error>
         </Field>
       </Card.Body>
     </Card>
@@ -301,7 +301,7 @@ const styles = stylex.create({
   optionGroup: { alignItems: 'center', backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-100)' }, borderColor: 'transparent', borderRadius: 4, borderStyle: 'solid', borderWidth: 0, color: 'var(--color-neutral-700)', cursor: 'pointer', display: 'flex', fontFamily: 'inherit', fontSize: 14, fontWeight: 500, gap: 8, justifyContent: 'space-between', minHeight: 38, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: -2, outlineStyle: 'solid', outlineWidth: 2, paddingBlock: 8, paddingInline: 10, textAlign: 'left', width: '100%' },
   optionGroupActive: { backgroundColor: 'var(--color-neutral-200)', color: 'var(--color-neutral-950)' },
   optionGroupName: { minWidth: 0, overflowWrap: 'anywhere' },
-  optionValues: { alignContent: 'start', backgroundColor: '#fff', display: 'grid', gap: 2, padding: 10 },
-  optionValue: { alignItems: 'flex-start', borderRadius: 4, color: 'var(--color-neutral-800)', cursor: 'pointer', display: 'flex', fontSize: 14, fontWeight: 500, gap: 10, minHeight: 38, overflowWrap: 'anywhere', paddingBlock: 8, paddingInline: 8 },
+  attributeValues: { alignContent: 'start', backgroundColor: '#fff', display: 'grid', gap: 2, padding: 10 },
+  attributeValue: { alignItems: 'flex-start', borderRadius: 4, color: 'var(--color-neutral-800)', cursor: 'pointer', display: 'flex', fontSize: 14, fontWeight: 500, gap: 10, minHeight: 38, overflowWrap: 'anywhere', paddingBlock: 8, paddingInline: 8 },
   optionsEmpty: { color: 'var(--color-neutral-500)', fontSize: 14, margin: 0 },
 })

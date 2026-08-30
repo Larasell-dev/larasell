@@ -9,8 +9,8 @@ use Larasell\Larasell\Admin\Http\Controllers\MediaController;
 use Larasell\Larasell\Admin\Http\Controllers\MediaUploadController;
 use Larasell\Larasell\Admin\Http\Controllers\MemberController;
 use Larasell\Larasell\Admin\Http\Controllers\OrderController;
+use Larasell\Larasell\Admin\Http\Controllers\ProductAttributeController;
 use Larasell\Larasell\Admin\Http\Controllers\ProductController;
-use Larasell\Larasell\Admin\Http\Controllers\ProductOptionController;
 use Larasell\Larasell\Admin\Http\Controllers\SettingsController;
 use Larasell\Larasell\Admin\Http\RedirectIfAuthenticated as AdminGuest;
 
@@ -41,12 +41,12 @@ Route::middleware(AdminAuthenticate::using($guard))->group(function () {
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('products', [ProductController::class, 'store'])->name('products.store');
-    Route::get('product-options', [ProductOptionController::class, 'index'])->name('product-options.index');
-    Route::get('product-options/create', [ProductOptionController::class, 'create'])->name('product-options.create');
-    Route::post('product-options', [ProductOptionController::class, 'store'])->name('product-options.store');
-    Route::get('product-options/{adminProductOption}', [ProductOptionController::class, 'show'])->name('product-options.show');
-    Route::patch('product-options/{adminProductOption}', [ProductOptionController::class, 'update'])->name('product-options.update');
-    Route::delete('product-options/{adminProductOption}', [ProductOptionController::class, 'destroy'])->name('product-options.destroy');
+    Route::get('product-attributes', [ProductAttributeController::class, 'index'])->name('product-attributes.index');
+    Route::get('product-attributes/create', [ProductAttributeController::class, 'create'])->name('product-attributes.create');
+    Route::post('product-attributes', [ProductAttributeController::class, 'store'])->name('product-attributes.store');
+    Route::get('product-attributes/{adminProductAttribute}', [ProductAttributeController::class, 'show'])->name('product-attributes.show');
+    Route::patch('product-attributes/{adminProductAttribute}', [ProductAttributeController::class, 'update'])->name('product-attributes.update');
+    Route::delete('product-attributes/{adminProductAttribute}', [ProductAttributeController::class, 'destroy'])->name('product-attributes.destroy');
     Route::get('products/{adminProduct}', [ProductController::class, 'show'])->name('products.show');
     Route::patch('products/{adminProduct}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('products/{adminProduct}', [ProductController::class, 'destroy'])->name('products.destroy');

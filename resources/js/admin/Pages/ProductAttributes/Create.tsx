@@ -3,25 +3,23 @@ import * as stylex from '@stylexjs/stylex'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import BackLink from '../../Components/BackLink'
 import FormContainer from '../../Components/FormContainer'
-import ProductOptionForm, { type ProductOption } from './ProductOptionForm'
+import ProductAttributeForm from './ProductAttributeForm'
 
-type Props = AdminLayoutProps & {
-  productOption: ProductOption & { updateUrl: string }
-}
+type Props = AdminLayoutProps & { productAttributeStoreUrl: string }
 
-export default function ProductOptionShow({ productOption, ...props }: Props) {
+export default function ProductAttributeCreate({ productAttributeStoreUrl, ...props }: Props) {
   return (
-    <AdminLayout active="product-options" {...props}>
-      <Head title={productOption.name} />
+    <AdminLayout active="product-attributes" {...props}>
+      <Head title="Create product attribute" />
       <div {...stylex.props(styles.page)}>
         <FormContainer style={styles.pageContent}>
           <header {...stylex.props(styles.pageHeader)}>
             <div>
-              <BackLink href={props.productOptionsUrl}>Back to product options</BackLink>
-              <h1 {...stylex.props(styles.heading)}>{productOption.name}</h1>
+              <BackLink href={props.productAttributesUrl}>Back to product attributes</BackLink>
+              <h1 {...stylex.props(styles.heading)}>Create product attribute</h1>
             </div>
           </header>
-          <ProductOptionForm action={productOption.updateUrl} initialProductOption={productOption} method="patch" />
+          <ProductAttributeForm action={productAttributeStoreUrl} method="post" />
         </FormContainer>
       </div>
     </AdminLayout>

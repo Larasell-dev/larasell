@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Enums;
 
-enum ProductOptionType: string
+enum ProductAttributeType: string
 {
     case Boolean = 'boolean';
     case Number = 'number';

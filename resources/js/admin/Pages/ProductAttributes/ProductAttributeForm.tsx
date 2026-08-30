@@ -15,103 +15,103 @@ import NumberInput from '../../Components/NumberInput'
 import Select from '../../Components/Select'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
 
-export type ProductOptionType = 'boolean' | 'number' | 'text'
-export type ProductOptionValue = { id?: number | string; value: boolean | number | null | string }
-export type ProductOption = {
+export type ProductAttributeType = 'boolean' | 'number' | 'text'
+export type ProductAttributeValue = { id?: number | string; value: boolean | number | null | string }
+export type ProductAttribute = {
   name: string
-  type: ProductOptionType
-  values: ProductOptionValue[]
+  type: ProductAttributeType
+  values: ProductAttributeValue[]
 }
 
 type FormData = {
   name: string
-  type: ProductOptionType
-  options: Array<ProductOptionValue & { key: string }>
+  type: ProductAttributeType
+  values: Array<ProductAttributeValue & { key: string }>
 }
 
-type ProductOptionFormContextValue = {
-  addOption: () => void
+type ProductAttributeFormContextValue = {
+  addValue: () => void
   cancelTypeChange: () => void
-  changeType: (type: ProductOptionType) => void
+  changeType: (type: ProductAttributeType) => void
   confirmTypeChange: () => void
   errors: Record<string, string>
   name: string
-  options: FormData['options']
-  pendingType: ProductOptionType | null
-  removeOption: (key: string) => void
+  values: FormData['values']
+  pendingType: ProductAttributeType | null
+  removeValue: (key: string) => void
   setName: (name: string) => void
-  type: ProductOptionType
-  updateOption: (key: string, value: ProductOptionValue['value']) => void
+  type: ProductAttributeType
+  updateValue: (key: string, value: ProductAttributeValue['value']) => void
 }
 
 type Props = {
   action: string
-  initialProductOption?: ProductOption
+  initialProductAttribute?: ProductAttribute
   method: 'patch' | 'post'
 }
 
-const productOptionTypes = [
+const productAttributeTypes = [
   { label: 'Text', value: 'text' },
   { label: 'Number', value: 'number' },
   { label: 'Boolean', value: 'boolean' },
 ] as const
 
-const ProductOptionFormContext = createContext<ProductOptionFormContextValue | null>(null)
+const ProductAttributeFormContext = createContext<ProductAttributeFormContextValue | null>(null)
 
-export default function ProductOptionForm({ action, initialProductOption, method }: Props) {
+export default function ProductAttributeForm({ action, initialProductAttribute, method }: Props) {
   const form = useForm<FormData>({
-    name: initialProductOption?.name ?? '',
-    type: initialProductOption?.type ?? 'text',
-    options: initialOptions(initialProductOption),
+    name: initialProductAttribute?.name ?? '',
+    type: initialProductAttribute?.type ?? 'text',
+    values: initialValues(initialProductAttribute),
   })
-  const [pendingType, setPendingType] = useState<ProductOptionType | null>(null)
+  const [pendingType, setPendingType] = useState<ProductAttributeType | null>(null)
 
-  const emptyOption = (type: ProductOptionType): FormData['options'][number] => ({
+  const emptyValue = (type: ProductAttributeType): FormData['values'][number] => ({
     key: crypto.randomUUID(),
     value: type === 'number' ? null : '',
   })
 
-  const addOption = () => form.setData('options', [...form.data.options, emptyOption(form.data.type)])
+  const addValue = () => form.setData('values', [...form.data.values, emptyValue(form.data.type)])
 
-  const updateOption = (key: string, value: ProductOptionValue['value']) => {
-    const options = form.data.options.map((option) => option.key === key ? { ...option, value } : option)
+  const updateValue = (key: string, nextValue: ProductAttributeValue['value']) => {
+    const values = form.data.values.map((value) => value.key === key ? { ...value, value: nextValue } : value)
 
-    if (isOptionValueFilled(value) && options.every((option) => isOptionValueFilled(option.value))) {
-      options.push(emptyOption(form.data.type))
+    if (isAttributeValueFilled(nextValue) && values.every((value) => isAttributeValueFilled(value.value))) {
+      values.push(emptyValue(form.data.type))
     }
 
-    form.setData('options', options)
+    form.setData('values', values)
   }
 
-  const removeOption = (key: string) => {
-    form.setData('options', form.data.options.filter((option) => option.key !== key))
+  const removeValue = (key: string) => {
+    form.setData('values', form.data.values.filter((value) => value.key !== key))
   }
 
-  const changeType = (nextType: ProductOptionType) => {
+  const changeType = (nextType: ProductAttributeType) => {
     if (nextType === form.data.type) return
 
-    if (form.data.options.some((option) => isOptionValueFilled(option.value))) {
+    if (form.data.values.some((value) => isAttributeValueFilled(value.value))) {
       setPendingType(nextType)
       return
     }
 
-    form.setData((current) => ({ ...current, type: nextType, options: [emptyOption(nextType)] }))
+    form.setData((current) => ({ ...current, type: nextType, values: [emptyValue(nextType)] }))
   }
 
   const confirmTypeChange = () => {
     if (pendingType === null) return
 
-    form.setData((current) => ({ ...current, type: pendingType, options: [emptyOption(pendingType)] }))
+    form.setData((current) => ({ ...current, type: pendingType, values: [emptyValue(pendingType)] }))
     setPendingType(null)
   }
 
   const submit = () => {
     form.transform((data) => ({
       ...data,
-      options: data.type === 'boolean'
+      values: data.type === 'boolean'
         ? []
-        : data.options
-          .filter((option) => isOptionValueFilled(option.value))
+        : data.values
+          .filter((value) => isAttributeValueFilled(value.value))
           .map(({ id, value }) => ({ ...(id === undefined ? {} : { id }), value })),
     }))
     form[method](action, { preserveScroll: true })
@@ -133,42 +133,42 @@ export default function ProductOptionForm({ action, initialProductOption, method
     processing: form.processing,
   })
 
-  const context: ProductOptionFormContextValue = {
-    addOption,
+  const context: ProductAttributeFormContextValue = {
+    addValue,
     cancelTypeChange: () => setPendingType(null),
     changeType,
     confirmTypeChange,
     errors: form.errors,
     name: form.data.name,
-    options: form.data.options,
+    values: form.data.values,
     pendingType,
-    removeOption,
+    removeValue,
     setName: (name) => form.setData('name', name),
     type: form.data.type,
-    updateOption,
+    updateValue,
   }
 
   return (
-    <ProductOptionFormContext value={context}>
+    <ProductAttributeFormContext value={context}>
       <Form onSubmit={handleSubmit}>
         <div {...stylex.props(styles.cards)}>
           <GeneralSection />
-          {form.data.type !== 'boolean' && <OptionsSection />}
+          {form.data.type !== 'boolean' && <ValuesSection />}
         </div>
       </Form>
-    </ProductOptionFormContext>
+    </ProductAttributeFormContext>
   )
 }
 
 function GeneralSection() {
-  const form = useProductOptionForm()
+  const form = useProductAttributeForm()
 
   return (
     <>
       <Card>
         <Card.Header>
           <Card.Title>General</Card.Title>
-          <Card.Description>Set the name and value type for this product option.</Card.Description>
+          <Card.Description>Set the name and value type for this product attribute.</Card.Description>
         </Card.Header>
         <Card.Body>
           <div {...stylex.props(styles.detailsGrid)}>
@@ -182,7 +182,7 @@ function GeneralSection() {
             </Field>
             <Field invalid={Boolean(form.errors.type)}>
               <Label htmlFor="type">Type</Label>
-              <Select id="type" items={productOptionTypes} name="type" onValueChange={form.changeType} required value={form.type} />
+              <Select id="type" items={productAttributeTypes} name="type" onValueChange={form.changeType} required value={form.type} />
               <Error>{form.errors.type}</Error>
             </Field>
           </div>
@@ -190,10 +190,10 @@ function GeneralSection() {
       </Card>
 
       <Dialog
-        description="Changing the type will remove the option values you have entered because they cannot be migrated to the new type."
+        description="Changing the type will remove the values you have entered because they cannot be migrated to the new type."
         onOpenChange={(open) => !open && form.cancelTypeChange()}
         open={form.pendingType !== null}
-        title="Change product option type?"
+        title="Change product attribute type?"
       >
         <Button onClick={form.cancelTypeChange} type="button" variant="secondary">Cancel</Button>
         <Button onClick={form.confirmTypeChange} type="button">Change type</Button>
@@ -202,56 +202,56 @@ function GeneralSection() {
   )
 }
 
-function OptionsSection() {
-  const form = useProductOptionForm()
+function ValuesSection() {
+  const form = useProductAttributeForm()
 
   return (
     <Card>
       <div {...stylex.props(styles.optionsHeader)}>
         <Card.Header>
-          <Card.Title>Options</Card.Title>
+          <Card.Title>Values</Card.Title>
           <Card.Description>Add the choices customers can select.</Card.Description>
         </Card.Header>
-        <Button onClick={form.addOption} type="button" variant="secondary">
+        <Button onClick={form.addValue} type="button" variant="secondary">
           <Icon height={16} name="plus" width={16} />
-          Add option
+          Add value
         </Button>
       </div>
       <Card.Body>
         <div {...stylex.props(styles.optionsGrid)}>
-          {form.options.map((option, index) => (
-            <Field invalid={Boolean(form.errors[`options.${index}.value`])} key={option.key}>
-              <Label htmlFor={`option-${option.key}`}>Option {index + 1}</Label>
+          {form.values.map((value, index) => (
+            <Field invalid={Boolean(form.errors[`values.${index}.value`])} key={value.key}>
+              <Label htmlFor={`value-${value.key}`}>Value {index + 1}</Label>
               <div {...stylex.props(styles.optionInput)}>
                 {form.type === 'number' ? (
                   <NumberInput
-                    id={`option-${option.key}`}
-                    name={`options[${index}][value]`}
-                    onValueChange={(value) => form.updateOption(option.key, value)}
-                    placeholder={index === 0 ? '10' : 'Option value'}
-                    value={typeof option.value === 'number' ? option.value : null}
+                    id={`value-${value.key}`}
+                    name={`values[${index}][value]`}
+                    onValueChange={(nextValue) => form.updateValue(value.key, nextValue)}
+                    placeholder={index === 0 ? '10' : 'Value'}
+                    value={typeof value.value === 'number' ? value.value : null}
                   />
                 ) : (
                   <Input
-                    id={`option-${option.key}`}
-                    name={`options[${index}][value]`}
-                    onChange={(event) => form.updateOption(option.key, event.target.value)}
-                    placeholder={index === 0 ? 'Small' : 'Option value'}
-                    value={typeof option.value === 'string' ? option.value : ''}
+                    id={`value-${value.key}`}
+                    name={`values[${index}][value]`}
+                    onChange={(event) => form.updateValue(value.key, event.target.value)}
+                    placeholder={index === 0 ? 'Small' : 'Value'}
+                    value={typeof value.value === 'string' ? value.value : ''}
                   />
                 )}
                 <BaseButton
-                  aria-label={`Remove option ${index + 1}`}
-                  disabled={form.options.length === 1}
-                  onClick={() => form.removeOption(option.key)}
-                  title={`Remove option ${index + 1}`}
+                  aria-label={`Remove value ${index + 1}`}
+                  disabled={form.values.length === 1}
+                  onClick={() => form.removeValue(value.key)}
+                  title={`Remove value ${index + 1}`}
                   type="button"
-                  {...stylex.props(styles.removeButton, form.options.length === 1 && styles.removeButtonDisabled)}
+                  {...stylex.props(styles.removeButton, form.values.length === 1 && styles.removeButtonDisabled)}
                 >
                   <Icon height={18} name="trash" width={18} />
                 </BaseButton>
               </div>
-              <Error>{form.errors[`options.${index}.value`]}</Error>
+              <Error>{form.errors[`values.${index}.value`]}</Error>
             </Field>
           ))}
         </div>
@@ -260,23 +260,23 @@ function OptionsSection() {
   )
 }
 
-function useProductOptionForm() {
-  const context = useContext(ProductOptionFormContext)
+function useProductAttributeForm() {
+  const context = useContext(ProductAttributeFormContext)
 
-  if (context === null) throw new globalThis.Error('useProductOptionForm must be used within ProductOptionForm')
+  if (context === null) throw new globalThis.Error('useProductAttributeForm must be used within ProductAttributeForm')
 
   return context
 }
 
-function initialOptions(productOption?: ProductOption): FormData['options'] {
-  if (!productOption || productOption.values.length === 0) {
-    return [{ key: crypto.randomUUID(), value: productOption?.type === 'number' ? null : '' }]
+function initialValues(productAttribute?: ProductAttribute): FormData['values'] {
+  if (!productAttribute || productAttribute.values.length === 0) {
+    return [{ key: crypto.randomUUID(), value: productAttribute?.type === 'number' ? null : '' }]
   }
 
-  return productOption.values.map((option) => ({ ...option, key: `option-${option.id}` }))
+  return productAttribute.values.map((value) => ({ ...value, key: `value-${value.id}` }))
 }
 
-function isOptionValueFilled(value: ProductOptionValue['value']) {
+function isAttributeValueFilled(value: ProductAttributeValue['value']) {
   return value !== null && (typeof value === 'number' || value.trim() !== '')
 }
 

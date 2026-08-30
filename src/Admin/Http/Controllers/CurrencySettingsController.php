@@ -48,7 +48,7 @@ class CurrencySettingsController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
-            'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => ['name' => $admin->name, 'email' => $admin->email],
         ];

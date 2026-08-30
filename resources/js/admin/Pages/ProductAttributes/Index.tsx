@@ -10,7 +10,7 @@ import EmptyState from '../../Components/EmptyState'
 import Icon from '../../Components/Icon'
 import Table, { type PaginationData } from '../../Components/Table'
 
-type ProductOption = {
+type ProductAttribute = {
   deleteUrl: string
   id: number | string
   name: string
@@ -21,32 +21,32 @@ type ProductOption = {
 
 type Props = AdminLayoutProps & {
   pagination: PaginationData
-  productOptionCreateUrl: string
-  productOptions: ProductOption[]
+  productAttributeCreateUrl: string
+  productAttributes: ProductAttribute[]
 }
 
-export default function ProductOptionIndex({ pagination, productOptionCreateUrl, productOptions, ...layoutProps }: Props) {
-  const [productOptionToDelete, setProductOptionToDelete] = useState<ProductOption | null>(null)
+export default function ProductAttributeIndex({ pagination, productAttributeCreateUrl, productAttributes, ...layoutProps }: Props) {
+  const [productAttributeToDelete, setProductAttributeToDelete] = useState<ProductAttribute | null>(null)
 
-  const deleteProductOption = () => {
-    if (productOptionToDelete === null) return
+  const deleteProductAttribute = () => {
+    if (productAttributeToDelete === null) return
 
-    router.delete(productOptionToDelete.deleteUrl, {
-      onSuccess: () => setProductOptionToDelete(null),
+    router.delete(productAttributeToDelete.deleteUrl, {
+      onSuccess: () => setProductAttributeToDelete(null),
       preserveScroll: true,
     })
   }
 
   return (
-    <AdminLayout active="product-options" {...layoutProps}>
-      <Head title="Product options" />
-      {productOptions.length === 0 ? (
+    <AdminLayout active="product-attributes" {...layoutProps}>
+      <Head title="Product attributes" />
+      {productAttributes.length === 0 ? (
         <div {...stylex.props(styles.emptyStateWrapper)}>
           <EmptyState
-            actions={<Button render={<Link href={productOptionCreateUrl} />}>Create product option</Button>}
-            description="Product options let you define choices such as size, color, or material."
-            renderIcon={() => <Icon name="product-options" height={24} width={24} />}
-            title="No product options yet"
+            actions={<Button render={<Link href={productAttributeCreateUrl} />}>Create product attribute</Button>}
+            description="Product attributes let you define choices such as size, color, or material."
+            renderIcon={() => <Icon name="product-attributes" height={24} width={24} />}
+            title="No product attributes yet"
           />
         </div>
       ) : (
@@ -55,12 +55,12 @@ export default function ProductOptionIndex({ pagination, productOptionCreateUrl,
             <Table.Root>
               <Table.Header>
                 <tr>
-                  <Table.Heading>Product option</Table.Heading>
+                  <Table.Heading>Product attribute</Table.Heading>
                   <Table.Heading>Type</Table.Heading>
                   <Table.Heading numeric>Values</Table.Heading>
                   <Table.Heading>
                     <div {...stylex.props(styles.actionsHeading)}>
-                      <Button render={<Link href={productOptionCreateUrl} />}>
+                      <Button render={<Link href={productAttributeCreateUrl} />}>
                         <Icon height={16} name="plus" width={16} />
                         Create
                       </Button>
@@ -69,24 +69,24 @@ export default function ProductOptionIndex({ pagination, productOptionCreateUrl,
                 </tr>
               </Table.Header>
               <Table.Body>
-                {productOptions.map((productOption, index) => (
+                {productAttributes.map((productAttribute, index) => (
                   <Table.Row
                     first={index === 0}
                     interactive
-                    key={productOption.id}
-                    onClick={() => router.visit(productOption.url)}
+                    key={productAttribute.id}
+                    onClick={() => router.visit(productAttribute.url)}
                   >
                     <Table.Cell selectable>
                       <Link
-                        href={productOption.url}
+                        href={productAttribute.url}
                         onClick={(event) => event.stopPropagation()}
-                        {...stylex.props(styles.productOptionLink)}
+                        {...stylex.props(styles.productAttributeLink)}
                       >
-                        {productOption.name}
+                        {productAttribute.name}
                       </Link>
                     </Table.Cell>
-                    <Table.Cell>{formatType(productOption.type)}</Table.Cell>
-                    <Table.Cell numeric selectable>{productOption.type === 'boolean' ? null : productOption.valuesCount}</Table.Cell>
+                    <Table.Cell>{formatType(productAttribute.type)}</Table.Cell>
+                    <Table.Cell numeric selectable>{productAttribute.type === 'boolean' ? null : productAttribute.valuesCount}</Table.Cell>
                     <Table.Cell>
                       <div onClick={(event) => event.stopPropagation()} {...stylex.props(styles.actions)}>
                         <DropdownMenu
@@ -94,12 +94,12 @@ export default function ProductOptionIndex({ pagination, productOptionCreateUrl,
                           items={[{
                             icon: <Icon height={18} name="trash" width={18} />,
                             label: 'Delete',
-                            onClick: () => setProductOptionToDelete(productOption),
+                            onClick: () => setProductAttributeToDelete(productAttribute),
                             variant: 'danger',
                           }]}
                           side="bottom"
                           trigger={(open) => (
-                            <BaseButton aria-label={`Actions for ${productOption.name}`} type="button" {...stylex.props(styles.actionsTrigger, open && styles.actionsTriggerOpen)}>
+                            <BaseButton aria-label={`Actions for ${productAttribute.name}`} type="button" {...stylex.props(styles.actionsTrigger, open && styles.actionsTriggerOpen)}>
                               <Icon height={20} name="dots" width={20} />
                             </BaseButton>
                           )}
@@ -111,22 +111,22 @@ export default function ProductOptionIndex({ pagination, productOptionCreateUrl,
               </Table.Body>
             </Table.Root>
           </Table.Scroll>
-          <Table.Pagination data={pagination} itemLabel="product options" label="Product option pagination" />
+          <Table.Pagination data={pagination} itemLabel="product attributes" label="Product attribute pagination" />
         </Table.Frame>
       )}
 
       <Dialog
-        description={productOptionToDelete === null
+        description={productAttributeToDelete === null
           ? ''
-          : `This will permanently delete "${productOptionToDelete.name}" and all of its values.`}
-        onOpenChange={(open) => !open && setProductOptionToDelete(null)}
-        open={productOptionToDelete !== null}
-        title="Delete product option?"
+          : `This will permanently delete "${productAttributeToDelete.name}" and all of its values.`}
+        onOpenChange={(open) => !open && setProductAttributeToDelete(null)}
+        open={productAttributeToDelete !== null}
+        title="Delete product attribute?"
       >
-        <Button onClick={() => setProductOptionToDelete(null)} type="button" variant="secondary">
+        <Button onClick={() => setProductAttributeToDelete(null)} type="button" variant="secondary">
           Cancel
         </Button>
-        <Button onClick={deleteProductOption} type="button" variant="danger">
+        <Button onClick={deleteProductAttribute} type="button" variant="danger">
           Delete
         </Button>
       </Dialog>
@@ -140,9 +140,9 @@ const styles = stylex.create({
   actionsHeading: { display: 'flex', justifyContent: 'flex-end' },
   actionsTrigger: { alignItems: 'center', backgroundColor: { default: 'transparent', ':hover': 'var(--color-neutral-200)' }, borderColor: 'transparent', borderRadius: 4, borderStyle: 'solid', borderWidth: 0, color: 'var(--color-neutral-600)', cursor: 'pointer', display: 'flex', height: 32, justifyContent: 'center', outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, padding: 0, width: 32 },
   actionsTriggerOpen: { backgroundColor: 'var(--color-neutral-200)' },
-  productOptionLink: { borderRadius: 4, color: { default: 'var(--color-neutral-950)', [stylex.when.ancestor(':hover')]: 'var(--color-brand-700)' }, fontWeight: 600, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, textDecoration: { default: 'none', ':hover': 'underline' }, textUnderlineOffset: 3 },
+  productAttributeLink: { borderRadius: 4, color: { default: 'var(--color-neutral-950)', [stylex.when.ancestor(':hover')]: 'var(--color-brand-700)' }, fontWeight: 600, outlineColor: { default: 'transparent', ':focus-visible': 'var(--color-brand-400)' }, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 2, textDecoration: { default: 'none', ':hover': 'underline' }, textUnderlineOffset: 3 },
 })
 
-function formatType(type: ProductOption['type']) {
+function formatType(type: ProductAttribute['type']) {
   return type.charAt(0).toUpperCase() + type.slice(1)
 }

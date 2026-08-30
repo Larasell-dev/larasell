@@ -13,18 +13,18 @@ export type AdminLayoutProps = {
   mediaUrl: string
   ordersUrl: string
   productsUrl: string
-  productOptionsUrl: string
+  productAttributesUrl: string
   settingsUrl: string
   logoutUrl: string
   user: { name: string; email: string }
 }
 
 type Props = AdminLayoutProps & {
-  active: 'home' | 'media' | 'orders' | 'product-options' | 'products' | 'settings'
+  active: 'home' | 'media' | 'orders' | 'product-attributes' | 'products' | 'settings'
   children?: ReactNode
 }
 
-export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, ordersUrl, productOptionsUrl, productsUrl, settingsUrl, user }: Props) {
+export default function AdminLayout({ active, children, homeUrl, logoutUrl, mediaUrl, ordersUrl, productAttributesUrl, productsUrl, settingsUrl, user }: Props) {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   useBreakpoint({ onBreakpointExceeded: { lg: () => setMenuOpen(false) } })
@@ -75,12 +75,12 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
             Media
           </Link>
           <Link
-            aria-current={active === 'product-options' ? 'page' : undefined}
-            href={productOptionsUrl}
-            {...stylex.props(styles.navLink, active === 'product-options' && styles.navLinkActive)}
+            aria-current={active === 'product-attributes' ? 'page' : undefined}
+            href={productAttributesUrl}
+            {...stylex.props(styles.navLink, active === 'product-attributes' && styles.navLinkActive)}
           >
-            <Icon name={active === 'product-options' ? 'product-options-filled' : 'product-options'} width={18} height={18} />
-            Product options
+            <Icon name={active === 'product-attributes' ? 'product-attributes-filled' : 'product-attributes'} width={18} height={18} />
+            Product attributes
           </Link>
         </nav>
 
@@ -161,13 +161,13 @@ export default function AdminLayout({ active, children, homeUrl, logoutUrl, medi
                     Media
                   </Link>
                   <Link
-                    aria-current={active === 'product-options' ? 'page' : undefined}
-                    href={productOptionsUrl}
+                    aria-current={active === 'product-attributes' ? 'page' : undefined}
+                    href={productAttributesUrl}
                     onClick={() => setMenuOpen(false)}
-                    {...stylex.props(styles.navLink, active === 'product-options' && styles.navLinkActive)}
+                    {...stylex.props(styles.navLink, active === 'product-attributes' && styles.navLinkActive)}
                   >
-                    <Icon name={active === 'product-options' ? 'product-options-filled' : 'product-options'} width={18} height={18} />
-                    Product options
+                    <Icon name={active === 'product-attributes' ? 'product-attributes-filled' : 'product-attributes'} width={18} height={18} />
+                    Product attributes
                   </Link>
                 </nav>
 
