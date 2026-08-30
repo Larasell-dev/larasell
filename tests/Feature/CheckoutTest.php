@@ -169,6 +169,8 @@ it('keeps snapshots after the source product changes', function () {
     $product = Product::query()->create([
         'slug' => 'tea',
         'name' => 'Tea',
+        'sku' => 'TEA-001',
+        'barcode' => '04012345678901',
         'price' => Price::of(500),
         'allow_backorders' => true,
         'status' => Visibility::Visible,
@@ -177,7 +179,12 @@ it('keeps snapshots after the source product changes', function () {
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData(42))->order;
-    $product->update(['name' => 'Changed Tea', 'price' => Price::of(900)]);
+    $product->update([
+        'name' => 'Changed Tea',
+        'sku' => 'TEA-002',
+        'barcode' => '04012345678918',
+        'price' => Price::of(900),
+    ]);
     $product->delete();
 
     $item = $order->items()->first();
@@ -187,6 +194,8 @@ it('keeps snapshots after the source product changes', function () {
         ->and($order->billing_address->street)->toBe(['Main Street 1'])
         ->and($order->shipping_address->street)->toBe(['Shipping Street 2', 'Second floor'])
         ->and($item->product_name)->toBe('Tea')
+        ->and($item->product_sku)->toBe('TEA-001')
+        ->and($item->product_barcode)->toBe('04012345678901')
         ->and($item->inventory_quantity)->toBe(0)
         ->and($item->unit_price->amount())->toBe('500');
 });

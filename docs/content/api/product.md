@@ -15,6 +15,11 @@ Products must also include a currency-independent `price` field. Price values
 are integer strings in minor units and are cast to `Larasell\Larasell\Price`
 on the model. Supply the cart or order currency when formatting a price.
 
+Products may have a nullable `sku` and `barcode`. Both identifiers are stored
+as strings, preserve leading zeroes, and must be unique when present. Use `sku`
+for the merchant's internal stock identifier and `barcode` for an external
+identifier such as an EAN, UPC, or GTIN.
+
 Products include a nullable `stock` field that defaults to `null`.
 When `stock` is `null`, Larasell does not track inventory for the
 product and customers may buy any quantity. By default, products also
@@ -32,6 +37,8 @@ use Larasell\Larasell\Price;
 $product = Product::create([
     'slug' => 'basic-plan',
     'name' => 'Basic Plan',
+    'sku' => 'PLAN-BASIC',
+    'barcode' => null,
     'price' => Price::of(1299),
 ]);
 

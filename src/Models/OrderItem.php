@@ -15,6 +15,8 @@ use Larasell\Larasell\Price;
  * @property int|null $product_id
  * @property string $product_name
  * @property string|null $product_slug
+ * @property string|null $product_sku
+ * @property string|null $product_barcode
  * @property Price $unit_price
  * @property int $quantity
  * @property int $inventory_quantity

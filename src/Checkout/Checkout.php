@@ -175,6 +175,8 @@ class Checkout
                         'product_id' => $item->product->getKey(),
                         'product_name' => $item->product->name->get(),
                         'product_slug' => $item->product->slug,
+                        'product_sku' => $item->product->sku,
+                        'product_barcode' => $item->product->barcode,
                         'unit_price' => $item->product->price,
                         'quantity' => $item->quantity,
                         'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,

@@ -19,6 +19,8 @@ use Larasell\Larasell\Translatable;
 /**
  * @property int $id
  * @property string $slug
+ * @property string|null $sku
+ * @property string|null $barcode
  * @property Translatable $name
  * @property Translatable|null $description
  * @property Price $price
