@@ -271,7 +271,7 @@ class Product extends Model
 
                 return $existing instanceof ProductVariant
                     ? $existing->load('attributeValues.attribute')
-                    : $this->createVariant($combination);
+                    : $this->createVariant($combination, ['status' => Visibility::Hidden]);
             });
 
             return new EloquentCollection($variants->all());
@@ -292,7 +292,9 @@ class Product extends Model
             $this->variants()->where('is_default', true)->delete();
 
             /** @var ProductVariant $variant */
-            $variant = $this->variants()->create(array_merge($attributes, [
+            $variant = $this->variants()->create(array_merge([
+                'status' => Visibility::Visible,
+            ], $attributes, [
                 'combination_key' => self::combinationKey($values),
             ]));
 

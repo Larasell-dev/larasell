@@ -99,6 +99,7 @@ function variantInventoryCart(): array
         'price' => Price::of(1500),
         'stock' => 5,
         'allow_backorders' => false,
+        'status' => Visibility::Visible,
     ]);
 
     return [Cart::create(['currency' => Currency::EUR]), $variants->first()->refresh(), $variants->last()->refresh()];

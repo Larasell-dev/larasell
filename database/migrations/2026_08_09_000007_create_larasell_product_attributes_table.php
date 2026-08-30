@@ -25,8 +25,8 @@ return new class extends Migration
             $table->unsignedInteger('position')->nullable();
             $table->timestamps();
 
-            $table->unique(['product_attribute_id', 'slug']);
-            $table->index(['product_attribute_id', 'position']);
+            $table->unique(['product_attribute_id', 'slug'], 'product_attribute_value_slug_unique');
+            $table->index(['product_attribute_id', 'position'], 'product_attribute_value_position_idx');
         });
 
         Schema::create('larasell_product_product_attribute_value', function (Blueprint $table) {

@@ -2,6 +2,7 @@
 
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductAttribute;
@@ -148,6 +149,7 @@ function cartVariantCatalog(array $firstVariantAttributes = []): array
     $product->attributeValues()->attach([$small->id, $medium->id]);
     $variants = $product->generateVariants([$size]);
 
+    $variants->each->update(['status' => Visibility::Visible]);
     $variants->first()->update($firstVariantAttributes);
 
     return [$product, $variants->first()->refresh(), $variants->last()->refresh()];

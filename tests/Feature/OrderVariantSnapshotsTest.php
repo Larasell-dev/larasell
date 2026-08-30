@@ -105,7 +105,11 @@ function orderSnapshotVariantCart(): array
     $product->attributeValues()->attach([$small->id, $medium->id, $black->id]);
     $variants = $product->generateVariants([$size, $color]);
     $variant = $variants->first();
-    $variant->update(['sku' => 'TSHIRT-BLK-S', 'barcode' => '4012345678901']);
+    $variant->update([
+        'sku' => 'TSHIRT-BLK-S',
+        'barcode' => '4012345678901',
+        'status' => Visibility::Visible,
+    ]);
 
     return [Cart::create(['currency' => Currency::EUR]), $variant->refresh(), $size, $small, $color, $black];
 }

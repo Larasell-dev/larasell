@@ -218,8 +218,8 @@ it('does not block checkout of a different variant from the same product', funct
     $mediumValue = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
     $product->attributeValues()->attach([$smallValue->id, $mediumValue->id]);
     [$small, $medium] = $product->generateVariants([$size]);
-    $small->update(['stock' => 1, 'allow_backorders' => false]);
-    $medium->update(['stock' => 1, 'allow_backorders' => false]);
+    $small->update(['stock' => 1, 'allow_backorders' => false, 'status' => Visibility::Visible]);
+    $medium->update(['stock' => 1, 'allow_backorders' => false, 'status' => Visibility::Visible]);
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($medium);
 

@@ -166,6 +166,7 @@ it('generates the cartesian product of selected attribute dimensions', function 
 
     expect($variants)->toHaveCount(4)
         ->and($product->variantDimensions->modelKeys())->toBe([$size->id, $color->id])
+        ->and($variants->every(fn (ProductVariant $variant): bool => $variant->status === Visibility::Hidden))->toBeTrue()
         ->and($variants->map->attributeValues->flatten()->pluck('slug')->contains('cotton'))->toBeFalse();
 });
 
