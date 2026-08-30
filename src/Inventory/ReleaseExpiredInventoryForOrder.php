@@ -39,7 +39,7 @@ final readonly class ReleaseExpiredInventoryForOrder
 
             $reservations = $order->inventoryReservations()
                 ->where('status', InventoryReservationStatus::Active->value)
-                ->orderBy('product_id')
+                ->orderBy('product_variant_id')
                 ->lockForUpdate()
                 ->get();
 

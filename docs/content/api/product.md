@@ -101,21 +101,21 @@ $products = Product::query()
 ## Filtering product listings
 
 `ProductListingRequest::products()` applies the current category, sort,
-and product option filters from the request query string.
+and product attribute filters from the request query string.
 
 ```php
 $products = $request->products()->get();
 ```
 
-Filter by product option slug and option value slug with the `options`
+Filter by product attribute slug and attribute value slug with the `attributes`
 query parameter.
 
 ```text
-/c/shirts?options[size][]=small&options[size][]=medium&options[color]=black
+/c/shirts?attributes[size][]=small&attributes[size][]=medium&attributes[color]=black
 ```
 
-Multiple values for the same option match any selected value. Multiple
-options must all match.
+Multiple values for the same attribute match any selected value. Multiple
+attributes must all match.
 
 ## Managing product images
 
@@ -186,21 +186,21 @@ $product->images()->sync([
 ]);
 ```
 
-## Managing product options
+## Managing product attributes
 
-Product options are reusable typed definitions, such as `Size`, `Color`,
-or `Gift wrap`. Supported option types are `text`, `number`, and
-`boolean`. Each option owns its available values, and products are
+Product attributes are reusable typed definitions, such as `Size`, `Color`,
+or `Gift wrap`. Supported attribute types are `text`, `number`, and
+`boolean`. Each attribute owns its available values, and products are
 assigned the specific values they support.
 
 ```php
-use Larasell\Larasell\Enums\ProductOptionType;
-use Larasell\Larasell\Models\ProductOption;
+use Larasell\Larasell\Enums\ProductAttributeType;
+use Larasell\Larasell\Models\ProductAttribute;
 
-$size = ProductOption::create([
+$size = ProductAttribute::create([
     'slug' => 'size',
     'name' => 'Size',
-    'type' => ProductOptionType::Text,
+    'type' => ProductAttributeType::Text,
 ]);
 
 $small = $size->values()->create([
@@ -210,18 +210,58 @@ $small = $size->values()->create([
     'position' => 0,
 ]);
 
-$product->optionValues()->attach($small);
+$product->attributeValues()->attach($small);
 ```
 
-Option values must match their parent option type. Text options accept
-strings, number options accept integers or floats, and boolean options
+Choose which attached attributes define purchasable variants. Generation must
+produce at least two combinations.
+
+```php
+$medium = $size->values()->create([
+    'slug' => 'medium',
+    'name' => 'Medium',
+    'value' => 'medium',
+]);
+$product->attributeValues()->attach($medium);
+
+$variants = $product->generateVariants([$size]);
+```
+
+The selected attributes are persisted in `variantDimensions()`. Calling the
+generator again creates only missing combinations and preserves existing
+variant data. Generated variants start hidden so the merchant can review SKU,
+price, inventory, and availability before selling them.
+
+Resolve a storefront selection using stable attribute and value slugs:
+
+```php
+$variant = $product->variantFor([
+    'size' => 'small',
+    'color' => 'black',
+]);
+
+$cart->add($variant, quantity: 2);
+```
+
+`ProductVariant` is the authoritative purchasable record. Its nullable price,
+stock, backorder policy, and quantity limits inherit from the product. SKU and
+barcode also inherit when omitted. Products without generated combinations use
+an automatically-created default variant, so `$cart->add($product)` remains
+valid.
+
+Variant combinations are identified by stable attribute and value IDs rather
+than customer-facing labels. Duplicate combinations, SKUs, and barcodes are
+rejected.
+
+Attribute values must match their parent attribute type. Text attributes accept
+strings, number attributes accept integers or floats, and boolean attributes
 accept booleans.
 
 ```php
-$giftWrap = ProductOption::create([
+$giftWrap = ProductAttribute::create([
     'slug' => 'gift-wrap',
     'name' => 'Gift wrap',
-    'type' => ProductOptionType::Boolean,
+    'type' => ProductAttributeType::Boolean,
 ]);
 
 $giftWrap->values()->create([
@@ -231,17 +271,17 @@ $giftWrap->values()->create([
 ]);
 ```
 
-Use `withOptions()` to load product option values with their parent
-option when rendering a product page.
+Use `withAttributeValues()` to load product attribute values with their parent
+attribute when rendering a product page.
 
 ```php
 $product = Product::query()
-    ->withOptions()
+    ->withAttributeValues()
     ->where('slug', 'basic-plan')
     ->firstOrFail();
 
-foreach ($product->optionValues as $value) {
-    $optionName = $value->option->name;
+foreach ($product->attributeValues as $value) {
+    $attributeName = $value->attribute->name;
     $valueName = $value->name;
 }
 ```

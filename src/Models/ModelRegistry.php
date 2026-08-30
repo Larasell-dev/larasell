@@ -36,11 +36,14 @@ final readonly class ModelRegistry
     /** @var ModelEntry<ProductImage> */
     public ModelEntry $productImage;
 
-    /** @var ModelEntry<ProductOption> */
-    public ModelEntry $productOption;
+    /** @var ModelEntry<ProductAttribute> */
+    public ModelEntry $productAttribute;
 
-    /** @var ModelEntry<ProductOptionValue> */
-    public ModelEntry $productOptionValue;
+    /** @var ModelEntry<ProductAttributeValue> */
+    public ModelEntry $productAttributeValue;
+
+    /** @var ModelEntry<ProductVariant> */
+    public ModelEntry $productVariant;
 
     /** @var ModelEntry<PromotionRedemption> */
     public ModelEntry $promotionRedemption;
@@ -60,8 +63,9 @@ final readonly class ModelRegistry
         $this->refund = new ModelEntry($config, 'larasell.models.refund', Refund::class);
         $this->product = new ModelEntry($config, 'larasell.models.product', Product::class);
         $this->productImage = new ModelEntry($config, 'larasell.models.product_image', ProductImage::class);
-        $this->productOption = new ModelEntry($config, 'larasell.models.product_option', ProductOption::class);
-        $this->productOptionValue = new ModelEntry($config, 'larasell.models.product_option_value', ProductOptionValue::class);
+        $this->productAttribute = new ModelEntry($config, 'larasell.models.product_attribute', ProductAttribute::class);
+        $this->productAttributeValue = new ModelEntry($config, 'larasell.models.product_attribute_value', ProductAttributeValue::class);
+        $this->productVariant = new ModelEntry($config, 'larasell.models.product_variant', ProductVariant::class);
         $this->promotionRedemption = new ModelEntry($config, 'larasell.models.promotion_redemption', PromotionRedemption::class);
         $this->setting = new ModelEntry($config, 'larasell.models.setting', Setting::class);
     }

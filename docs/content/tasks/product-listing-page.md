@@ -59,15 +59,15 @@ class ProductController
 }
 ```
 
-The request supports sorting and product option filters through query
+The request supports sorting and product attribute filters through query
 parameters:
 
 ```text
-/c/mens/clothing/shirts?sort=price_asc&options[size][]=small&options[size][]=medium&options[color]=black
+/c/mens/clothing/shirts?sort=price_asc&attributes[size][]=small&attributes[size][]=medium&attributes[color]=black
 ```
 
-Multiple values for the same option match any selected value. Multiple
-options must all match.
+Multiple values for the same attribute match any selected value. Multiple
+attributes must all match.
 
 ## Creating a template
 

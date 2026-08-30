@@ -15,8 +15,10 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 
@@ -50,7 +52,7 @@ class ProductController extends Controller
             'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
             'productCreateUrl' => route('larasell.admin.products.create'),
-            'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -96,11 +98,11 @@ class ProductController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
-            'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'productStoreUrl' => route('larasell.admin.products.store'),
             'categories' => $this->categoryOptions($productModel),
-            'productOptions' => $this->productOptionValueOptions($productModel),
+            'productAttributes' => $this->productAttributeValueOptions($productModel),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
                 'name' => $admin->name,
@@ -116,13 +118,13 @@ class ProductController extends Controller
         $data = $this->validatedProductData($request);
         $data['slug'] = $this->uniqueSlug($productModel, $data['name']);
         $categoryIds = $data['category_ids'];
-        $optionValueIds = $data['option_value_ids'];
-        unset($data['category_ids'], $data['option_value_ids']);
+        $attributeValueIds = $data['attribute_value_ids'];
+        unset($data['category_ids'], $data['attribute_value_ids']);
 
-        $product = DB::transaction(function () use ($categoryIds, $data, $optionValueIds, $productModel): Model {
+        $product = DB::transaction(function () use ($categoryIds, $data, $attributeValueIds, $productModel): Model {
             $product = $productModel::query()->create($data);
             $product->categories()->sync($categoryIds);
-            $product->optionValues()->sync($optionValueIds);
+            $product->attributeValues()->sync($attributeValueIds);
 
             return $product;
         });
@@ -142,7 +144,7 @@ class ProductController extends Controller
             'mediaUrl' => route('larasell.admin.media.index'),
             'ordersUrl' => route('larasell.admin.orders.index'),
             'productsUrl' => route('larasell.admin.products.index'),
-            'productOptionsUrl' => route('larasell.admin.product-options.index'),
+            'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
@@ -164,11 +166,32 @@ class ProductController extends Controller
                 'imageUploadUrl' => route('larasell.admin.products.images.store', $product->getKey()),
                 'generalUpdateUrl' => route('larasell.admin.products.general.update', $product->getKey()),
                 'stockUpdateUrl' => route('larasell.admin.products.stock.update', $product->getKey()),
+                'variantGenerateUrl' => route('larasell.admin.products.variants.generate', $product->getKey()),
+                'variantUpdateUrl' => route('larasell.admin.products.variants.update', $product->getKey()),
                 'categoryIds' => $product->categories()->pluck($product->categories()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
-                'optionValueIds' => $product->optionValues()->pluck($product->optionValues()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
+                'attributeValueIds' => $product->attributeValues()->pluck($product->attributeValues()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
             ],
             'categories' => $this->categoryOptions($productModel),
-            'productOptions' => $this->productOptionValueOptions($productModel),
+            'productAttributes' => $this->productAttributeValueOptions($productModel),
+            'variantDimensionIds' => $product->variantDimensions()->pluck('larasell_product_attributes.id')->map(fn ($id): string => (string) $id)->all(),
+            'variants' => $product->variants()
+                ->with(['product.variantDimensions', 'attributeValues.attribute'])
+                ->where('is_default', false)
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (ProductVariant $variant): array => [
+                    'id' => $variant->getKey(),
+                    'name' => $variant->snapshotName(),
+                    'sku' => $variant->sku,
+                    'barcode' => $variant->barcode,
+                    'priceAmount' => $variant->price?->amount(),
+                    'stock' => $variant->stock,
+                    'allowBackorders' => $variant->allow_backorders,
+                    'minQuantity' => $variant->min_quantity,
+                    'maxQuantity' => $variant->max_quantity,
+                    'status' => $variant->status->value,
+                ])->all(),
             'images' => Inertia::defer(fn (): array => $product->images()
                 ->get()
                 ->map(fn (Model $image): array => [
@@ -185,7 +208,7 @@ class ProductController extends Controller
         $product = $this->findProduct($adminProduct);
         $imageModel = $product->images()->getRelated();
         $categoryModel = $product->categories()->getRelated();
-        $optionValueModel = $product->optionValues()->getRelated();
+        $attributeValueModel = $product->attributeValues()->getRelated();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
@@ -202,14 +225,14 @@ class ProductController extends Controller
             'new_image_ids.*' => ['required', 'integer', 'distinct', Rule::exists($imageModel->getTable(), $imageModel->getKeyName())],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['required', 'integer', 'distinct', Rule::exists($categoryModel->getTable(), $categoryModel->getKeyName())],
-            'option_value_ids' => ['sometimes', 'array'],
-            'option_value_ids.*' => ['required', 'integer', 'distinct', Rule::exists($optionValueModel->getTable(), $optionValueModel->getKeyName())],
+            'attribute_value_ids' => ['sometimes', 'array'],
+            'attribute_value_ids.*' => ['required', 'integer', 'distinct', Rule::exists($attributeValueModel->getTable(), $attributeValueModel->getKeyName())],
         ]);
 
         $imageIds = array_map('intval', $data['image_order']);
         $newImageIds = array_map('intval', $data['new_image_ids']);
         $categoryIds = array_key_exists('category_ids', $data) ? array_map('intval', $data['category_ids']) : null;
-        $optionValueIds = array_key_exists('option_value_ids', $data) ? array_map('intval', $data['option_value_ids']) : null;
+        $attributeValueIds = array_key_exists('attribute_value_ids', $data) ? array_map('intval', $data['attribute_value_ids']) : null;
         $attachedImageIds = $product->images()->pluck($imageModel->getQualifiedKeyName())->map(fn ($id): int => (int) $id)->all();
         $expectedImageIds = [...$attachedImageIds, ...$newImageIds];
 
@@ -225,17 +248,17 @@ class ProductController extends Controller
         $data['price'] = Price::of($data['price_amount']);
         $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
         $data['description'] = $this->translatedDescription($product, $data['description']);
-        unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids'], $data['option_value_ids']);
+        unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids'], $data['attribute_value_ids']);
 
-        DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $optionValueIds, $product): void {
+        DB::transaction(function () use ($categoryIds, $data, $imageIds, $newImages, $attributeValueIds, $product): void {
             $product->fill($data)->save();
 
             if ($categoryIds !== null) {
                 $product->categories()->sync($categoryIds);
             }
 
-            if ($optionValueIds !== null) {
-                $product->optionValues()->sync($optionValueIds);
+            if ($attributeValueIds !== null) {
+                $product->attributeValues()->sync($attributeValueIds);
             }
 
             foreach ($imageIds as $position => $imageId) {
@@ -336,6 +359,82 @@ class ProductController extends Controller
         return back();
     }
 
+    public function generateVariants(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $attributeModel = app(ModelRegistry::class)->productAttribute->class();
+        $data = $request->validate([
+            'attribute_ids' => ['required', 'array', 'min:1'],
+            'attribute_ids.*' => ['required', 'integer', 'distinct', Rule::exists((new $attributeModel)->getTable(), (new $attributeModel)->getKeyName())],
+        ]);
+        $attributes = $attributeModel::query()
+            ->whereKey($data['attribute_ids'])
+            ->get()
+            ->sortBy(fn (Model $attribute): int => array_search((string) $attribute->getKey(), array_map('strval', $data['attribute_ids']), true))
+            ->values()
+            ->all();
+
+        try {
+            $product->generateVariants($attributes);
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['attribute_ids' => $exception->getMessage()]);
+        }
+
+        return back();
+    }
+
+    public function updateVariants(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $variantTable = app(ModelRegistry::class)->productVariant->query()->getModel()->getTable();
+        $data = $request->validate([
+            'variants' => ['required', 'array', 'min:1'],
+            'variants.*.id' => ['required', 'integer', 'distinct'],
+            'variants.*.sku' => ['present', 'nullable', 'string', 'max:255'],
+            'variants.*.barcode' => ['present', 'nullable', 'string', 'max:255'],
+            'variants.*.price_amount' => ['present', 'nullable', 'integer', 'min:0'],
+            'variants.*.stock' => ['present', 'nullable', 'integer', 'min:0'],
+            'variants.*.allow_backorders' => ['present', 'nullable', 'boolean'],
+            'variants.*.min_quantity' => ['present', 'nullable', 'integer', 'min:1'],
+            'variants.*.max_quantity' => ['present', 'nullable', 'integer', 'min:1'],
+            'variants.*.status' => ['required', Rule::enum(Visibility::class)],
+        ]);
+
+        $ids = collect($data['variants'])->pluck('id')->map(fn ($id): int => (int) $id);
+        $variants = $product->variants()->whereKey($ids)->get()->keyBy('id');
+        if ($variants->count() !== $ids->count()) {
+            throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
+        }
+
+        foreach (['sku', 'barcode'] as $identifier) {
+            $values = collect($data['variants'])->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
+            if ($values->duplicates()->isNotEmpty() || DB::table($variantTable)->whereNotIn('id', $ids)->whereIn($identifier, $values)->exists()) {
+                throw ValidationException::withMessages(["variants.{$identifier}" => "Variant {$identifier}s must be unique."]);
+            }
+        }
+
+        DB::transaction(function () use ($data, $variants): void {
+            foreach ($data['variants'] as $input) {
+                $variant = $variants->get($input['id']);
+                if ($input['min_quantity'] !== null && $input['max_quantity'] !== null && $input['min_quantity'] > $input['max_quantity']) {
+                    throw ValidationException::withMessages(['variants' => 'Variant minimum quantity cannot exceed maximum quantity.']);
+                }
+                $variant->update([
+                    'sku' => $input['sku'],
+                    'barcode' => $input['barcode'],
+                    'price' => $input['price_amount'] === null ? null : Price::of($input['price_amount']),
+                    'stock' => $input['stock'],
+                    'allow_backorders' => $input['allow_backorders'],
+                    'min_quantity' => $input['min_quantity'],
+                    'max_quantity' => $input['max_quantity'],
+                    'status' => $input['status'],
+                ]);
+            }
+        });
+
+        return back();
+    }
+
     private function findProduct(string $id): Model
     {
         /** @var class-string<Model> $productModel */
@@ -405,14 +504,14 @@ class ProductController extends Controller
             'price_amount' => ['required', 'integer', 'min:0'],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['required', 'integer', 'distinct', Rule::exists($this->categoryTable(), $this->categoryKeyName())],
-            'option_value_ids' => ['sometimes', 'array'],
-            'option_value_ids.*' => ['required', 'integer', 'distinct', Rule::exists($this->optionValueTable(), $this->optionValueKeyName())],
+            'attribute_value_ids' => ['sometimes', 'array'],
+            'attribute_value_ids.*' => ['required', 'integer', 'distinct', Rule::exists($this->attributeValueTable(), $this->attributeValueKeyName())],
         ]);
 
         $data['price'] = Price::of($data['price_amount']);
         unset($data['price_amount']);
         $data['category_ids'] ??= [];
-        $data['option_value_ids'] ??= [];
+        $data['attribute_value_ids'] ??= [];
 
         return $data;
     }
@@ -456,20 +555,20 @@ class ProductController extends Controller
     }
 
     /** @param class-string<Model> $productModel */
-    private function productOptionValueOptions(string $productModel): array
+    private function productAttributeValueOptions(string $productModel): array
     {
-        $valueModel = $productModel::query()->getModel()->optionValues()->getRelated();
-        $optionModel = $valueModel->newInstance()->option()->getRelated();
+        $valueModel = $productModel::query()->getModel()->attributeValues()->getRelated();
+        $attributeModel = $valueModel->newInstance()->attribute()->getRelated();
 
-        return $optionModel->newQuery()
+        return $attributeModel->newQuery()
             ->with(['values' => fn ($query) => $query->orderBy('position')->orderBy('name')])
             ->orderBy('name')
             ->get()
-            ->map(fn (Model $option): array => [
-                'id' => (string) $option->getKey(),
-                'name' => $option->getAttribute('name'),
-                'type' => $option->getAttribute('type')->value,
-                'values' => $option->getRelation('values')->map(fn (Model $value): array => [
+            ->map(fn (Model $attribute): array => [
+                'id' => (string) $attribute->getKey(),
+                'name' => $attribute->getAttribute('name'),
+                'type' => $attribute->getAttribute('type')->value,
+                'values' => $attribute->getRelation('values')->map(fn (Model $value): array => [
                     'id' => (string) $value->getKey(),
                     'name' => $value->getAttribute('name'),
                     'value' => $value->getAttribute('value'),
@@ -478,14 +577,14 @@ class ProductController extends Controller
             ->all();
     }
 
-    private function optionValueTable(): string
+    private function attributeValueTable(): string
     {
-        return $this->productModelInstance()->optionValues()->getRelated()->getTable();
+        return $this->productModelInstance()->attributeValues()->getRelated()->getTable();
     }
 
-    private function optionValueKeyName(): string
+    private function attributeValueKeyName(): string
     {
-        return $this->productModelInstance()->optionValues()->getRelated()->getKeyName();
+        return $this->productModelInstance()->attributeValues()->getRelated()->getKeyName();
     }
 
     private function productModelInstance(): Model

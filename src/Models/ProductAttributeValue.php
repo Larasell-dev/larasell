@@ -11,18 +11,18 @@ use InvalidArgumentException;
 
 /**
  * @property int $id
- * @property int $product_option_id
+ * @property int $product_attribute_id
  * @property string $slug
  * @property string $name
  * @property mixed $value
  * @property int|null $position
- * @property ProductOption $option
+ * @property ProductAttribute $attribute
  */
-class ProductOptionValue extends Model
+class ProductAttributeValue extends Model
 {
     use HasFactory;
 
-    protected $table = 'larasell_product_option_values';
+    protected $table = 'larasell_product_attribute_values';
 
     protected $guarded = [];
 
@@ -33,7 +33,7 @@ class ProductOptionValue extends Model
     protected static function booted(): void
     {
         static::saving(function (self $value): void {
-            $value->assertValueMatchesOptionType();
+            $value->assertValueMatchesAttributeType();
         });
     }
 
@@ -49,13 +49,13 @@ class ProductOptionValue extends Model
     }
 
     /**
-     * @return BelongsTo<ProductOption, $this>
+     * @return BelongsTo<ProductAttribute, $this>
      */
-    public function option(): BelongsTo
+    public function attribute(): BelongsTo
     {
         return $this->belongsTo(
-            $this->productOptionModel(),
-            'product_option_id'
+            $this->productAttributeModel(),
+            'product_attribute_id'
         );
     }
 
@@ -66,15 +66,28 @@ class ProductOptionValue extends Model
     {
         return $this->belongsToMany(
             $this->productModel(),
-            'larasell_product_product_option_value',
-            'product_option_value_id',
+            'larasell_product_product_attribute_value',
+            'product_attribute_value_id',
             'product_id'
         )->withTimestamps();
     }
 
-    protected function productOptionModel(): string
+    /**
+     * @return BelongsToMany<ProductVariant, $this>
+     */
+    public function variants(): BelongsToMany
     {
-        return app(ModelRegistry::class)->productOption->class();
+        return $this->belongsToMany(
+            app(ModelRegistry::class)->productVariant->class(),
+            'larasell_product_variant_product_attribute_value',
+            'product_attribute_value_id',
+            'product_variant_id',
+        );
+    }
+
+    protected function productAttributeModel(): string
+    {
+        return app(ModelRegistry::class)->productAttribute->class();
     }
 
     protected function productModel(): string
@@ -82,23 +95,23 @@ class ProductOptionValue extends Model
         return app(ModelRegistry::class)->product->class();
     }
 
-    private function assertValueMatchesOptionType(): void
+    private function assertValueMatchesAttributeType(): void
     {
-        $option = $this->relationLoaded('option')
-            ? $this->option
-            : $this->option()->first();
+        $attribute = $this->relationLoaded('attribute')
+            ? $this->attribute
+            : $this->attribute()->first();
 
-        if (! $option instanceof ProductOption) {
+        if (! $attribute instanceof ProductAttribute) {
             return;
         }
 
-        if ($option->type->accepts($this->value)) {
+        if ($attribute->type->accepts($this->value)) {
             return;
         }
 
         throw new InvalidArgumentException(sprintf(
-            'Product option value must be %s.',
-            $option->type->value
+            'Product attribute value must be %s.',
+            $attribute->type->value
         ));
     }
 }

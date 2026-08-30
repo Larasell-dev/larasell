@@ -54,3 +54,9 @@ Each event exposes the affected reservation through its `$reservation`
 property. Expiration dispatches both `InventoryReservationReleased` and
 `InventoryReservationExpired`. Stock quantity changes continue to dispatch
 `InventoryDecremented` and `InventoryRestocked`.
+
+Both stock-change events expose `$product`, `$variant`, `$order`, and
+`$quantity`. `$variant` identifies the concrete inventory record. It is
+nullable only for compatibility with historical product-only inventory paths.
+Reservation events expose the same identity through
+`$event->reservation->variant` and `product_variant_id`.

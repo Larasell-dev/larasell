@@ -26,8 +26,8 @@ import WorldIcon from '~icons/tabler/world'
 import type { ComponentProps } from 'react'
 
 const icons = {
-  'product-options': AdjustmentsHorizontalIcon,
-  'product-options-filled': AdjustmentsHorizontalFilledIcon,
+  'product-attributes': AdjustmentsHorizontalIcon,
+  'product-attributes-filled': AdjustmentsHorizontalFilledIcon,
   'arrow-left': ArrowLeftIcon,
   'brand-x': BrandXIcon,
   book: BookIcon,

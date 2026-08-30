@@ -327,3 +327,14 @@ persisted payment and refund through `RefundRequest` and returns
 `RefundResult::pending()`, `succeeded()`, `failed()`, or `cancelled()`. Providers
 that only implement `PaymentProvider` continue to work, but their payments
 cannot be refunded through Larasell.
+
+# Variant order history
+
+Cart lines are checked out against their concrete variant. Checkout locks and
+revalidates variant availability and stock before creating the order.
+
+Each order item stores a nullable current `variant()` relation and immutable
+transaction data in `product_sku`, `product_barcode`, `unit_price`,
+`variant_name`, and `variant_options`. The option snapshot contains stable IDs
+and slugs plus the customer-facing labels used at checkout. Deleting or
+renaming catalog variants therefore does not rewrite historical orders.

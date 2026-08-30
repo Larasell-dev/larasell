@@ -24,7 +24,7 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
@@ -69,9 +69,12 @@ class Checkout
         $provider = $this->payments->provider($method);
         $data['billing_address'] = $this->address($data['billing_address'] ?? null);
         $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
+        $existingOrder = $idempotencyKey === null
+            ? null
+            : $this->models->order->query()->where('idempotency_key', $idempotencyKey)->first();
         $fingerprint = $idempotencyKey === null
             ? null
-            : $this->fingerprint($cart, $data, $method->handle, $paymentOptions);
+            : $this->fingerprint($cart, $data, $method->handle, $paymentOptions, $existingOrder);
 
         if ($idempotencyKey !== null
             && ($existing = $this->existingCheckout($idempotencyKey, $fingerprint)) !== null) {
@@ -95,8 +98,8 @@ class Checkout
                 }
 
                 $items = $lockedCart->items()
-                    ->with('product')
-                    ->orderBy('product_id')
+                    ->with(['product', 'variant.product'])
+                    ->orderBy('product_variant_id')
                     ->lockForUpdate()
                     ->get();
                 $shippingOption = $lockedCart->shippingOption();
@@ -111,11 +114,25 @@ class Checkout
 
                 $total = null;
 
+                $variants = $this->models->productVariant->query()
+                    ->with(['product.variantDimensions', 'attributeValues.attribute'])
+                    ->whereKey($items->pluck('product_variant_id'))
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy(fn (ProductVariant $variant): int => (int) $variant->getKey());
+
                 foreach ($items as $item) {
-                    /** @var Product $product */
-                    $product = $item->product->newQuery()->lockForUpdate()->findOrFail($item->product_id);
-                    $item->setRelation('product', $product);
-                    $lockedCart->assertProductCanBePurchased($product, $item->quantity);
+                    /** @var ProductVariant|null $variant */
+                    $variant = $variants->get($item->product_variant_id);
+
+                    if ($variant === null || $variant->product_id !== $item->product_id) {
+                        throw new InvalidArgumentException('The cart item product variant is invalid.');
+                    }
+
+                    $item->setRelation('variant', $variant);
+                    $item->setRelation('product', $variant->product);
+                    $lockedCart->assertVariantCanBePurchased($variant, $item->quantity);
 
                     $lineTotal = $item->total();
                     $total = $total === null
@@ -173,30 +190,34 @@ class Checkout
                     );
                     $orderItem = $order->items()->create([
                         'product_id' => $item->product->getKey(),
+                        'product_variant_id' => $item->variant->getKey(),
                         'product_name' => $item->product->name->get(),
                         'product_slug' => $item->product->slug,
-                        'product_sku' => $item->product->sku,
-                        'product_barcode' => $item->product->barcode,
-                        'unit_price' => $item->product->price,
+                        'product_sku' => $item->sku(),
+                        'product_barcode' => $item->barcode(),
+                        'variant_name' => $item->variant->snapshotName(),
+                        'variant_options' => $item->variant->optionSnapshot(),
+                        'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,
-                        'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,
+                        'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,
                         'discount_total' => $lineDiscountTotal,
                         'total' => $item->total(),
                     ]);
                     $orderItemsByTarget[$target] = $orderItem->getKey();
 
-                    if ($item->product->stock !== null) {
-                        $item->product->decrement('stock', $item->quantity);
+                    if ($item->availableStock() !== null) {
+                        $item->variant->decrementInventory($item->quantity);
                         $reservation = $orderItem->inventoryReservation()->create([
                             'order_id' => $order->getKey(),
                             'product_id' => $item->product->getKey(),
+                            'product_variant_id' => $item->variant->getKey(),
                             'quantity' => $item->quantity,
                             'status' => InventoryReservationStatus::Active,
                             'expires_at' => $method->inventoryReservationMinutes === null
                                 ? null
                                 : now()->addMinutes($method->inventoryReservationMinutes),
                         ]);
-                        InventoryDecremented::dispatch($item->product, $order, $item->quantity);
+                        InventoryDecremented::dispatch($item->product, $order, $item->quantity, $item->variant);
                         InventoryReserved::dispatch($reservation);
                     }
                 }
@@ -325,11 +346,37 @@ class Checkout
     /** @param array<string, mixed> $data
      * @param  array<string, mixed>  $paymentOptions
      */
-    private function fingerprint(Cart $cart, array $data, string $paymentMethod, array $paymentOptions): string
-    {
+    private function fingerprint(
+        Cart $cart,
+        array $data,
+        string $paymentMethod,
+        array $paymentOptions,
+        ?Order $existingOrder = null,
+    ): string {
+        $items = $cart->items()
+            ->orderBy('product_variant_id')
+            ->get(['product_variant_id', 'quantity'])
+            ->map(fn ($item): array => [
+                'product_variant_id' => $item->product_variant_id,
+                'quantity' => $item->quantity,
+            ])
+            ->all();
+
+        if ($items === [] && $existingOrder !== null) {
+            $items = $existingOrder->items()
+                ->orderBy('product_variant_id')
+                ->get(['product_variant_id', 'quantity'])
+                ->map(fn ($item): array => [
+                    'product_variant_id' => $item->product_variant_id,
+                    'quantity' => $item->quantity,
+                ])
+                ->all();
+        }
+
         $input = [
             'cart_type' => $cart->getMorphClass(),
             'cart_id' => $cart->getKey(),
+            'items' => $items,
             'data' => $data,
             'payment_method' => $paymentMethod,
             'payment_options' => $paymentOptions,

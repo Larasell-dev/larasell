@@ -8,9 +8,10 @@ use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\OrderItem;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductAttribute;
+use Larasell\Larasell\Models\ProductAttributeValue;
 use Larasell\Larasell\Models\ProductImage;
-use Larasell\Larasell\Models\ProductOption;
-use Larasell\Larasell\Models\ProductOptionValue;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Models\PromotionRedemption;
 use Larasell\Larasell\Models\Refund;
 use Larasell\Larasell\Models\Setting;
@@ -30,8 +31,9 @@ return [
         'refund' => Refund::class,
         'product' => Product::class,
         'product_image' => ProductImage::class,
-        'product_option' => ProductOption::class,
-        'product_option_value' => ProductOptionValue::class,
+        'product_attribute' => ProductAttribute::class,
+        'product_attribute_value' => ProductAttributeValue::class,
+        'product_variant' => ProductVariant::class,
         'promotion_redemption' => PromotionRedemption::class,
         'setting' => Setting::class,
     ],

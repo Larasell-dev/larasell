@@ -12,6 +12,7 @@ use Larasell\Larasell\Enums\InventoryReservationStatus;
  * @property int $order_id
  * @property int $order_item_id
  * @property int $product_id
+ * @property int|null $product_variant_id
  * @property int $quantity
  * @property InventoryReservationStatus $status
  * @property Carbon|null $expires_at
@@ -28,6 +29,7 @@ class InventoryReservation extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'product_variant_id' => 'integer',
         'quantity' => 'integer',
         'status' => InventoryReservationStatus::class,
         'expires_at' => 'datetime',
@@ -51,5 +53,11 @@ class InventoryReservation extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(app(ModelRegistry::class)->product->class());
+    }
+
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(app(ModelRegistry::class)->productVariant->class(), 'product_variant_id');
     }
 }

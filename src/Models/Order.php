@@ -160,12 +160,30 @@ class Order extends Model
 
             $restockedAt = null;
             $reservations = $order->inventoryReservations()
-                ->orderBy('product_id')
+                ->orderBy('product_variant_id')
                 ->lockForUpdate()
                 ->get();
 
             if ($restock) {
                 foreach ($reservations as $reservation) {
+                    $variant = $reservation->product_variant_id === null
+                        ? null
+                        : app(ModelRegistry::class)->productVariant->query()
+                            ->with('product')
+                            ->lockForUpdate()
+                            ->find($reservation->product_variant_id);
+
+                    if ($variant !== null && $variant->availableStock() !== null) {
+                        $variant->incrementInventory($reservation->quantity);
+                        InventoryRestocked::dispatch($variant->product, $order, $reservation->quantity, $variant);
+
+                        continue;
+                    }
+
+                    if ($reservation->product_variant_id !== null) {
+                        continue;
+                    }
+
                     $product = app(ModelRegistry::class)->product->query()
                         ->lockForUpdate()
                         ->find($reservation->product_id);
@@ -181,8 +199,22 @@ class Order extends Model
                     ->whereDoesntHave('inventoryReservation')
                     ->get();
 
-                foreach ($items->sortBy('product_id') as $item) {
-                    if ($item->product_id === null) {
+                foreach ($items->sortBy('product_variant_id') as $item) {
+                    $variant = $item->product_variant_id === null
+                        ? null
+                        : app(ModelRegistry::class)->productVariant->query()
+                            ->with('product')
+                            ->lockForUpdate()
+                            ->find($item->product_variant_id);
+
+                    if ($variant !== null && $variant->availableStock() !== null) {
+                        $variant->incrementInventory($item->inventory_quantity);
+                        InventoryRestocked::dispatch($variant->product, $order, $item->inventory_quantity, $variant);
+
+                        continue;
+                    }
+
+                    if ($item->product_variant_id !== null || $item->product_id === null) {
                         continue;
                     }
 
