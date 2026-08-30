@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0](https://github.com/Larasell-dev/larasell/compare/v1.3.0...v1.4.0) (2026-08-30)
+
+
+### Features
+
+* add discount events ([45a8435](https://github.com/Larasell-dev/larasell/commit/45a8435f9e8be36022b80f499338fd8524256221))
+* add priority and exclusivity for promotions ([9897892](https://github.com/Larasell-dev/larasell/commit/98978922f3f6e3c2751523181f4118242962e9a8))
+* add promotion api ([#34](https://github.com/Larasell-dev/larasell/issues/34)) ([55d1e7a](https://github.com/Larasell-dev/larasell/commit/55d1e7a78ed80dbbb1de7cf2a0189cfcd0df1590))
+* add promotion effects ([#36](https://github.com/Larasell-dev/larasell/issues/36)) ([2d16d25](https://github.com/Larasell-dev/larasell/commit/2d16d25fe50a696316bc6e24797b32d0c9851499))
+* add promotion limits ([#46](https://github.com/Larasell-dev/larasell/issues/46)) ([1c42670](https://github.com/Larasell-dev/larasell/commit/1c4267072b96f45d1140ade2865510222a4ea8fa))
+* add promotions ([#33](https://github.com/Larasell-dev/larasell/issues/33)) ([d486184](https://github.com/Larasell-dev/larasell/commit/d48618431f70bd45b77c19d257675f4e6a8ec1ee))
+* add user entered promotion codes ([#39](https://github.com/Larasell-dev/larasell/issues/39)) ([66f9c95](https://github.com/Larasell-dev/larasell/commit/66f9c95db418d95c3aa22822895b06565f09a1ba))
+* calculate promotions ([#37](https://github.com/Larasell-dev/larasell/issues/37)) ([7919935](https://github.com/Larasell-dev/larasell/commit/7919935f6d8322c13efb3eb52512fe066386b13e))
+* snapshot discounts ([#38](https://github.com/Larasell-dev/larasell/issues/38)) ([f2036f4](https://github.com/Larasell-dev/larasell/commit/f2036f4dac415508d320cd8c136cfc94675af870))
+
 ## [1.3.0](https://github.com/Larasell-dev/larasell/compare/v1.2.0...v1.3.0) (2026-08-29)
 
 
