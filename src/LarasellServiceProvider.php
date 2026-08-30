@@ -4,11 +4,14 @@ namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
+use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
+use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
 use Larasell\Larasell\Shipping\ShippingManager;
 
 class LarasellServiceProvider extends ServiceProvider
@@ -25,6 +28,9 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
         ));
+        $this->app->bind(PromotionCustomerResolver::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.promotions.customer_resolver', DefaultPromotionCustomerResolver::class)
+        ));
     }
 
     public function boot(): void
@@ -34,6 +40,7 @@ class LarasellServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ReleaseExpiredInventoryCommand::class,
+                ReleaseExpiredPromotionRedemptionsCommand::class,
             ]);
 
             $this->publishes([

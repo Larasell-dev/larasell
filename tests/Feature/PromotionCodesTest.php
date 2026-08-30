@@ -1,6 +1,7 @@
 <?php
 
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
@@ -45,6 +46,28 @@ final class PromotionCodeAutomaticDiscount implements Promotion
     }
 }
 
+final class FuturePromotionCode implements HasAvailability, HasCode, Promotion
+{
+    public function window(): array
+    {
+        return ['starts_at' => now()->addDay()];
+    }
+
+    public function code(): string
+    {
+        return 'FUTURE';
+    }
+
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult(
+            identifier: 'future-code',
+            name: 'Future code',
+            allocations: $context->fixedAmountOff(Price::of(100)),
+        );
+    }
+}
+
 it('only applies a coded promotion after its code is attached to the cart', function () {
     $manager = app(PromotionManager::class);
     $manager->register(TenPercentPromotionCode::class);
@@ -84,6 +107,13 @@ it('rejects unknown and currently inapplicable codes', function () {
         ->toThrow(InvalidArgumentException::class, 'Promotion code [UNKNOWN] is not registered.')
         ->and(fn () => promotionCodeCart(500)->applyPromotionCode('save10'))
         ->toThrow(InvalidArgumentException::class, 'Promotion code [SAVE10] is not applicable to this cart.');
+});
+
+it('rejects codes outside their promotion availability window', function () {
+    app(PromotionManager::class)->register(FuturePromotionCode::class);
+
+    expect(fn () => promotionCodeCart(2000)->applyPromotionCode('FUTURE'))
+        ->toThrow(InvalidArgumentException::class, 'Promotion code [FUTURE] is not applicable to this cart.');
 });
 
 it('reevaluates attached codes when the cart changes', function () {

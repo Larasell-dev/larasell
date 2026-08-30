@@ -5,24 +5,29 @@ namespace Larasell\Larasell\Checkout;
 use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Events\PromotionApplied;
+use Larasell\Larasell\Events\PromotionRedemptionReserved;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
 class Checkout
 {
@@ -32,6 +37,8 @@ class Checkout
         private readonly OrderNumberFactory $orderNumbers,
         private readonly PaymentManager $payments,
         private readonly PromotionManager $promotions,
+        private readonly PromotionCustomerResolver $promotionCustomers,
+        private readonly PromotionRedemptionCounters $promotionRedemptions,
     ) {}
 
     /**
@@ -119,6 +126,12 @@ class Checkout
                 ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
                 'total' => $totalBeforeDiscounts->subtract($discountTotal),
             ]);
+
+            foreach ($discounts->sortBy('identifier') as $discount) {
+                if ($discount->redemptionLimits !== null) {
+                    $this->reservePromotionRedemption($order, $discount, $data, $method->inventoryReservationMinutes);
+                }
+            }
 
             $orderItemsByTarget = [];
 
@@ -262,5 +275,42 @@ class Checkout
         }
 
         return $address instanceof Address ? $address : Address::fromArray($address);
+    }
+
+    /**
+     * @param  array{customer_email: string, customer_id?: int|null}  $data
+     */
+    private function reservePromotionRedemption(
+        Order $order,
+        DiscountResult $discount,
+        array $data,
+        ?int $reservationMinutes,
+    ): void {
+        $now = now();
+        $customerIdentifier = $this->promotionCustomers->resolve(
+            $data['customer_id'] ?? null,
+            $data['customer_email'],
+        );
+
+        if (trim($customerIdentifier) === '') {
+            throw new InvalidArgumentException('The promotion customer resolver must return a customer identifier.');
+        }
+
+        $this->promotionRedemptions->reserve(
+            $discount->identifier,
+            $customerIdentifier,
+            $discount->redemptionLimits,
+            $now,
+        );
+
+        $redemption = $order->promotionRedemptions()->create([
+            'promotion_identifier' => $discount->identifier,
+            'customer_identifier' => $customerIdentifier,
+            'global_limit' => $discount->redemptionLimits->global,
+            'customer_limit' => $discount->redemptionLimits->customer,
+            'status' => PromotionRedemptionStatus::Reserved,
+            'expires_at' => $reservationMinutes === null ? null : $now->copy()->addMinutes($reservationMinutes),
+        ]);
+        PromotionRedemptionReserved::dispatch($redemption);
     }
 }

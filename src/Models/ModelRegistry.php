@@ -42,6 +42,9 @@ final readonly class ModelRegistry
     /** @var ModelEntry<ProductOptionValue> */
     public ModelEntry $productOptionValue;
 
+    /** @var ModelEntry<PromotionRedemption> */
+    public ModelEntry $promotionRedemption;
+
     /** @var ModelEntry<Setting> */
     public ModelEntry $setting;
 
@@ -59,6 +62,7 @@ final readonly class ModelRegistry
         $this->productImage = new ModelEntry($config, 'larasell.models.product_image', ProductImage::class);
         $this->productOption = new ModelEntry($config, 'larasell.models.product_option', ProductOption::class);
         $this->productOptionValue = new ModelEntry($config, 'larasell.models.product_option_value', ProductOptionValue::class);
+        $this->promotionRedemption = new ModelEntry($config, 'larasell.models.promotion_redemption', PromotionRedemption::class);
         $this->setting = new ModelEntry($config, 'larasell.models.setting', Setting::class);
     }
 }

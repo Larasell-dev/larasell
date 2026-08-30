@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Discounts;
 
 use InvalidArgumentException;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\RedemptionLimits;
 
 final readonly class DiscountResult
 {
@@ -16,6 +17,7 @@ final readonly class DiscountResult
         public string $name,
         array $allocations,
         public ?string $code = null,
+        public ?RedemptionLimits $redemptionLimits = null,
     ) {
         if (trim($identifier) === '') {
             throw new InvalidArgumentException('A discount identifier is required.');

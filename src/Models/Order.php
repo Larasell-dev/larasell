@@ -16,12 +16,14 @@ use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Events\InventoryReservationReleased;
 use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Events\OrderCancelled;
 use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
 /**
  * @property int $id
@@ -48,6 +50,7 @@ use Larasell\Larasell\Price;
  * @property Collection<int, OrderItem> $items
  * @property Collection<int, InventoryReservation> $inventoryReservations
  * @property Collection<int, Payment> $payments
+ * @property Collection<int, PromotionRedemption> $promotionRedemptions
  */
 class Order extends Model
 {
@@ -93,6 +96,12 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(app(ModelRegistry::class)->payment->class());
+    }
+
+    /** @return HasMany<PromotionRedemption, $this> */
+    public function promotionRedemptions(): HasMany
+    {
+        return $this->hasMany(app(ModelRegistry::class)->promotionRedemption->class());
     }
 
     public function transitionTo(OrderStatus $status): void
@@ -144,6 +153,8 @@ class Order extends Model
             foreach ($payments->where('status', PaymentStatus::Pending) as $payment) {
                 $payment->transitionTo(PaymentStatus::Cancelled);
             }
+
+            $order->releasePromotionRedemptions();
 
             $restockedAt = null;
             $reservations = $order->inventoryReservations()
@@ -206,5 +217,19 @@ class Order extends Model
 
             return $order->refresh();
         });
+    }
+
+    private function releasePromotionRedemptions(): void
+    {
+        $redemptions = $this->promotionRedemptions()
+            ->where('status', PromotionRedemptionStatus::Reserved->value)
+            ->orderBy('promotion_identifier')
+            ->lockForUpdate()
+            ->get();
+        $releasedAt = now();
+
+        foreach ($redemptions as $redemption) {
+            app(PromotionRedemptionCounters::class)->release($redemption, $releasedAt);
+        }
     }
 }

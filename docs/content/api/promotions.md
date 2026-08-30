@@ -288,6 +288,117 @@ When one or more exclusive promotions apply, only the applicable exclusive
 promotion with the highest priority is used. Registration order resolves a tie.
 An inapplicable exclusive promotion does not affect other promotions.
 
+## Availability windows
+
+Implement `HasAvailability` when a promotion may only apply during a specific
+period. The single `window()` method returns its optional boundaries:
+
+```php
+use Illuminate\Support\Carbon;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
+
+final class SeptemberSale implements HasAvailability, Promotion
+{
+    public function window(): array
+    {
+        return [
+            'starts_at' => Carbon::parse('2026-09-01 00:00:00'),
+            'ends_at' => Carbon::parse('2026-09-30 23:59:59'),
+        ];
+    }
+
+    // ...
+}
+```
+
+Both boundaries are inclusive and must implement `CarbonInterface`. Either
+`starts_at` or `ends_at` may be omitted for an open-ended window, but at least
+one boundary is required. Coded promotions outside their availability window
+cannot be attached to a cart. Previously attached codes remain stored but stop
+producing a discount while their promotion is unavailable.
+
+## Redemption limits
+
+Implement `HasRedemptionLimit` to cap how many orders can use a promotion:
+
+```php
+use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
+
+final class LimitedSummerSale implements HasRedemptionLimit, Promotion
+{
+    public function limit(): int|array
+    {
+        return 100;
+    }
+
+    // ...
+}
+```
+
+A plain integer defines a global limit. Return an array to define global and
+per-customer limits together:
+
+```php
+public function limit(): int|array
+{
+    return [
+        'global' => 1000,
+        'customer' => 1,
+    ];
+}
+```
+
+Either array key may be omitted, so `['customer' => 1]` creates a
+customer-only limit. All configured limits must be positive integers.
+
+By default, Larasell identifies a customer by `customer_id` when checkout
+provides one, and otherwise by normalized email address. Applications can
+replace this behavior by binding the resolver contract:
+
+```php [app/Providers/AppServiceProvider.php]
+use App\Commerce\PromotionCustomerResolver;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver as PromotionCustomerResolverContract;
+
+$this->app->bind(
+    PromotionCustomerResolverContract::class,
+    PromotionCustomerResolver::class,
+);
+```
+
+The custom resolver implements:
+
+```php
+public function resolve(?int $customerId, string $email): string;
+```
+
+It must return a stable, non-empty identifier for the customer.
+
+Checkout reserves one use of each applied limited promotion. A successful
+payment permanently redeems it. Cancelling an unpaid order releases its
+reserved uses. Redeemed uses remain counted when an order is later refunded or
+cancelled.
+
+Expired promotion reservations are processed by this command:
+
+```bash
+php artisan larasell:release-expired-promotions
+```
+
+The package does not schedule the command. Add it to the application scheduler:
+
+```php [routes/console.php]
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('larasell:release-expired-promotions')
+    ->everyMinute()
+    ->withoutOverlapping();
+```
+
+An expired promotion reservation cancels its unpaid order and releases its
+reserved capacity. The reservation lifetime comes from the selected payment
+method's `inventory_reservation_minutes` setting. The command supports a
+custom batch size with `--batch-size=250`.
+
 ## Order snapshots
 
 Checkout recalculates promotions inside its database transaction. The order
@@ -316,6 +427,9 @@ commits:
 - `Larasell\Larasell\Events\PromotionCodeApplied`
 - `Larasell\Larasell\Events\PromotionCodeRemoved`
 - `Larasell\Larasell\Events\PromotionApplied`
+- `Larasell\Larasell\Events\PromotionRedemptionReserved`
+- `Larasell\Larasell\Events\PromotionRedemptionRedeemed`
+- `Larasell\Larasell\Events\PromotionRedemptionReleased`
 
 Code events expose the affected `$cart` and normalized `$code` properties. They
 only fire when the stored codes actually change, so applying an attached code
@@ -325,3 +439,8 @@ or removing a missing code does not dispatch a duplicate event.
 is dispatched for each promotion recorded during checkout. Reading
 `$cart->discounts()` does not dispatch events because cart promotions are
 recalculated values rather than durable state changes.
+
+Redemption events expose the affected redemption through their `$redemption`
+property. They are dispatched once when limited promotion capacity is reserved
+during checkout, permanently redeemed by successful payment, or released by
+order cancellation or expiration.

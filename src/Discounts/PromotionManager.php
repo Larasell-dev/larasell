@@ -5,14 +5,18 @@ namespace Larasell\Larasell\Discounts;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
 use Larasell\Larasell\Contracts\Promotions\HasPriority;
+use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
 use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\AvailabilityWindow;
+use Larasell\Larasell\Promotions\RedemptionLimits;
 
 final class PromotionManager
 {
@@ -45,6 +49,10 @@ final class PromotionManager
         $identifiers = [];
 
         foreach ($this->resolvedPromotions() as $promotion) {
+
+            if (! $this->isAvailable($promotion)) {
+                continue;
+            }
 
             if ($promotion instanceof HasCode
                 && ! in_array(self::normalizeCode($promotion->code()), $cart->promotionCodes(), true)) {
@@ -79,6 +87,10 @@ final class PromotionManager
 
         foreach ($selected as [$promotion, $result]) {
 
+            $redemptionLimits = $promotion instanceof HasRedemptionLimit
+                ? RedemptionLimits::from($promotion->limit())
+                : null;
+
             $allocations = [];
 
             foreach ($result->allocations as $allocation) {
@@ -99,6 +111,7 @@ final class PromotionManager
                 $result->name,
                 $allocations,
                 $promotion instanceof HasCode ? self::normalizeCode($promotion->code()) : null,
+                $redemptionLimits,
             ));
         }
 
@@ -124,6 +137,10 @@ final class PromotionManager
 
         if ($promotion === null) {
             throw new InvalidArgumentException("Promotion code [{$code}] is not registered.");
+        }
+
+        if (! $this->isAvailable($promotion)) {
+            throw new InvalidArgumentException("Promotion code [{$code}] is not applicable to this cart.");
         }
 
         $context = $this->context($cart);
@@ -200,6 +217,12 @@ final class PromotionManager
             shippingOption: $cart->shippingOption(),
             allocator: $this->allocator,
         );
+    }
+
+    private function isAvailable(Promotion $promotion): bool
+    {
+        return ! $promotion instanceof HasAvailability
+            || AvailabilityWindow::from($promotion->window())->contains(now());
     }
 
     private function validateTargets(DiscountResult $result, PromotionContext $context): void

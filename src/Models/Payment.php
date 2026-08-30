@@ -14,6 +14,7 @@ use Larasell\Larasell\Contracts\RefundProvider;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Enums\RefundStatus;
 use Larasell\Larasell\Events\InventoryReservationConsumed;
 use Larasell\Larasell\Events\PaymentCancelled;
@@ -22,6 +23,7 @@ use Larasell\Larasell\Events\PaymentPending;
 use Larasell\Larasell\Events\PaymentSucceeded;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 use Larasell\Larasell\Refunds\RefundRequest;
 
 /**
@@ -193,6 +195,7 @@ class Payment extends Model
                 'paid_at' => now(),
                 'failure_message' => null,
             ]);
+            $this->redeemPromotionRedemptions($order);
             $reservations = $order->inventoryReservations()
                 ->where('status', InventoryReservationStatus::Active->value)
                 ->get();
@@ -270,6 +273,20 @@ class Payment extends Model
             PaymentStatus::Failed => PaymentFailed::dispatch($payment),
             PaymentStatus::Cancelled => PaymentCancelled::dispatch($payment),
         };
+    }
+
+    private function redeemPromotionRedemptions(Order $order): void
+    {
+        $redemptions = $order->promotionRedemptions()
+            ->where('status', PromotionRedemptionStatus::Reserved->value)
+            ->orderBy('promotion_identifier')
+            ->lockForUpdate()
+            ->get();
+        $redeemedAt = now();
+
+        foreach ($redemptions as $redemption) {
+            app(PromotionRedemptionCounters::class)->redeem($redemption, $redeemedAt);
+        }
     }
 
     /** @param array<int, RefundStatus> $statuses */
