@@ -7,6 +7,9 @@ use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
+use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductAttributeValue;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingOption;
 
@@ -29,6 +32,32 @@ final readonly class PromotionContext
         }
 
         return 'line:'.$item->getKey();
+    }
+
+    /** @return Collection<int, CartItem> */
+    public function forProduct(Product $product): Collection
+    {
+        return $this->items->filter(
+            fn (CartItem $item): bool => $item->product_id === $product->getKey(),
+        )->values();
+    }
+
+    /** @return Collection<int, CartItem> */
+    public function forVariant(ProductVariant $variant): Collection
+    {
+        return $this->items->filter(
+            fn (CartItem $item): bool => $item->product_variant_id === $variant->getKey(),
+        )->values();
+    }
+
+    /** @return Collection<int, CartItem> */
+    public function withAttributeValue(ProductAttributeValue $value): Collection
+    {
+        return $this->items->filter(
+            fn (CartItem $item): bool => $item->variant->attributeValues->contains(
+                fn (ProductAttributeValue $candidate): bool => $candidate->is($value),
+            ),
+        )->values();
     }
 
     /**

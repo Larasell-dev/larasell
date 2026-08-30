@@ -200,10 +200,7 @@ final class PromotionManager
     private function context(Cart $cart): PromotionContext
     {
         /** @var Collection<int, CartItem> $items */
-        $items = $cart->items()
-            ->with('product')
-            ->orderBy('id')
-            ->get();
+        $items = $cart->purchasableItems();
         $subtotal = $items->reduce(
             fn (Price $total, CartItem $item): Price => $total->add($item->total()),
             Price::of(0),

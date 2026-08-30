@@ -17,8 +17,66 @@ use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\Price;
+
+it('generates and bulk updates variants in the admin panel', function () {
+    $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'variants@example.com', 'password' => Hash::make('password')]);
+    $product = Product::query()->create(['slug' => 'admin-shirt', 'name' => 'Admin shirt', 'price' => Price::of(1000)]);
+    $size = ProductAttribute::query()->create(['slug' => 'admin-size', 'name' => 'Size']);
+    $small = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
+    $medium = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
+    $product->attributeValues()->attach([$small->id, $medium->id]);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->post(route('larasell.admin.products.variants.generate', $product), [
+            'attribute_ids' => [$size->id],
+        ])
+        ->assertRedirect();
+
+    $variants = $product->variants()->orderBy('id')->get();
+    expect($variants)->toHaveCount(2);
+
+    $this->actingAs($admin, 'larasell-admin')
+        ->patch(route('larasell.admin.products.variants.update', $product), [
+            'variants' => [
+                [
+                    'id' => $variants[0]->id,
+                    'sku' => 'ADMIN-S',
+                    'barcode' => '00001',
+                    'price_amount' => 1200,
+                    'stock' => 4,
+                    'allow_backorders' => false,
+                    'min_quantity' => 1,
+                    'max_quantity' => 3,
+                    'status' => 'visible',
+                ],
+                [
+                    'id' => $variants[1]->id,
+                    'sku' => 'ADMIN-M',
+                    'barcode' => null,
+                    'price_amount' => null,
+                    'stock' => null,
+                    'allow_backorders' => null,
+                    'min_quantity' => null,
+                    'max_quantity' => null,
+                    'status' => 'hidden',
+                ],
+            ],
+        ])
+        ->assertRedirect();
+
+    expect(ProductVariant::query()->find($variants[0]->id))
+        ->sku->toBe('ADMIN-S')
+        ->barcode->toBe('00001')
+        ->stock->toBe(4)
+        ->status->toBe(Visibility::Visible)
+        ->and(ProductVariant::query()->find($variants[1]->id))
+        ->sku->toBe('ADMIN-M')
+        ->price->toBeNull()
+        ->status->toBe(Visibility::Hidden);
+});
 
 function orderAttributes(array $overrides = []): array
 {
@@ -998,6 +1056,10 @@ it('shows a product in the admin panel', function () {
         ->assertJsonPath('props.product.imageUploadUrl', route('larasell.admin.products.images.store', $product))
         ->assertJsonPath('props.product.generalUpdateUrl', route('larasell.admin.products.general.update', $product))
         ->assertJsonPath('props.product.stockUpdateUrl', route('larasell.admin.products.stock.update', $product))
+        ->assertJsonPath('props.product.variantGenerateUrl', route('larasell.admin.products.variants.generate', $product))
+        ->assertJsonPath('props.product.variantUpdateUrl', route('larasell.admin.products.variants.update', $product))
+        ->assertJsonPath('props.variantDimensionIds', [])
+        ->assertJsonPath('props.variants', [])
         ->assertJsonMissingPath('props.images')
         ->assertJsonPath('deferredProps.default.0', 'images')
         ->assertJsonPath('props.productsUrl', route('larasell.admin.products.index'));

@@ -229,7 +229,29 @@ $variants = $product->generateVariants([$size]);
 
 The selected attributes are persisted in `variantDimensions()`. Calling the
 generator again creates only missing combinations and preserves existing
-variant data.
+variant data. Generated variants start hidden so the merchant can review SKU,
+price, inventory, and availability before selling them.
+
+Resolve a storefront selection using stable attribute and value slugs:
+
+```php
+$variant = $product->variantFor([
+    'size' => 'small',
+    'color' => 'black',
+]);
+
+$cart->add($variant, quantity: 2);
+```
+
+`ProductVariant` is the authoritative purchasable record. Its nullable price,
+stock, backorder policy, and quantity limits inherit from the product. SKU and
+barcode also inherit when omitted. Products without generated combinations use
+an automatically-created default variant, so `$cart->add($product)` remains
+valid.
+
+Variant combinations are identified by stable attribute and value IDs rather
+than customer-facing labels. Duplicate combinations, SKUs, and barcodes are
+rejected.
 
 Attribute values must match their parent attribute type. Text attributes accept
 strings, number attributes accept integers or floats, and boolean attributes

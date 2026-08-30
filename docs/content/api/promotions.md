@@ -212,6 +212,23 @@ return new DiscountResult(
 );
 ```
 
+Every promotion line identifies both its merchandising product and concrete
+purchasable variant. Use the context selectors for common variant-aware rules:
+
+```php
+$productLines = $context->forProduct($product);
+$oneCombination = $context->forVariant($variant);
+$smallLines = $context->withAttributeValue($small);
+
+$context->percentageOff(
+    20,
+    fn ($item) => $smallLines->contains(fn ($line) => $line->is($item)),
+);
+```
+
+Allocation targets remain cart-line IDs, so two variants of the same product
+receive independent, stable discount allocations.
+
 An allocation amount must be positive. A result may contain at most one
 allocation for each target. The promotion manager rejects targets outside the
 cart.

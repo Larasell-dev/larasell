@@ -7,6 +7,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductVariant;
 
 class InventoryRestocked implements ShouldDispatchAfterCommit
 {
@@ -17,5 +18,6 @@ class InventoryRestocked implements ShouldDispatchAfterCommit
         public readonly Product $product,
         public readonly Order $order,
         public readonly int $quantity,
+        public readonly ?ProductVariant $variant = null,
     ) {}
 }

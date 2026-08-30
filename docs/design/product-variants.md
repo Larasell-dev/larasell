@@ -1,10 +1,10 @@
 # Product variants design proposal
 
-Status: partially implemented
+Status: implemented
 
 This document records the product variant design for Larasell. The catalog
-foundation is implemented; cart, checkout, inventory, and order integration
-remain future work.
+foundation, cart, checkout, inventory, order snapshots, surrounding extension
+points, and admin management are implemented.
 
 ## Objective
 
@@ -34,17 +34,10 @@ Larasell currently supports reusable typed product attributes and values:
 - Products can be associated with multiple attribute values.
 - Product listings can be filtered by attached attribute values.
 
-Products can now persist variant dimensions and concrete combinations. The
-catalog layer validates combinations and resolves selections, but variants do
-not yet participate in carts, checkout, inventory reservations, or orders.
-
-Commerce data currently belongs to the product:
-
-- Cart items reference `product_id` only.
-- Price, stock, backorder policy, and quantity limits come from the product.
-- A cart can contain only one line for a given product.
-- Checkout locks and decrements product stock.
-- Order items do not identify or snapshot an attribute combination.
+Products persist variant dimensions and concrete combinations. Cart lines,
+checkout locks, inventory reservations, order snapshots, promotions, shipping
+contexts, inventory events, and the admin editor all expose the selected
+variant. Simple products use an automatically-created default variant.
 
 Products now have nullable, unique `sku` and `barcode` fields. Checkout copies
 them to `product_sku` and `product_barcode` on the order item. This is sufficient
@@ -173,16 +166,9 @@ its own SKU:
 | Classic T-shirt | Small / Black | `TSHIRT-BLK-S` | `4012345678901` |
 | Classic T-shirt | Medium / Black | `TSHIRT-BLK-M` | `4012345678918` |
 
-The existing product identifier fields remain useful for simple products and
-as a migration source. A final design must choose one authoritative rule:
-
-- Keep simple products variant-free and resolve identifiers from the product.
-- Give every product an invisible default variant and always resolve identifiers
-  from a variant.
-
-The default-variant approach gives cart, inventory, checkout, and integrations
-one purchasable entity type. It is the preferred long-term design, despite the
-additional migration work.
+Every product has a default variant, giving cart, inventory, checkout, and
+integrations one purchasable entity type. Product identifier fields remain
+available as compatibility accessors for simple products.
 
 ## Simple products and compatibility
 
@@ -192,15 +178,10 @@ Existing calls should remain valid:
 $cart->add($product);
 ```
 
-Under the preferred design, this resolves the product's default variant
-internally. Existing products receive one default variant during migration.
-Their SKU, barcode, price, stock, backorder policy, and quantity limits are
-copied to it.
+This resolves the product's default variant internally.
 
 Compatibility helpers may continue exposing effective values through Product,
-but the system must avoid two writable sources of truth. Product commerce fields
-should eventually be deprecated after migration rather than independently
-editable alongside default-variant fields.
+while concrete purchasing and inventory behavior resolves through the variant.
 
 ## Variant resolution
 
@@ -395,7 +376,7 @@ Add tests for:
 
 ### Phase 2: catalog foundation
 
-- Add the variant migration and model.
+- Add the variant model and database schema.
 - Register the model in `ModelRegistry`.
 - Add product and attribute-value relationships.
 - Implement canonical combination keys and validation.
@@ -429,7 +410,7 @@ Add tests for:
 - Make shipping contexts expose the selected variant.
 - Update events and integration payloads.
 - Add admin variant management.
-- Document migration and public APIs.
+- Document the public APIs.
 
 ## Required test coverage
 
@@ -449,19 +430,17 @@ At minimum, the completed feature needs tests for:
 - Model overrides through `ModelRegistry`.
 - SQLite, MySQL, and PostgreSQL behavior.
 
-## Open decisions
+## Future scope
 
-The following decisions should be settled before implementation:
+The implemented contract uses mandatory default variants, nullable inheritance
+for variant commerce fields, stable combination keys, and immutable order
+snapshots. Product and variant identifiers are unique within their respective
+tables.
 
-1. Whether every product always has a default variant.
-2. Whether variant price and policies inherit from the product or are always
-   explicit.
-3. How existing product commerce fields are deprecated and migrated.
-4. Whether variant images are required in the first release.
-5. Whether SKU uniqueness spans products and variants in one shared namespace.
-6. Whether archived variants may be reactivated with changed combinations.
-7. Which weight and dimension units future shipping APIs will use.
+The following capabilities are outside the current variant feature and can be
+designed independently when required:
 
-The recommended defaults are: mandatory default variants, one authoritative
-variant commerce record, stable canonical combination keys, immutable order
-snapshots, and SKU uniqueness across all purchasable items.
+- Variant-specific images.
+- A shared SKU and barcode namespace across products and variants.
+- An archived variant lifecycle and combination-reuse policy.
+- Variant weight, dimensions, packaging behavior, and measurement units.

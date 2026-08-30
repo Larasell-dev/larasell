@@ -217,7 +217,7 @@ class Checkout
                                 ? null
                                 : now()->addMinutes($method->inventoryReservationMinutes),
                         ]);
-                        InventoryDecremented::dispatch($item->product, $order, $item->quantity);
+                        InventoryDecremented::dispatch($item->product, $order, $item->quantity, $item->variant);
                         InventoryReserved::dispatch($reservation);
                     }
                 }

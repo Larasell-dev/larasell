@@ -7,11 +7,18 @@ import * as stylex from '@stylexjs/stylex'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import AdminLayout, { type AdminLayoutProps } from '../../Components/AdminLayout'
 import BackLink from '../../Components/BackLink'
+import Button from '../../Components/Button'
 import Card from '../../Components/Card'
+import Checkbox from '../../Components/Checkbox'
 import Error from '../../Components/Error'
 import Field from '../../Components/Field'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
+import Input from '../../Components/Input'
+import NumberInput from '../../Components/NumberInput'
+import Select from '../../Components/Select'
+import Table from '../../Components/Table'
+import Toggle from '../../Components/Toggle'
 import useUnsavedChanges from '../../Hooks/useUnsavedChanges'
 import ProductForm, { type ProductCategory, type ProductFormData, type ProductAttribute } from './ProductForm'
 
@@ -30,18 +37,21 @@ type Product = {
   imageUploadUrl: string
   generalUpdateUrl: string
   stockUpdateUrl: string
+  variantGenerateUrl: string
+  variantUpdateUrl: string
   categoryIds: string[]
   attributeValueIds: string[]
 }
 
 type ProductImage = { alt: string | null; id: number | string; uploading?: boolean; url: string }
-type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product; productAttributes: ProductAttribute[] }
+type ProductVariant = { id: number | string; name: string; sku: string | null; barcode: string | null; priceAmount: string | null; stock: number | null; allowBackorders: boolean | null; minQuantity: number | null; maxQuantity: number | null; status: 'visible' | 'hidden' }
+type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product; productAttributes: ProductAttribute[]; variantDimensionIds: string[]; variants: ProductVariant[] }
 
 export default function ProductShow({ images, product, ...layoutProps }: Props) {
   return <ProductEditor images={images} product={product} {...layoutProps} />
 }
 
-function ProductEditor({ categories, images, product, productAttributes, ...layoutProps }: Props) {
+function ProductEditor({ categories, images, product, productAttributes, variantDimensionIds, variants, ...layoutProps }: Props) {
   const form = useForm<ProductFormData>({
     name: product.name,
     slug: product.slug,
@@ -200,9 +210,101 @@ function ProductEditor({ categories, images, product, productAttributes, ...layo
             </div>
           </ProductForm>
         </Form>
+        <VariantEditor
+          dimensionIds={variantDimensionIds}
+          key={variants.map((variant) => variant.id).join(',') || 'generator'}
+          product={product}
+          productAttributes={productAttributes}
+          variants={variants}
+        />
         </FormContainer>
       </div>
     </AdminLayout>
+  )
+}
+
+function VariantEditor({ dimensionIds, product, productAttributes, variants }: { dimensionIds: string[]; product: Product; productAttributes: ProductAttribute[]; variants: ProductVariant[] }) {
+  const generation = useForm({ attribute_ids: dimensionIds })
+  const editor = useForm({
+    variants: variants.map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      barcode: variant.barcode,
+      price_amount: variant.priceAmount === null ? null : Number(variant.priceAmount),
+      stock: variant.stock,
+      allow_backorders: variant.allowBackorders,
+      min_quantity: variant.minQuantity,
+      max_quantity: variant.maxQuantity,
+      status: variant.status,
+    })),
+  })
+  const attachedIds = new Set(product.attributeValueIds)
+  const availableDimensions = productAttributes.filter((attribute) => attribute.values.some((value) => attachedIds.has(value.id)))
+
+  function updateVariant(index: number, values: Partial<(typeof editor.data.variants)[number]>) {
+    editor.setData('variants', editor.data.variants.map((variant, candidate) => candidate === index ? { ...variant, ...values } : variant))
+  }
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Variants</Card.Title>
+        <Card.Description>Generate purchasable combinations and manage their commerce data.</Card.Description>
+      </Card.Header>
+      <Card.Body>
+        {variants.length === 0 ? (
+          <form onSubmit={(event) => {
+            event.preventDefault()
+            generation.post(product.variantGenerateUrl, { preserveScroll: true })
+          }} {...stylex.props(styles.variantGenerator)}>
+            <div {...stylex.props(styles.dimensionList)}>
+              {availableDimensions.map((attribute) => (
+                <label key={attribute.id} {...stylex.props(styles.dimensionChoice)}>
+                  <Checkbox
+                    checked={generation.data.attribute_ids.includes(attribute.id)}
+                    onCheckedChange={(checked) => generation.setData('attribute_ids', checked
+                      ? [...generation.data.attribute_ids, attribute.id]
+                      : generation.data.attribute_ids.filter((id) => id !== attribute.id))}
+                  />
+                  <span>{attribute.name}</span>
+                </label>
+              ))}
+            </div>
+            <Error>{generation.errors.attribute_ids}</Error>
+            <Button disabled={generation.processing || generation.data.attribute_ids.length === 0} type="submit">Generate variants</Button>
+          </form>
+        ) : (
+          <form onSubmit={(event) => {
+            event.preventDefault()
+            editor.patch(product.variantUpdateUrl, { preserveScroll: true })
+          }} {...stylex.props(styles.variantForm)}>
+            <Table.Scroll>
+              <Table.Root>
+                <Table.Header><Table.Row>
+                  <Table.Heading>Variant</Table.Heading><Table.Heading>Status</Table.Heading><Table.Heading>SKU</Table.Heading><Table.Heading>Barcode</Table.Heading><Table.Heading>Price</Table.Heading><Table.Heading>Stock</Table.Heading><Table.Heading>Min</Table.Heading><Table.Heading>Max</Table.Heading><Table.Heading>Backorders</Table.Heading>
+                </Table.Row></Table.Header>
+                <Table.Body>{variants.map((variant, index) => {
+                  const values = editor.data.variants[index]
+                  return <Table.Row first={index === 0} key={variant.id}>
+                    <Table.Cell><strong {...stylex.props(styles.variantName)}>{variant.name}</strong></Table.Cell>
+                    <Table.Cell><Toggle aria-label={`${variant.name} visible`} checked={values.status === 'visible'} onCheckedChange={(checked) => updateVariant(index, { status: checked ? 'visible' : 'hidden' })} /></Table.Cell>
+                    <Table.Cell><Input aria-label={`${variant.name} SKU`} onChange={(event) => updateVariant(index, { sku: event.target.value || null })} value={values.sku ?? ''} {...stylex.props(styles.compactInput)} /></Table.Cell>
+                    <Table.Cell><Input aria-label={`${variant.name} barcode`} onChange={(event) => updateVariant(index, { barcode: event.target.value || null })} value={values.barcode ?? ''} {...stylex.props(styles.compactInput)} /></Table.Cell>
+                    <Table.Cell><NumberInput aria-label={`${variant.name} price`} min={0} onValueChange={(value) => updateVariant(index, { price_amount: value })} placeholder="Inherit" value={values.price_amount} /></Table.Cell>
+                    <Table.Cell><NumberInput aria-label={`${variant.name} stock`} min={0} onValueChange={(value) => updateVariant(index, { stock: value })} placeholder="Inherit" value={values.stock} /></Table.Cell>
+                    <Table.Cell><NumberInput aria-label={`${variant.name} minimum`} min={1} onValueChange={(value) => updateVariant(index, { min_quantity: value })} value={values.min_quantity} /></Table.Cell>
+                    <Table.Cell><NumberInput aria-label={`${variant.name} maximum`} min={1} onValueChange={(value) => updateVariant(index, { max_quantity: value })} value={values.max_quantity} /></Table.Cell>
+                    <Table.Cell><Select items={[{ label: 'Inherit', value: 'inherit' }, { label: 'Allowed', value: 'yes' }, { label: 'Blocked', value: 'no' }]} onValueChange={(value) => updateVariant(index, { allow_backorders: value === 'inherit' ? null : value === 'yes' })} value={values.allow_backorders === null ? 'inherit' : values.allow_backorders ? 'yes' : 'no'} /></Table.Cell>
+                  </Table.Row>
+                })}</Table.Body>
+              </Table.Root>
+            </Table.Scroll>
+            <Error>{editor.errors.variants ?? editor.errors['variants.sku'] ?? editor.errors['variants.barcode']}</Error>
+            <div><Button disabled={editor.processing} type="submit">Save variants</Button></div>
+          </form>
+        )}
+      </Card.Body>
+    </Card>
   )
 }
 
@@ -326,6 +428,12 @@ function moveItem<T>(items: T[], from: number, to: number): T[] {
 const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
 
 const styles = stylex.create({
+  variantGenerator: { display: 'grid', gap: 12 },
+  dimensionList: { display: 'flex', flexWrap: 'wrap', gap: 16 },
+  dimensionChoice: { alignItems: 'center', display: 'flex', fontSize: 14, fontWeight: 500, gap: 8 },
+  variantForm: { display: 'grid', gap: 12, minWidth: 0 },
+  variantName: { display: 'block', minWidth: 110, overflowWrap: 'anywhere' },
+  compactInput: { minWidth: 110, width: 130 },
   page: { backgroundColor: 'var(--color-neutral-50)', minHeight: '100vh', width: '100%' },
   pageContent: { paddingBlockEnd: 120, paddingBlockStart: { default: 32, '@media (max-width: 640px)': 16 }, paddingInline: { default: 32, '@media (max-width: 640px)': 16 } },
   pageHeader: { alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 24, minHeight: 48 },

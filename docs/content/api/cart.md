@@ -80,6 +80,10 @@ Empty carts return `null` from `total()`.
 Shipping methods receive the cart and may register one or more options. Each
 option needs a unique handle, a customer-facing name, and a price.
 
+Use `purchasableItems()` when rates depend on the selected combinations. It
+returns cart items with their product, concrete variant, and variant attribute
+values loaded.
+
 ```php
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
@@ -89,6 +93,9 @@ class ParcelShipping extends ShippingMethod
 {
     public function handle(Cart $cart): void
     {
+        $items = $cart->purchasableItems();
+        $variants = $items->pluck('variant');
+
         $this->register('standard', 'Standard shipping', Price::of(500));
 
         if ($cart->quantity() < 10) {

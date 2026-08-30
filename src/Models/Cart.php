@@ -107,9 +107,18 @@ class Cart extends Model
         return (int) $this->items()->sum('quantity');
     }
 
+    /** @return Collection<int, CartItem> */
+    public function purchasableItems(): Collection
+    {
+        return $this->items()
+            ->with(['product', 'variant.product', 'variant.attributeValues.attribute'])
+            ->orderBy('id')
+            ->get();
+    }
+
     public function subtotal(): ?Price
     {
-        $items = $this->items()->with(['product', 'variant.product'])->get();
+        $items = $this->purchasableItems();
 
         if ($items->isEmpty()) {
             return null;

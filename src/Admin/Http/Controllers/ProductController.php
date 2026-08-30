@@ -15,8 +15,10 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 
@@ -164,11 +166,32 @@ class ProductController extends Controller
                 'imageUploadUrl' => route('larasell.admin.products.images.store', $product->getKey()),
                 'generalUpdateUrl' => route('larasell.admin.products.general.update', $product->getKey()),
                 'stockUpdateUrl' => route('larasell.admin.products.stock.update', $product->getKey()),
+                'variantGenerateUrl' => route('larasell.admin.products.variants.generate', $product->getKey()),
+                'variantUpdateUrl' => route('larasell.admin.products.variants.update', $product->getKey()),
                 'categoryIds' => $product->categories()->pluck($product->categories()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
                 'attributeValueIds' => $product->attributeValues()->pluck($product->attributeValues()->getRelated()->getQualifiedKeyName())->map(fn ($id): string => (string) $id)->all(),
             ],
             'categories' => $this->categoryOptions($productModel),
             'productAttributes' => $this->productAttributeValueOptions($productModel),
+            'variantDimensionIds' => $product->variantDimensions()->pluck('larasell_product_attributes.id')->map(fn ($id): string => (string) $id)->all(),
+            'variants' => $product->variants()
+                ->with(['product.variantDimensions', 'attributeValues.attribute'])
+                ->where('is_default', false)
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (ProductVariant $variant): array => [
+                    'id' => $variant->getKey(),
+                    'name' => $variant->snapshotName(),
+                    'sku' => $variant->sku,
+                    'barcode' => $variant->barcode,
+                    'priceAmount' => $variant->price?->amount(),
+                    'stock' => $variant->stock,
+                    'allowBackorders' => $variant->allow_backorders,
+                    'minQuantity' => $variant->min_quantity,
+                    'maxQuantity' => $variant->max_quantity,
+                    'status' => $variant->status->value,
+                ])->all(),
             'images' => Inertia::defer(fn (): array => $product->images()
                 ->get()
                 ->map(fn (Model $image): array => [
@@ -332,6 +355,82 @@ class ProductController extends Controller
         ]);
 
         $product->fill($data)->save();
+
+        return back();
+    }
+
+    public function generateVariants(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $attributeModel = app(ModelRegistry::class)->productAttribute->class();
+        $data = $request->validate([
+            'attribute_ids' => ['required', 'array', 'min:1'],
+            'attribute_ids.*' => ['required', 'integer', 'distinct', Rule::exists((new $attributeModel)->getTable(), (new $attributeModel)->getKeyName())],
+        ]);
+        $attributes = $attributeModel::query()
+            ->whereKey($data['attribute_ids'])
+            ->get()
+            ->sortBy(fn (Model $attribute): int => array_search((string) $attribute->getKey(), array_map('strval', $data['attribute_ids']), true))
+            ->values()
+            ->all();
+
+        try {
+            $product->generateVariants($attributes);
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['attribute_ids' => $exception->getMessage()]);
+        }
+
+        return back();
+    }
+
+    public function updateVariants(Request $request, string $adminProduct): RedirectResponse
+    {
+        $product = $this->findProduct($adminProduct);
+        $variantTable = app(ModelRegistry::class)->productVariant->query()->getModel()->getTable();
+        $data = $request->validate([
+            'variants' => ['required', 'array', 'min:1'],
+            'variants.*.id' => ['required', 'integer', 'distinct'],
+            'variants.*.sku' => ['present', 'nullable', 'string', 'max:255'],
+            'variants.*.barcode' => ['present', 'nullable', 'string', 'max:255'],
+            'variants.*.price_amount' => ['present', 'nullable', 'integer', 'min:0'],
+            'variants.*.stock' => ['present', 'nullable', 'integer', 'min:0'],
+            'variants.*.allow_backorders' => ['present', 'nullable', 'boolean'],
+            'variants.*.min_quantity' => ['present', 'nullable', 'integer', 'min:1'],
+            'variants.*.max_quantity' => ['present', 'nullable', 'integer', 'min:1'],
+            'variants.*.status' => ['required', Rule::enum(Visibility::class)],
+        ]);
+
+        $ids = collect($data['variants'])->pluck('id')->map(fn ($id): int => (int) $id);
+        $variants = $product->variants()->whereKey($ids)->get()->keyBy('id');
+        if ($variants->count() !== $ids->count()) {
+            throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
+        }
+
+        foreach (['sku', 'barcode'] as $identifier) {
+            $values = collect($data['variants'])->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
+            if ($values->duplicates()->isNotEmpty() || DB::table($variantTable)->whereNotIn('id', $ids)->whereIn($identifier, $values)->exists()) {
+                throw ValidationException::withMessages(["variants.{$identifier}" => "Variant {$identifier}s must be unique."]);
+            }
+        }
+
+        DB::transaction(function () use ($data, $variants): void {
+            foreach ($data['variants'] as $input) {
+                $variant = $variants->get($input['id']);
+                if ($input['min_quantity'] !== null && $input['max_quantity'] !== null && $input['min_quantity'] > $input['max_quantity']) {
+                    throw ValidationException::withMessages(['variants' => 'Variant minimum quantity cannot exceed maximum quantity.']);
+                }
+                $variant->update([
+                    'sku' => $input['sku'],
+                    'barcode' => $input['barcode'],
+                    'price' => $input['price_amount'] === null ? null : Price::of($input['price_amount']),
+                    'stock' => $input['stock'],
+                    'allow_backorders' => $input['allow_backorders'],
+                    'min_quantity' => $input['min_quantity'],
+                    'max_quantity' => $input['max_quantity'],
+                    'status' => $input['status'],
+                ]);
+            }
+        });
 
         return back();
     }

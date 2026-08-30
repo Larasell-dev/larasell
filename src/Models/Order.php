@@ -175,7 +175,7 @@ class Order extends Model
 
                     if ($variant !== null && $variant->availableStock() !== null) {
                         $variant->incrementInventory($reservation->quantity);
-                        InventoryRestocked::dispatch($variant->product, $order, $reservation->quantity);
+                        InventoryRestocked::dispatch($variant->product, $order, $reservation->quantity, $variant);
 
                         continue;
                     }
@@ -209,7 +209,7 @@ class Order extends Model
 
                     if ($variant !== null && $variant->availableStock() !== null) {
                         $variant->incrementInventory($item->inventory_quantity);
-                        InventoryRestocked::dispatch($variant->product, $order, $item->inventory_quantity);
+                        InventoryRestocked::dispatch($variant->product, $order, $item->inventory_quantity, $variant);
 
                         continue;
                     }
