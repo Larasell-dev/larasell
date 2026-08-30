@@ -21,6 +21,7 @@ use Larasell\Larasell\Shipping\ShippingOption;
  * @property string|null $session_id
  * @property int|null $user_id
  * @property string|null $shipping_option
+ * @property array<int, string> $promotion_codes
  * @property Collection<int, CartItem> $items
  */
 class Cart extends Model
@@ -31,8 +32,13 @@ class Cart extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'promotion_codes' => '[]',
+    ];
+
     protected $casts = [
         'currency' => Currency::class,
+        'promotion_codes' => 'array',
         'user_id' => 'integer',
     ];
 
@@ -174,6 +180,30 @@ class Cart extends Model
         }
 
         return $discountTotal->greaterThan($total) ? $total : $discountTotal;
+    }
+
+    public function applyPromotionCode(string $code): self
+    {
+        return app(PromotionManager::class)->attachCode($this, $code);
+    }
+
+    public function removePromotionCode(string $code): self
+    {
+        $code = PromotionManager::normalizeCode($code);
+        $this->update([
+            'promotion_codes' => array_values(array_filter(
+                $this->promotionCodes(),
+                fn (string $attached): bool => $attached !== $code,
+            )),
+        ]);
+
+        return $this;
+    }
+
+    /** @return array<int, string> */
+    public function promotionCodes(): array
+    {
+        return $this->promotion_codes ?? [];
     }
 
     private function totalBeforeDiscounts(): ?Price

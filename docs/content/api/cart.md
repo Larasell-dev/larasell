@@ -117,11 +117,15 @@ $cart->selectShippingOption('express');
 
 $cart->shippingOption(); // The selected ShippingOption
 $cart->subtotal();       // Products only
-$cart->total();          // Products and selected shipping
+$cart->discountTotal();  // Applied product and shipping discounts
+$cart->total();          // Products + shipping - discounts
 ```
 
 The selected option is resolved again whenever totals are calculated. Checkout
 stores a snapshot of its method, handle, name, and price on the order.
+
+See the [Promotions API](/api/promotions) for defining automatic discounts and
+reading their allocations.
 
 ## Stock and backorders
 

@@ -6,8 +6,8 @@ description: Turn a cart into an immutable order and collect payment.
 # Checkout API
 
 Checkout creates an order from a cart, snapshots its customer, address,
-product, and price data, reserves finite stock, and asks the configured
-payment provider to initiate payment for the total.
+product, price, and applied discount data, reserves finite stock, and asks the
+configured payment provider to initiate payment for the total.
 
 The cart's currency becomes the order currency and is passed to the payment
 provider alongside the currency-independent price amount.
@@ -54,6 +54,10 @@ class CheckoutController
 `customer_id` is optional. Leave it `null` for guest checkout. The email,
 name, addresses, product details, and prices are always copied to the order,
 so later changes to customer or product records do not rewrite order history.
+
+Applicable promotions are recalculated during checkout. Their identifiers,
+names, totals, and product or shipping allocations are stored on the order.
+See the [Promotions API](/api/promotions) for the snapshot structure.
 
 Both addresses accept an `Address` value object or an associative array. An
 address requires `country`, `first_name`, `last_name`, `street`, `city`, and

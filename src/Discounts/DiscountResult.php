@@ -15,6 +15,7 @@ final readonly class DiscountResult
         public string $identifier,
         public string $name,
         array $allocations,
+        public ?string $code = null,
     ) {
         if (trim($identifier) === '') {
             throw new InvalidArgumentException('A discount identifier is required.');
@@ -22,6 +23,10 @@ final readonly class DiscountResult
 
         if (trim($name) === '') {
             throw new InvalidArgumentException('A discount name is required.');
+        }
+
+        if ($code !== null && trim($code) === '') {
+            throw new InvalidArgumentException('A discount code cannot be empty.');
         }
 
         $targets = [];
