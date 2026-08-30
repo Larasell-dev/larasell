@@ -115,7 +115,7 @@ class Checkout
                 $total = null;
 
                 $variants = $this->models->productVariant->query()
-                    ->with('product')
+                    ->with(['product.variantDimensions', 'attributeValues.attribute'])
                     ->whereKey($items->pluck('product_variant_id'))
                     ->orderBy('id')
                     ->lockForUpdate()
@@ -195,6 +195,8 @@ class Checkout
                         'product_slug' => $item->product->slug,
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
+                        'variant_name' => $item->variant->snapshotName(),
+                        'variant_options' => $item->variant->optionSnapshot(),
                         'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,
                         'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,

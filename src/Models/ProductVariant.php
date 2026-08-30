@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,7 @@ use Larasell\Larasell\Price;
  * @property string $combination_key
  * @property array<string, mixed>|null $metadata
  * @property Product $product
+ * @property Collection<int, ProductAttributeValue> $attributeValues
  */
 class ProductVariant extends Model
 {
@@ -97,6 +99,45 @@ class ProductVariant extends Model
     public function maximumQuantity(): ?int
     {
         return $this->max_quantity ?? $this->product->max_quantity;
+    }
+
+    /**
+     * @return array<string, array{attribute_id: int, attribute_slug: string, attribute_name: string, value_id: int, value_slug: string, value_name: string}>
+     */
+    public function optionSnapshot(): array
+    {
+        if ($this->is_default) {
+            return [];
+        }
+
+        $positions = $this->product->variantDimensions
+            ->pluck('pivot.position', 'id');
+
+        return $this->attributeValues
+            ->sortBy(fn (ProductAttributeValue $value): array => [
+                $positions->get($value->product_attribute_id, PHP_INT_MAX),
+                $value->product_attribute_id,
+            ])
+            ->mapWithKeys(fn (ProductAttributeValue $value): array => [
+                $value->attribute->slug => [
+                    'attribute_id' => $value->attribute->id,
+                    'attribute_slug' => $value->attribute->slug,
+                    'attribute_name' => $value->attribute->name,
+                    'value_id' => $value->id,
+                    'value_slug' => $value->slug,
+                    'value_name' => $value->name,
+                ],
+            ])
+            ->all();
+    }
+
+    public function snapshotName(): string
+    {
+        $options = $this->optionSnapshot();
+
+        return $options === []
+            ? $this->product->name->get()
+            : collect($options)->pluck('value_name')->implode(' / ');
     }
 
     public function decrementInventory(int $quantity): void

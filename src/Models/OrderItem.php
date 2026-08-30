@@ -18,6 +18,8 @@ use Larasell\Larasell\Price;
  * @property string|null $product_slug
  * @property string|null $product_sku
  * @property string|null $product_barcode
+ * @property string|null $variant_name
+ * @property array<string, mixed>|null $variant_options
  * @property Price $unit_price
  * @property int $quantity
  * @property int $inventory_quantity
@@ -41,6 +43,7 @@ class OrderItem extends Model
         'product_variant_id' => 'integer',
         'quantity' => 'integer',
         'inventory_quantity' => 'integer',
+        'variant_options' => 'array',
         'unit_price' => PriceCast::class,
         'discount_total' => PriceCast::class,
         'total' => PriceCast::class,
