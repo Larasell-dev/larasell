@@ -657,7 +657,7 @@ it('creates a product in the admin panel', function () {
             'attribute_value_ids' => [(string) $large->id],
         ]);
 
-    $product = Product::query()->where('slug', 'desk-lamp-2')->sole();
+    $product = Product::query()->where('slug->en', 'desk-lamp-2')->sole();
 
     $response->assertRedirect(route('larasell.admin.products.show', $product));
     expect($product->name->get())->toBe('Desk lamp');
@@ -1155,7 +1155,7 @@ it('updates all product settings in the admin panel', function () {
     $product->refresh();
     expect($product->name->get())->toBe('Reading lamp');
     expect($product)
-        ->slug->toBe('reading-lamp')
+        ->slug->get()->toBe('reading-lamp')
         ->description->get()->toBe('Warm, adjustable light.')
         ->stock->toBe(20)
         ->min_quantity->toBe(2)
@@ -1193,7 +1193,7 @@ it('updates product general information in the admin panel', function () {
     $product->refresh();
     expect($product->name->get())->toBe('Reading lamp');
     expect($product)
-        ->slug->toBe('reading-lamp')
+        ->slug->get()->toBe('reading-lamp')
         ->description->get()->toBe('Warm, adjustable light.');
 });
 

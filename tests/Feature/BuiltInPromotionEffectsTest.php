@@ -23,7 +23,7 @@ final class FixedProductPromotion implements Promotion
             'Fixed product discount',
             $context->fixedAmountOff(
                 Price::of(500),
-                fn (CartItem $item): bool => str_starts_with($item->product->slug, 'eligible-'),
+                fn (CartItem $item): bool => str_starts_with($item->product->slug->get(), 'eligible-'),
             ),
         );
     }

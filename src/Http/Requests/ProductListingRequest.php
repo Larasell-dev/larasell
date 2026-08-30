@@ -42,7 +42,7 @@ class ProductListingRequest extends FormRequest
         }
 
         return $this->resolvedCategory = app(ModelRegistry::class)->category->query()
-            ->where('slug', $slug)
+            ->where('slug->'.App::currentLocale(), $slug)
             ->firstOrFail();
     }
 

@@ -192,7 +192,7 @@ class Checkout
                         'product_id' => $item->product->getKey(),
                         'product_variant_id' => $item->variant->getKey(),
                         'product_name' => $item->product->name->get(),
-                        'product_slug' => $item->product->slug,
+                        'product_slug' => $item->product->slug->get(),
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
                         'variant_name' => $item->variant->snapshotName(),

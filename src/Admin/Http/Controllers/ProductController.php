@@ -154,7 +154,7 @@ class ProductController extends Controller
             'product' => [
                 'id' => $product->getKey(),
                 'name' => $this->productName($product)->get(),
-                'slug' => $product->getAttribute('slug'),
+                'slug' => $product->getAttribute('slug')->get(),
                 'description' => $this->productDescription($product)?->get(),
                 'stock' => $product->getAttribute('stock'),
                 'minQuantity' => $product->getAttribute('min_quantity'),
@@ -211,7 +211,7 @@ class ProductController extends Controller
         $attributeValueModel = $product->attributeValues()->getRelated();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
+            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug->'.App::currentLocale())->ignore($product->getKey())],
             'description' => ['nullable', 'string'],
             'stock' => ['nullable', 'integer', 'min:0'],
             'min_quantity' => ['nullable', 'integer', 'min:1', 'lte:max_quantity'],
@@ -247,6 +247,7 @@ class ProductController extends Controller
 
         $data['price'] = Price::of($data['price_amount']);
         $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
+        $data['slug'] = $product->slug->with(App::currentLocale(), $data['slug']);
         $data['description'] = $this->translatedDescription($product, $data['description']);
         unset($data['price_amount'], $data['image_order'], $data['new_image_ids'], $data['category_ids'], $data['attribute_value_ids']);
 
@@ -334,10 +335,11 @@ class ProductController extends Controller
         $product = $this->findProduct($adminProduct);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug')->ignore($product->getKey())],
+            'slug' => ['required', 'string', 'max:255', Rule::unique($product->getTable(), 'slug->'.App::currentLocale())->ignore($product->getKey())],
             'description' => ['nullable', 'string'],
         ]);
         $data['name'] = $this->productName($product)->with(App::currentLocale(), $data['name']);
+        $data['slug'] = $product->slug->with(App::currentLocale(), $data['slug']);
         $data['description'] = $this->translatedDescription($product, $data['description']);
         $product->fill($data)->save();
 
@@ -484,7 +486,7 @@ class ProductController extends Controller
         $slug = $base;
         $suffix = 2;
 
-        while ($model::query()->where('slug', $slug)->exists()) {
+        while ($model::query()->where('slug->'.App::currentLocale(), $slug)->exists()) {
             $slug = $base.'-'.$suffix++;
         }
 

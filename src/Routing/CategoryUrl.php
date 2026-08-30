@@ -25,7 +25,7 @@ class CategoryUrl
         $segments = [];
 
         while ($category) {
-            array_unshift($segments, $category->slug);
+            array_unshift($segments, $category->slug->get());
 
             $category = $category->relationLoaded('parent')
                 ? $category->parent

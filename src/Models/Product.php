@@ -22,7 +22,7 @@ use Larasell\Larasell\Translatable;
 
 /**
  * @property int $id
- * @property string $slug
+ * @property Translatable $slug
  * @property string|null $sku
  * @property string|null $barcode
  * @property Translatable $name
@@ -48,6 +48,7 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'slug' => TranslatableCast::class,
         'name' => TranslatableCast::class,
         'description' => NullableTranslatableCast::class,
         'price' => PriceCast::class,
