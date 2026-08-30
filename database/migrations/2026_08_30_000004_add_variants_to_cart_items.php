@@ -14,6 +14,10 @@ return new class extends Migration
         });
 
         Schema::table('larasell_cart_items', function (Blueprint $table) {
+            $table->index('cart_id', 'cart_items_cart_id_idx');
+        });
+
+        Schema::table('larasell_cart_items', function (Blueprint $table) {
             $table->dropUnique(['cart_id', 'product_id']);
             $table->foreignId('product_variant_id')
                 ->nullable()
