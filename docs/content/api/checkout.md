@@ -84,8 +84,9 @@ and rethrows the exception. Retry checkout with the same key to recover the
 provider operation.
 
 `customer_id` is optional. Leave it `null` for guest checkout. The email,
-name, addresses, product details, and prices are always copied to the order,
-so later changes to customer or product records do not rewrite order history.
+name, addresses, product name, slug, SKU, barcode, and prices are always copied
+to the order, so later changes to customer or product records do not rewrite
+order history.
 
 Applicable promotions are recalculated during checkout. Their identifiers,
 names, totals, and product or shipping allocations are stored on the order.
