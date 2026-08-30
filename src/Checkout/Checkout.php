@@ -3,8 +3,10 @@
 namespace Larasell\Larasell\Checkout;
 
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\QueryException;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
@@ -21,11 +23,11 @@ use Larasell\Larasell\Events\PromotionRedemptionReserved;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
+use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
-use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
@@ -57,161 +59,217 @@ class Checkout
         array $data,
         ?string $paymentMethod = null,
         array $paymentOptions = [],
+        ?string $idempotencyKey = null,
     ): CheckoutResult {
         $this->validate($data);
+        $this->validateIdempotencyKey($idempotencyKey);
         $method = $paymentMethod === null
             ? $this->payments->default()
             : $this->payments->method($paymentMethod);
         $provider = $this->payments->provider($method);
         $data['billing_address'] = $this->address($data['billing_address'] ?? null);
         $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
+        $fingerprint = $idempotencyKey === null
+            ? null
+            : $this->fingerprint($cart, $data, $method->handle, $paymentOptions);
 
-        [$order, $payment] = $this->database->transaction(function () use ($cart, $data, $method): array {
-            /** @var Cart $lockedCart */
-            $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
-            $items = $lockedCart->items()
-                ->with('product')
-                ->orderBy('product_id')
-                ->lockForUpdate()
-                ->get();
-            $shippingOption = $lockedCart->shippingOption();
+        if ($idempotencyKey !== null
+            && ($existing = $this->existingCheckout($idempotencyKey, $fingerprint)) !== null) {
+            return $this->initiate($existing[0], $existing[1], $provider, $method->handle, $paymentOptions, false);
+        }
 
-            if ($shippingOption?->requiresAddress && $data['shipping_address'] === null) {
-                throw new InvalidArgumentException('A shipping_address is required for the selected shipping option.');
-            }
+        try {
+            [$order, $payment, $created] = $this->database->transaction(function () use (
+                $cart,
+                $data,
+                $method,
+                $idempotencyKey,
+                $fingerprint,
+            ): array {
+                /** @var Cart $lockedCart */
+                $lockedCart = $cart->newQuery()->lockForUpdate()->findOrFail($cart->getKey());
 
-            if ($items->isEmpty()) {
-                throw new InvalidArgumentException('Cannot checkout an empty cart.');
-            }
-
-            $total = null;
-
-            foreach ($items as $item) {
-                /** @var Product $product */
-                $product = $item->product->newQuery()->lockForUpdate()->findOrFail($item->product_id);
-                $item->setRelation('product', $product);
-                $lockedCart->assertProductCanBePurchased($product, $item->quantity);
-
-                $lineTotal = $item->total();
-                $total = $total === null
-                    ? $lineTotal
-                    : $total->add($lineTotal);
-            }
-
-            $discounts = $this->promotions->apply($lockedCart)
-                ->filter(fn (DiscountResult $discount): bool => $discount->total()->isPositive())
-                ->values();
-            $discountTotal = $discounts->reduce(
-                fn (Price $sum, DiscountResult $discount): Price => $sum->add($discount->total()),
-                Price::of(0),
-            );
-            $totalBeforeDiscounts = $shippingOption === null ? $total : $total->add($shippingOption->price);
-
-            $order = $this->models->order->query()->create([
-                'number' => $this->orderNumbers->generate(),
-                'currency' => $lockedCart->currency,
-                'customer_id' => $data['customer_id'] ?? null,
-                'customer_email' => $data['customer_email'],
-                'customer_name' => $data['customer_name'],
-                'customer_phone' => $data['customer_phone'] ?? null,
-                'billing_address' => $data['billing_address'],
-                'shipping_address' => $data['shipping_address'],
-                'status' => OrderStatus::PendingPayment,
-                'subtotal' => $total,
-                'discount_total' => $discountTotal,
-                'discounts' => [],
-                'shipping_method' => $shippingOption?->method,
-                'shipping_option' => $shippingOption?->handle,
-                'shipping_option_name' => $shippingOption?->name,
-                ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
-                'total' => $totalBeforeDiscounts->subtract($discountTotal),
-            ]);
-
-            foreach ($discounts->sortBy('identifier') as $discount) {
-                if ($discount->redemptionLimits !== null) {
-                    $this->reservePromotionRedemption($order, $discount, $data, $method->inventoryReservationMinutes);
+                if ($idempotencyKey !== null
+                    && ($existing = $this->existingCheckout($idempotencyKey, $fingerprint)) !== null) {
+                    return [$existing[0], $existing[1], false];
                 }
-            }
 
-            $orderItemsByTarget = [];
+                $items = $lockedCart->items()
+                    ->with('product')
+                    ->orderBy('product_id')
+                    ->lockForUpdate()
+                    ->get();
+                $shippingOption = $lockedCart->shippingOption();
 
-            foreach ($items as $item) {
-                $target = 'line:'.$item->getKey();
-                $lineDiscountTotal = $discounts->reduce(
-                    fn (Price $sum, DiscountResult $discount): Price => $sum->add(
-                        collect($discount->allocations)
-                            ->firstWhere('target', $target)?->amount ?? Price::of(0)
-                    ),
+                if ($shippingOption?->requiresAddress && $data['shipping_address'] === null) {
+                    throw new InvalidArgumentException('A shipping_address is required for the selected shipping option.');
+                }
+
+                if ($items->isEmpty()) {
+                    throw new InvalidArgumentException('Cannot checkout an empty cart.');
+                }
+
+                $total = null;
+
+                foreach ($items as $item) {
+                    /** @var Product $product */
+                    $product = $item->product->newQuery()->lockForUpdate()->findOrFail($item->product_id);
+                    $item->setRelation('product', $product);
+                    $lockedCart->assertProductCanBePurchased($product, $item->quantity);
+
+                    $lineTotal = $item->total();
+                    $total = $total === null
+                        ? $lineTotal
+                        : $total->add($lineTotal);
+                }
+
+                $discounts = $this->promotions->apply($lockedCart)
+                    ->filter(fn (DiscountResult $discount): bool => $discount->total()->isPositive())
+                    ->values();
+                $discountTotal = $discounts->reduce(
+                    fn (Price $sum, DiscountResult $discount): Price => $sum->add($discount->total()),
                     Price::of(0),
                 );
-                $orderItem = $order->items()->create([
-                    'product_id' => $item->product->getKey(),
-                    'product_name' => $item->product->name->get(),
-                    'product_slug' => $item->product->slug,
-                    'unit_price' => $item->product->price,
-                    'quantity' => $item->quantity,
-                    'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,
-                    'discount_total' => $lineDiscountTotal,
-                    'total' => $item->total(),
+                $totalBeforeDiscounts = $shippingOption === null ? $total : $total->add($shippingOption->price);
+
+                $order = $this->models->order->query()->create([
+                    'number' => $this->orderNumbers->generate(),
+                    'idempotency_key' => $idempotencyKey,
+                    'idempotency_fingerprint' => $fingerprint,
+                    'currency' => $lockedCart->currency,
+                    'customer_id' => $data['customer_id'] ?? null,
+                    'customer_email' => $data['customer_email'],
+                    'customer_name' => $data['customer_name'],
+                    'customer_phone' => $data['customer_phone'] ?? null,
+                    'billing_address' => $data['billing_address'],
+                    'shipping_address' => $data['shipping_address'],
+                    'status' => OrderStatus::PendingPayment,
+                    'subtotal' => $total,
+                    'discount_total' => $discountTotal,
+                    'discounts' => [],
+                    'shipping_method' => $shippingOption?->method,
+                    'shipping_option' => $shippingOption?->handle,
+                    'shipping_option_name' => $shippingOption?->name,
+                    ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
+                    'total' => $totalBeforeDiscounts->subtract($discountTotal),
                 ]);
-                $orderItemsByTarget[$target] = $orderItem->getKey();
 
-                if ($item->product->stock !== null) {
-                    $item->product->decrement('stock', $item->quantity);
-                    $reservation = $orderItem->inventoryReservation()->create([
-                        'order_id' => $order->getKey(),
-                        'product_id' => $item->product->getKey(),
-                        'quantity' => $item->quantity,
-                        'status' => InventoryReservationStatus::Active,
-                        'expires_at' => $method->inventoryReservationMinutes === null
-                            ? null
-                            : now()->addMinutes($method->inventoryReservationMinutes),
-                    ]);
-                    InventoryDecremented::dispatch($item->product, $order, $item->quantity);
-                    InventoryReserved::dispatch($reservation);
+                foreach ($discounts->sortBy('identifier') as $discount) {
+                    if ($discount->redemptionLimits !== null) {
+                        $this->reservePromotionRedemption($order, $discount, $data, $method->inventoryReservationMinutes);
+                    }
                 }
+
+                $orderItemsByTarget = [];
+
+                foreach ($items as $item) {
+                    $target = 'line:'.$item->getKey();
+                    $lineDiscountTotal = $discounts->reduce(
+                        fn (Price $sum, DiscountResult $discount): Price => $sum->add(
+                            collect($discount->allocations)
+                                ->firstWhere('target', $target)?->amount ?? Price::of(0)
+                        ),
+                        Price::of(0),
+                    );
+                    $orderItem = $order->items()->create([
+                        'product_id' => $item->product->getKey(),
+                        'product_name' => $item->product->name->get(),
+                        'product_slug' => $item->product->slug,
+                        'unit_price' => $item->product->price,
+                        'quantity' => $item->quantity,
+                        'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,
+                        'discount_total' => $lineDiscountTotal,
+                        'total' => $item->total(),
+                    ]);
+                    $orderItemsByTarget[$target] = $orderItem->getKey();
+
+                    if ($item->product->stock !== null) {
+                        $item->product->decrement('stock', $item->quantity);
+                        $reservation = $orderItem->inventoryReservation()->create([
+                            'order_id' => $order->getKey(),
+                            'product_id' => $item->product->getKey(),
+                            'quantity' => $item->quantity,
+                            'status' => InventoryReservationStatus::Active,
+                            'expires_at' => $method->inventoryReservationMinutes === null
+                                ? null
+                                : now()->addMinutes($method->inventoryReservationMinutes),
+                        ]);
+                        InventoryDecremented::dispatch($item->product, $order, $item->quantity);
+                        InventoryReserved::dispatch($reservation);
+                    }
+                }
+
+                $discountSnapshots = $discounts->map(fn (DiscountResult $discount): array => [
+                    'identifier' => $discount->identifier,
+                    'name' => $discount->name,
+                    ...($discount->code === null ? [] : ['code' => $discount->code]),
+                    'total' => $discount->total()->toArray(),
+                    'allocations' => collect($discount->allocations)->map(
+                        fn (DiscountAllocation $allocation): array => [
+                            'target' => $allocation->target === 'shipping' ? 'shipping' : 'line',
+                            'order_item_id' => $orderItemsByTarget[$allocation->target] ?? null,
+                            'amount' => $allocation->amount->toArray(),
+                        ]
+                    )->all(),
+                ])->all();
+                $order->update(['discounts' => $discountSnapshots]);
+
+                foreach ($discountSnapshots as $discountSnapshot) {
+                    PromotionApplied::dispatch($order, $discountSnapshot);
+                }
+
+                $lockedCart->clear();
+
+                $payment = $order->payments()->create([
+                    'method' => $method->handle,
+                    'provider' => $method->driver,
+                    'status' => PaymentStatus::Pending,
+                    'amount' => $order->total,
+                ]);
+
+                return [$order, $payment, true];
+            });
+        } catch (QueryException $exception) {
+            if ($idempotencyKey === null
+                || ($existing = $this->existingCheckout($idempotencyKey, $fingerprint)) === null) {
+                throw $exception;
             }
 
-            $discountSnapshots = $discounts->map(fn (DiscountResult $discount): array => [
-                'identifier' => $discount->identifier,
-                'name' => $discount->name,
-                ...($discount->code === null ? [] : ['code' => $discount->code]),
-                'total' => $discount->total()->toArray(),
-                'allocations' => collect($discount->allocations)->map(
-                    fn (DiscountAllocation $allocation): array => [
-                        'target' => $allocation->target === 'shipping' ? 'shipping' : 'line',
-                        'order_item_id' => $orderItemsByTarget[$allocation->target] ?? null,
-                        'amount' => $allocation->amount->toArray(),
-                    ]
-                )->all(),
-            ])->all();
-            $order->update(['discounts' => $discountSnapshots]);
+            [$order, $payment] = $existing;
+            $created = false;
+        }
 
-            foreach ($discountSnapshots as $discountSnapshot) {
-                PromotionApplied::dispatch($order, $discountSnapshot);
-            }
+        return $this->initiate($order, $payment, $provider, $method->handle, $paymentOptions, $created);
+    }
 
-            $lockedCart->clear();
+    /** @param array<string, mixed> $paymentOptions */
+    private function initiate(
+        Order $order,
+        Payment $payment,
+        PaymentProvider $provider,
+        string $paymentMethod,
+        array $paymentOptions,
+        bool $created,
+    ): CheckoutResult {
+        $order->loadMissing(['items', 'payments']);
 
-            $payment = $order->payments()->create([
-                'method' => $method->handle,
-                'provider' => $method->driver,
-                'status' => PaymentStatus::Pending,
-                'amount' => $order->total,
-            ]);
-
-            return [$order, $payment];
-        });
+        if ($payment->status !== PaymentStatus::Pending) {
+            return new CheckoutResult($order, $payment);
+        }
 
         try {
             $result = $provider->initiate(new PaymentRequest(
-                $method->handle,
+                $paymentMethod,
                 $order,
                 $payment,
                 $paymentOptions,
             ));
         } catch (\Throwable $exception) {
-            $result = PaymentResult::failed($exception->getMessage());
+            if ($created) {
+                OrderPlaced::dispatch($order);
+            }
+
+            throw $exception;
         }
 
         if ($result->reference !== null) {
@@ -230,9 +288,69 @@ class Checkout
         }
 
         $order->load(['items', 'payments']);
-        OrderPlaced::dispatch($order);
+
+        if ($created) {
+            OrderPlaced::dispatch($order);
+        }
 
         return new CheckoutResult($order->refresh()->load(['items', 'payments']), $payment, $result->action);
+    }
+
+    /** @return array{Order, Payment}|null */
+    private function existingCheckout(string $key, string $fingerprint): ?array
+    {
+        /** @var Order|null $order */
+        $order = $this->models->order->query()->where('idempotency_key', $key)->first();
+
+        if ($order === null) {
+            return null;
+        }
+
+        if (! hash_equals((string) $order->idempotency_fingerprint, $fingerprint)) {
+            throw new InvalidArgumentException('The idempotency key has already been used with different checkout input.');
+        }
+
+        return [$order, $order->payments()->oldest('id')->firstOrFail()];
+    }
+
+    private function validateIdempotencyKey(?string $key): void
+    {
+        if ($key !== null && (trim($key) === '' || strlen($key) > 255)) {
+            throw new InvalidArgumentException('The idempotency key must be a non-empty string of at most 255 characters.');
+        }
+    }
+
+    /** @param array<string, mixed> $data
+     * @param  array<string, mixed>  $paymentOptions
+     */
+    private function fingerprint(Cart $cart, array $data, string $paymentMethod, array $paymentOptions): string
+    {
+        $input = [
+            'cart_type' => $cart->getMorphClass(),
+            'cart_id' => $cart->getKey(),
+            'data' => $data,
+            'payment_method' => $paymentMethod,
+            'payment_options' => $paymentOptions,
+        ];
+
+        return hash('sha256', json_encode($this->canonicalize($input), JSON_THROW_ON_ERROR));
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if ($value instanceof Address) {
+            return $this->canonicalize($value->toArray());
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map(fn (mixed $item): mixed => $this->canonicalize($item), $value);
     }
 
     /** @param array<string, mixed> $data */

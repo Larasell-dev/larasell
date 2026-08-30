@@ -99,3 +99,94 @@ it('allows only one concurrent checkout to purchase the final stock item', funct
         ->and(Product::query()->findOrFail($product->getKey())->stock)->toBe(0)
         ->and(Order::query()->count())->toBe(1);
 });
+
+it('returns one order for concurrent retries with the same idempotency key', function () {
+    if (DB::getDriverName() === 'sqlite') {
+        $this->markTestSkipped('SQLite does not provide row-level FOR UPDATE locking.');
+    }
+
+    if (! function_exists('pcntl_fork')) {
+        $this->markTestSkipped('The pcntl extension is required for the concurrency test.');
+    }
+
+    $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+
+    $product = Product::query()->create([
+        'slug' => 'idempotent-concurrent-item',
+        'name' => 'Idempotent concurrent item',
+        'price' => Price::of(1000),
+        'stock' => 2,
+        'allow_backorders' => false,
+        'status' => Visibility::Visible,
+    ]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($product);
+
+    $defaultConnection = config('database.default');
+    config()->set('database.connections.idempotency_blocker', config("database.connections.{$defaultConnection}"));
+    $blocker = DB::connection('idempotency_blocker');
+    $blocker->beginTransaction();
+    $blocker->table($cart->getTable())->where('id', $cart->getKey())->lockForUpdate()->first();
+
+    $children = collect([0, 1])->map(function () use ($cart): array {
+        [$parentSocket, $childSocket] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
+        $pid = pcntl_fork();
+
+        if ($pid === -1) {
+            throw new RuntimeException('Unable to fork idempotent checkout process.');
+        }
+
+        if ($pid === 0) {
+            fclose($parentSocket);
+            DB::purge();
+            fwrite($childSocket, "ready\n");
+
+            try {
+                $result = app(Checkout::class)->create(
+                    Cart::query()->findOrFail($cart->getKey()),
+                    [
+                        'customer_email' => 'idempotent@example.com',
+                        'customer_name' => 'Idempotent Buyer',
+                    ],
+                    idempotencyKey: 'concurrent-checkout-request',
+                );
+                fwrite($childSocket, 'succeeded:'.$result->order->getKey()."\n");
+            } catch (Throwable $exception) {
+                fwrite($childSocket, 'failed:'.$exception->getMessage()."\n");
+            }
+
+            fclose($childSocket);
+            exit(0);
+        }
+
+        fclose($childSocket);
+        stream_set_timeout($parentSocket, 10);
+
+        return [$pid, $parentSocket];
+    });
+
+    $children->each(function (array $child): void {
+        expect(fgets($child[1]))->toBe("ready\n");
+    });
+    usleep(200_000);
+    $blocker->commit();
+
+    $results = $children->map(function (array $child): string {
+        [$pid, $socket] = $child;
+        pcntl_waitpid($pid, $status);
+        $result = trim((string) stream_get_contents($socket));
+        fclose($socket);
+
+        expect(pcntl_wifexited($status))->toBeTrue()
+            ->and(pcntl_wexitstatus($status))->toBe(0);
+
+        return $result;
+    });
+
+    DB::purge();
+
+    expect($results->every(fn (string $result): bool => str_starts_with($result, 'succeeded:')))->toBeTrue()
+        ->and($results->unique()->count())->toBe(1)
+        ->and(Order::query()->count())->toBe(1)
+        ->and(Product::query()->findOrFail($product->getKey())->stock)->toBe(1);
+});
