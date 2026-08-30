@@ -5,8 +5,10 @@ namespace Larasell\Larasell\Discounts;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Larasell\Larasell\Contracts\CodedPromotion;
-use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Contracts\Promotions\HasCode;
+use Larasell\Larasell\Contracts\Promotions\HasPriority;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
+use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
 use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
@@ -39,19 +41,12 @@ final class PromotionManager
     {
         $this->codedPromotions();
         $context = $this->context($cart);
-        $results = collect();
+        $applicable = collect();
         $identifiers = [];
-        $remaining = $context->eligibleAmounts();
 
-        if ($context->shippingOption !== null) {
-            $remaining['shipping'] = $context->shippingOption->price;
-        }
+        foreach ($this->resolvedPromotions() as $promotion) {
 
-        foreach ($this->promotions as $promotionClass) {
-            /** @var Promotion $promotion */
-            $promotion = $this->container->make($promotionClass);
-
-            if ($promotion instanceof CodedPromotion
+            if ($promotion instanceof HasCode
                 && ! in_array(self::normalizeCode($promotion->code()), $cart->promotionCodes(), true)) {
                 continue;
             }
@@ -68,6 +63,21 @@ final class PromotionManager
 
             $this->validateTargets($result, $context);
             $identifiers[$result->identifier] = true;
+            $applicable->push([$promotion, $result]);
+        }
+
+        $exclusive = $applicable->first(
+            fn (array $candidate): bool => $candidate[0] instanceof ShouldBeExclusive
+        );
+        $selected = $exclusive === null ? $applicable : collect([$exclusive]);
+        $results = collect();
+        $remaining = $context->eligibleAmounts();
+
+        if ($context->shippingOption !== null) {
+            $remaining['shipping'] = $context->shippingOption->price;
+        }
+
+        foreach ($selected as [$promotion, $result]) {
 
             $allocations = [];
 
@@ -88,11 +98,23 @@ final class PromotionManager
                 $result->identifier,
                 $result->name,
                 $allocations,
-                $promotion instanceof CodedPromotion ? self::normalizeCode($promotion->code()) : null,
+                $promotion instanceof HasCode ? self::normalizeCode($promotion->code()) : null,
             ));
         }
 
         return $results;
+    }
+
+    /** @return Collection<int, Promotion> */
+    private function resolvedPromotions(): Collection
+    {
+        return collect($this->promotions)
+            ->map(fn (string $promotion): Promotion => $this->container->make($promotion))
+            ->sortByDesc(fn (Promotion $promotion): int => $promotion instanceof HasPriority
+                ? $promotion->priority()
+                : 0
+            )
+            ->values();
     }
 
     public function attachCode(Cart $cart, string $code): Cart
@@ -129,7 +151,7 @@ final class PromotionManager
         return strtoupper(trim($code));
     }
 
-    /** @return array<string, CodedPromotion> */
+    /** @return array<string, HasCode> */
     private function codedPromotions(): array
     {
         $coded = [];
@@ -138,7 +160,7 @@ final class PromotionManager
             /** @var Promotion $promotion */
             $promotion = $this->container->make($promotionClass);
 
-            if (! $promotion instanceof CodedPromotion) {
+            if (! $promotion instanceof HasCode) {
                 continue;
             }
 

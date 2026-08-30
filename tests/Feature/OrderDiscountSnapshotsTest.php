@@ -1,7 +1,7 @@
 <?php
 
 use Larasell\Larasell\Checkout\Checkout;
-use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\PromotionManager;

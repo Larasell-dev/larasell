@@ -1,6 +1,6 @@
 <?php
 
-use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
