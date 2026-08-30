@@ -35,6 +35,8 @@ use Larasell\Larasell\Translatable;
  * @property Visibility $status
  *
  * @method static Builder<static> visible()
+ * @method static Builder<static> inCategory(Category $category)
+ * @method static Builder<static> inCategoryTree(Category $category)
  * @method static Builder<static> withAttributeValues()
  */
 class Product extends Model
@@ -137,9 +139,51 @@ class Product extends Model
      * @param  Builder<self>  $query
      */
     #[Scope]
+    protected function inCategory(Builder $query, Category $category): Builder
+    {
+        return $query->whereHas(
+            'categories',
+            fn (Builder $query): Builder => $query->whereKey($category->getKey()),
+        );
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function inCategoryTree(Builder $query, Category $category): Builder
+    {
+        $category->loadMissing('descendants');
+
+        $categoryIds = collect([$category->getKey()])
+            ->merge($category->descendants->flatMap(
+                fn (Category $descendant): Collection => $this->categoryTreeIds($descendant),
+            ));
+
+        return $query->whereHas(
+            'categories',
+            fn (Builder $query): Builder => $query->whereKey($categoryIds),
+        );
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
     protected function withAttributeValues(Builder $query): Builder
     {
         return $query->with('attributeValues.attribute');
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    private function categoryTreeIds(Category $category): Collection
+    {
+        return collect([$category->getKey()])
+            ->merge($category->descendants->flatMap(
+                fn (Category $descendant): Collection => $this->categoryTreeIds($descendant),
+            ));
     }
 
     /**
