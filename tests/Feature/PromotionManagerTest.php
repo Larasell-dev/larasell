@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
 use Larasell\Larasell\Contracts\Promotions\HasPriority;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
@@ -134,9 +136,30 @@ final class TestInapplicableExclusivePromotion implements Promotion, ShouldBeExc
     }
 }
 
+final class TestWindowedPromotion implements HasAvailability, Promotion
+{
+    public static array $window = [];
+
+    public static int $applications = 0;
+
+    public function window(): array
+    {
+        return self::$window;
+    }
+
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        self::$applications++;
+
+        return new DiscountResult('windowed', 'Windowed', $context->fixedAmountOff(Price::of(100)));
+    }
+}
+
 beforeEach(function () {
     TestAutomaticPromotion::$context = null;
     TestCountingPromotion::$applications = 0;
+    TestWindowedPromotion::$applications = 0;
+    TestWindowedPromotion::$window = [];
 });
 
 it('applies registered promotions with a cart calculation context', function () {
@@ -255,6 +278,53 @@ it('does not let an inapplicable exclusive promotion suppress other promotions',
     expect($manager->apply(promotionCart([1000]))->sole()->identifier)
         ->toBe('low-priority');
 });
+
+it('applies promotions only inside their inclusive availability window', function (string $now, bool $available) {
+    $this->travelTo($now);
+    TestWindowedPromotion::$window = [
+        'starts_at' => Carbon::parse('2026-09-01 10:00:00'),
+        'ends_at' => Carbon::parse('2026-09-01 12:00:00'),
+    ];
+    $manager = app(PromotionManager::class);
+    $manager->register(TestWindowedPromotion::class);
+
+    expect($manager->apply(promotionCart([1000]))->isNotEmpty())->toBe($available)
+        ->and(TestWindowedPromotion::$applications)->toBe($available ? 1 : 0);
+})->with([
+    'before start' => ['2026-09-01 09:59:59', false],
+    'at start' => ['2026-09-01 10:00:00', true],
+    'at end' => ['2026-09-01 12:00:00', true],
+    'after end' => ['2026-09-01 12:00:01', false],
+]);
+
+it('supports open-ended promotion availability windows', function (array $window) {
+    $this->travelTo('2026-09-01 11:00:00');
+    TestWindowedPromotion::$window = $window;
+    $manager = app(PromotionManager::class);
+    $manager->register(TestWindowedPromotion::class);
+
+    expect($manager->apply(promotionCart([1000])))->toHaveCount(1);
+})->with([
+    'without end' => fn () => ['starts_at' => Carbon::parse('2026-09-01 10:00:00')],
+    'without start' => fn () => ['ends_at' => Carbon::parse('2026-09-01 12:00:00')],
+]);
+
+it('rejects invalid promotion availability windows', function (array $window) {
+    TestWindowedPromotion::$window = $window;
+    $manager = app(PromotionManager::class);
+    $manager->register(TestWindowedPromotion::class);
+
+    expect(fn () => $manager->apply(promotionCart([1000])))
+        ->toThrow(InvalidArgumentException::class);
+})->with([
+    'empty' => [[]],
+    'unknown key' => [['start' => fn () => now()]],
+    'invalid start' => [['starts_at' => '2026-09-01']],
+    'end before start' => fn () => [
+        'starts_at' => now()->addMinute(),
+        'ends_at' => now(),
+    ],
+]);
 
 /** @param array<int, int> $prices */
 function promotionCart(array $prices): Cart

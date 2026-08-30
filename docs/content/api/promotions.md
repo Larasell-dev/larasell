@@ -288,6 +288,35 @@ When one or more exclusive promotions apply, only the applicable exclusive
 promotion with the highest priority is used. Registration order resolves a tie.
 An inapplicable exclusive promotion does not affect other promotions.
 
+## Availability windows
+
+Implement `HasAvailability` when a promotion may only apply during a specific
+period. The single `window()` method returns its optional boundaries:
+
+```php
+use Illuminate\Support\Carbon;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
+
+final class SeptemberSale implements HasAvailability, Promotion
+{
+    public function window(): array
+    {
+        return [
+            'starts_at' => Carbon::parse('2026-09-01 00:00:00'),
+            'ends_at' => Carbon::parse('2026-09-30 23:59:59'),
+        ];
+    }
+
+    // ...
+}
+```
+
+Both boundaries are inclusive and must implement `CarbonInterface`. Either
+`starts_at` or `ends_at` may be omitted for an open-ended window, but at least
+one boundary is required. Coded promotions outside their availability window
+cannot be attached to a cart. Previously attached codes remain stored but stop
+producing a discount while their promotion is unavailable.
+
 ## Redemption limits
 
 Implement `HasRedemptionLimit` to cap how many orders can use a promotion:

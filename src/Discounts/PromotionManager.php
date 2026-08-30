@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Discounts;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Larasell\Larasell\Contracts\Promotions\HasAvailability;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
 use Larasell\Larasell\Contracts\Promotions\HasPriority;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
@@ -14,6 +15,7 @@ use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\AvailabilityWindow;
 use Larasell\Larasell\Promotions\RedemptionLimits;
 
 final class PromotionManager
@@ -47,6 +49,10 @@ final class PromotionManager
         $identifiers = [];
 
         foreach ($this->resolvedPromotions() as $promotion) {
+
+            if (! $this->isAvailable($promotion)) {
+                continue;
+            }
 
             if ($promotion instanceof HasCode
                 && ! in_array(self::normalizeCode($promotion->code()), $cart->promotionCodes(), true)) {
@@ -133,6 +139,10 @@ final class PromotionManager
             throw new InvalidArgumentException("Promotion code [{$code}] is not registered.");
         }
 
+        if (! $this->isAvailable($promotion)) {
+            throw new InvalidArgumentException("Promotion code [{$code}] is not applicable to this cart.");
+        }
+
         $context = $this->context($cart);
         $result = $promotion->apply($context);
 
@@ -207,6 +217,12 @@ final class PromotionManager
             shippingOption: $cart->shippingOption(),
             allocator: $this->allocator,
         );
+    }
+
+    private function isAvailable(Promotion $promotion): bool
+    {
+        return ! $promotion instanceof HasAvailability
+            || AvailabilityWindow::from($promotion->window())->contains(now());
     }
 
     private function validateTargets(DiscountResult $result, PromotionContext $context): void
