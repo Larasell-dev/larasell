@@ -54,6 +54,30 @@ class Product extends Model
         'status' => Visibility::class,
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (Product $product): void {
+            $product->variants()->create($product->defaultVariantAttributes());
+        });
+
+        static::updated(function (Product $product): void {
+            if ($product->wasChanged([
+                'sku',
+                'barcode',
+                'price',
+                'stock',
+                'allow_backorders',
+                'min_quantity',
+                'max_quantity',
+                'status',
+            ])) {
+                $product->variants()->where('is_default', true)->first()?->update(
+                    $product->defaultVariantAttributes(),
+                );
+            }
+        });
+    }
+
     /**
      * @return Attribute<int|null, int|null>
      */
@@ -178,6 +202,18 @@ class Product extends Model
         return $this->hasMany($this->productVariantModel());
     }
 
+    public function defaultVariant(): ProductVariant
+    {
+        /** @var ProductVariant|null $variant */
+        $variant = $this->variants()->where('is_default', true)->first();
+
+        if (! $variant instanceof ProductVariant) {
+            throw new InvalidArgumentException('This product does not have a default variant. Select a product variant explicitly.');
+        }
+
+        return $variant;
+    }
+
     /**
      * @param  array<int, ProductAttribute>  $dimensions
      * @return EloquentCollection<int, ProductVariant>
@@ -215,6 +251,8 @@ class Product extends Model
         }
 
         return DB::transaction(function () use ($combinations, $dimensions): EloquentCollection {
+            $this->variants()->where('is_default', true)->delete();
+
             $configuredDimensionIds = $this->variantDimensions()->pluck('larasell_product_attributes.id');
             $requestedDimensionIds = $dimensions->pluck('id');
 
@@ -251,6 +289,8 @@ class Product extends Model
         $this->assertValidVariantValues($values);
 
         return DB::transaction(function () use ($attributes, $values): ProductVariant {
+            $this->variants()->where('is_default', true)->delete();
+
             /** @var ProductVariant $variant */
             $variant = $this->variants()->create(array_merge($attributes, [
                 'combination_key' => self::combinationKey($values),
@@ -347,6 +387,24 @@ class Product extends Model
             ->sortBy('product_attribute_id', SORT_NUMERIC)
             ->map(fn (ProductAttributeValue $value): string => "{$value->product_attribute_id}:{$value->id}")
             ->implode('|');
+    }
+
+    /** @return array<string, mixed> */
+    private function defaultVariantAttributes(): array
+    {
+        return [
+            'sku' => $this->sku,
+            'barcode' => $this->barcode,
+            'price' => $this->price,
+            'stock' => $this->stock,
+            'allow_backorders' => $this->allow_backorders,
+            'min_quantity' => $this->min_quantity,
+            'max_quantity' => $this->max_quantity,
+            'status' => $this->status ?? Visibility::Visible,
+            'is_default' => true,
+            'position' => 0,
+            'combination_key' => 'default',
+        ];
     }
 
     protected function categoryModel(): string

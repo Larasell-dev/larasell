@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\PromotionCodeRemoved;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
@@ -51,38 +52,48 @@ class Cart extends Model
         return $this->hasMany($this->cartItemModel());
     }
 
-    public function add(Product $product, int $quantity = 1): CartItem
+    public function add(Product|ProductVariant $purchasable, int $quantity = 1): CartItem
     {
         $this->assertValidQuantity($quantity);
+        $variant = $this->resolveVariant($purchasable);
 
         $item = $this->items()
-            ->where('product_id', $product->getKey())
+            ->where('product_variant_id', $variant->getKey())
             ->first();
 
         $quantity = $quantity + ($item?->quantity ?? 0);
-        $this->assertProductCanBePurchased($product, $quantity);
+        $this->assertVariantCanBePurchased($variant, $quantity);
 
         return $this->items()->updateOrCreate(
-            ['product_id' => $product->getKey()],
-            ['quantity' => $quantity]
+            ['product_variant_id' => $variant->getKey()],
+            [
+                'product_id' => $variant->product_id,
+                'quantity' => $quantity,
+            ]
         );
     }
 
-    public function set(Product $product, int $quantity): CartItem
+    public function set(Product|ProductVariant $purchasable, int $quantity): CartItem
     {
         $this->assertValidQuantity($quantity);
-        $this->assertProductCanBePurchased($product, $quantity);
+        $variant = $this->resolveVariant($purchasable);
+        $this->assertVariantCanBePurchased($variant, $quantity);
 
         return $this->items()->updateOrCreate(
-            ['product_id' => $product->getKey()],
-            ['quantity' => $quantity]
+            ['product_variant_id' => $variant->getKey()],
+            [
+                'product_id' => $variant->product_id,
+                'quantity' => $quantity,
+            ]
         );
     }
 
-    public function remove(Product $product): void
+    public function remove(Product|ProductVariant $purchasable): void
     {
+        $variant = $this->resolveVariant($purchasable);
+
         $this->items()
-            ->where('product_id', $product->getKey())
+            ->where('product_variant_id', $variant->getKey())
             ->delete();
     }
 
@@ -98,7 +109,7 @@ class Cart extends Model
 
     public function subtotal(): ?Price
     {
-        $items = $this->items()->with('product')->get();
+        $items = $this->items()->with(['product', 'variant.product'])->get();
 
         if ($items->isEmpty()) {
             return null;
@@ -241,16 +252,43 @@ class Cart extends Model
 
     public function assertProductCanBePurchased(Product $product, int $quantity): void
     {
-        if ($product->min_quantity !== null && $quantity < $product->min_quantity) {
-            throw new InvalidArgumentException('Cart item quantity is below the product minimum quantity.');
+        $this->assertVariantCanBePurchased($product->defaultVariant(), $quantity);
+    }
+
+    public function assertVariantCanBePurchased(ProductVariant $variant, int $quantity): void
+    {
+        $minimum = $variant->minimumQuantity();
+        $maximum = $variant->maximumQuantity();
+        $stock = $variant->availableStock();
+        $subject = $variant->is_default ? 'product' : 'variant';
+
+        if ($minimum !== null && $quantity < $minimum) {
+            throw new InvalidArgumentException("Cart item quantity is below the {$subject} minimum quantity.");
         }
 
-        if ($product->max_quantity !== null && $quantity > $product->max_quantity) {
-            throw new InvalidArgumentException('Cart item quantity exceeds the product maximum quantity.');
+        if ($maximum !== null && $quantity > $maximum) {
+            throw new InvalidArgumentException("Cart item quantity exceeds the {$subject} maximum quantity.");
         }
 
-        if (! $product->allow_backorders && $product->stock !== null && $quantity > $product->stock) {
-            throw new InvalidArgumentException('Cart item quantity exceeds available product stock.');
+        if (! $variant->allowsBackorders() && $stock !== null && $quantity > $stock) {
+            throw new InvalidArgumentException("Cart item quantity exceeds available {$subject} stock.");
         }
+    }
+
+    private function resolveVariant(Product|ProductVariant $purchasable): ProductVariant
+    {
+        $variant = $purchasable instanceof Product
+            ? $purchasable->defaultVariant()
+            : $purchasable;
+
+        if (! $variant->exists || ! $variant->product()->exists()) {
+            throw new InvalidArgumentException('The product variant is not persisted or has no product.');
+        }
+
+        if ($variant->status !== Visibility::Visible) {
+            throw new InvalidArgumentException('The product variant is unavailable.');
+        }
+
+        return $variant->loadMissing('product');
     }
 }

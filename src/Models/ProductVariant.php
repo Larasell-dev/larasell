@@ -21,6 +21,7 @@ use Larasell\Larasell\Price;
  * @property int|null $min_quantity
  * @property int|null $max_quantity
  * @property Visibility $status
+ * @property bool $is_default
  * @property int $position
  * @property string $combination_key
  * @property array<string, mixed>|null $metadata
@@ -41,6 +42,7 @@ class ProductVariant extends Model
         'min_quantity' => 'integer',
         'max_quantity' => 'integer',
         'status' => Visibility::class,
+        'is_default' => 'boolean',
         'position' => 'integer',
         'metadata' => 'array',
     ];
@@ -60,5 +62,40 @@ class ProductVariant extends Model
             'product_variant_id',
             'product_attribute_value_id',
         );
+    }
+
+    public function unitPrice(): Price
+    {
+        return $this->price ?? $this->product->price;
+    }
+
+    public function effectiveSku(): ?string
+    {
+        return $this->sku ?? $this->product->sku;
+    }
+
+    public function effectiveBarcode(): ?string
+    {
+        return $this->barcode ?? $this->product->barcode;
+    }
+
+    public function availableStock(): ?int
+    {
+        return $this->stock ?? $this->product->stock;
+    }
+
+    public function allowsBackorders(): bool
+    {
+        return $this->allow_backorders ?? $this->product->allow_backorders;
+    }
+
+    public function minimumQuantity(): ?int
+    {
+        return $this->min_quantity ?? $this->product->min_quantity;
+    }
+
+    public function maximumQuantity(): ?int
+    {
+        return $this->max_quantity ?? $this->product->max_quantity;
     }
 }
