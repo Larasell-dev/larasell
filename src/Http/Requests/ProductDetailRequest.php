@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Http\Requests;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\App;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class ProductDetailRequest extends FormRequest
@@ -33,7 +34,7 @@ class ProductDetailRequest extends FormRequest
         }
 
         return $this->resolvedProduct = app(ModelRegistry::class)->product->query()
-            ->where('slug', $product)
+            ->where('slug->'.App::currentLocale(), $product)
             ->firstOrFail();
     }
 }

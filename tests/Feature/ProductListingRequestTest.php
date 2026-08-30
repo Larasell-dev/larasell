@@ -10,7 +10,9 @@ use Larasell\Larasell\Routing\ProductListingRoute;
 
 beforeEach(function () {
     ProductListingRoute::get(function (ProductListingRequest $request): array {
-        return $request->products()->pluck('slug')->all();
+        return $request->products()->get()->map(
+            fn (Product $product): string => $product->slug->get(),
+        )->all();
     }, prefix: 'c');
 });
 
@@ -102,6 +104,18 @@ it('sorts products by their name in the current locale', function () {
     $this->getJson('/c/shirts')
         ->assertOk()
         ->assertExactJson(['table', 'lamp']);
+});
+
+it('resolves a category by its slug in the current locale', function () {
+    App::setLocale('de');
+    $category = categoryForListing([
+        'slug' => ['en' => 'shirts', 'de' => 'hemden'],
+    ]);
+    productForListing(['slug' => 'linen-shirt'], $category);
+
+    $this->getJson('/c/hemden')
+        ->assertOk()
+        ->assertExactJson(['linen-shirt']);
 });
 
 function categoryForListing(array $attributes = []): Category

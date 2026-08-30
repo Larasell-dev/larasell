@@ -10,12 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Translatable;
 
 /**
  * @property int $id
  * @property int|null $parent_id
- * @property string $slug
+ * @property Translatable $slug
  * @property string $name
  * @property Visibility $status
  *
@@ -30,6 +32,7 @@ class Category extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'slug' => TranslatableCast::class,
         'status' => Visibility::class,
     ];
 
