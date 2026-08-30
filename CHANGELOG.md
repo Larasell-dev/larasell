@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/Larasell-dev/larasell/compare/v1.4.0...v1.4.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* specify requirements ([0835e52](https://github.com/Larasell-dev/larasell/commit/0835e529261a76aac26dd43187acd7f736c77345))
+
 ## [1.4.0](https://github.com/Larasell-dev/larasell/compare/v1.3.0...v1.4.0) (2026-08-30)
 
 
