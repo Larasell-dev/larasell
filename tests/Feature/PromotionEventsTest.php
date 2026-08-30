@@ -2,7 +2,8 @@
 
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Checkout\Checkout;
-use Larasell\Larasell\Contracts\CodedPromotion;
+use Larasell\Larasell\Contracts\Promotions\HasCode;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\PromotionManager;
@@ -15,7 +16,7 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
-final class PromotionEventDiscount implements CodedPromotion
+final class PromotionEventDiscount implements HasCode, Promotion
 {
     public function code(): string
     {

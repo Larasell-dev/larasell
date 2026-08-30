@@ -25,7 +25,7 @@ option, and the proportional discount allocator.
 
 namespace App\Promotions;
 
-use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Price;
@@ -72,20 +72,21 @@ Registering the same class more than once has no effect.
 
 ## User-entered promotion codes
 
-Implement `CodedPromotion` instead of `Promotion` when a customer must enter a
-code before the promotion runs. A coded promotion uses the same context,
-results, and allocation helpers as an automatic promotion.
+Implement `HasCode` alongside `Promotion` when a customer must enter a code
+before the promotion runs. A coded promotion uses the same context, results,
+and allocation helpers as an automatic promotion.
 
 ```php
 <?php
 
 namespace App\Promotions;
 
-use Larasell\Larasell\Contracts\CodedPromotion;
+use Larasell\Larasell\Contracts\Promotions\HasCode;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 
-final class SaveTenPercent implements CodedPromotion
+final class SaveTenPercent implements HasCode, Promotion
 {
     public function code(): string
     {
@@ -248,14 +249,44 @@ cart result as a historical record.
 
 ## Stacking promotions
 
-All applicable registered promotions currently stack. They are evaluated in
-registration order, and earlier promotions receive their allocations first.
-The manager caps the combined discount at each product or shipping target, so
-later promotions cannot make that target negative.
+Promotions are stackable by default. Implement `HasPriority` to evaluate a
+promotion before lower-priority promotions:
 
-Exclusive promotions and configurable priority are not currently part of the
-API. Put mutually exclusive conditions inside your promotion classes when an
-application needs that behavior.
+```php
+use Larasell\Larasell\Contracts\Promotions\HasPriority;
+
+final class SummerSale implements HasPriority, Promotion
+{
+    public function priority(): int
+    {
+        return 100;
+    }
+
+    // ...
+}
+```
+
+Higher numeric priorities run first. Promotions without this interface have a
+priority of `0`, and registration order resolves equal priorities. Earlier
+promotions receive their allocations first. The manager caps the combined
+discount at each product or shipping target, so later promotions cannot make
+that target negative.
+
+Implement the `ShouldBeExclusive` marker interface when a promotion must be
+used alone:
+
+```php
+use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
+
+final class WelcomeOffer implements Promotion, ShouldBeExclusive
+{
+    // ...
+}
+```
+
+When one or more exclusive promotions apply, only the applicable exclusive
+promotion with the highest priority is used. Registration order resolves a tie.
+An inapplicable exclusive promotion does not affect other promotions.
 
 ## Order snapshots
 

@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Collection;
-use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Contracts\Promotions\HasPriority;
+use Larasell\Larasell\Contracts\Promotions\Promotion;
+use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
@@ -71,6 +73,64 @@ final class TestCountingPromotion implements Promotion
             name: 'Counting promotion',
             allocations: $context->allocator->allocate(Price::of(100), $context->eligibleAmounts()),
         );
+    }
+}
+
+class TestLowPriorityPromotion implements HasPriority, Promotion
+{
+    public function priority(): int
+    {
+        return 10;
+    }
+
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult('low-priority', 'Low priority', $context->fixedAmountOff(Price::of(750)));
+    }
+}
+
+class TestHighPriorityPromotion implements HasPriority, Promotion
+{
+    public function priority(): int
+    {
+        return 100;
+    }
+
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult('high-priority', 'High priority', $context->fixedAmountOff(Price::of(750)));
+    }
+}
+
+final class TestExclusivePromotion extends TestLowPriorityPromotion implements ShouldBeExclusive
+{
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult('exclusive', 'Exclusive', $context->fixedAmountOff(Price::of(300)));
+    }
+}
+
+final class TestHighPriorityExclusivePromotion extends TestHighPriorityPromotion implements ShouldBeExclusive
+{
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult('high-priority-exclusive', 'High priority exclusive', $context->fixedAmountOff(Price::of(400)));
+    }
+}
+
+final class TestEqualPriorityExclusivePromotion extends TestLowPriorityPromotion implements ShouldBeExclusive
+{
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return new DiscountResult('equal-priority-exclusive', 'Equal priority exclusive', $context->fixedAmountOff(Price::of(500)));
+    }
+}
+
+final class TestInapplicableExclusivePromotion implements Promotion, ShouldBeExclusive
+{
+    public function apply(PromotionContext $context): ?DiscountResult
+    {
+        return null;
     }
 }
 
@@ -152,6 +212,48 @@ it('evaluates each cart without retaining previous results', function () {
 
     expect($first->total()->amount())->toBe('300')
         ->and($second->total()->amount())->toBe('500');
+});
+
+it('applies stackable promotions in descending priority order', function () {
+    $manager = app(PromotionManager::class);
+    $manager->register(TestLowPriorityPromotion::class);
+    $manager->register(TestHighPriorityPromotion::class);
+
+    $results = $manager->apply(promotionCart([1000]));
+
+    expect($results->pluck('identifier')->all())->toBe(['high-priority', 'low-priority'])
+        ->and($results[0]->total()->amount())->toBe('750')
+        ->and($results[1]->total()->amount())->toBe('250');
+});
+
+it('uses only the highest-priority applicable exclusive promotion', function () {
+    $manager = app(PromotionManager::class);
+    $manager->register(TestLowPriorityPromotion::class);
+    $manager->register(TestExclusivePromotion::class);
+    $manager->register(TestHighPriorityExclusivePromotion::class);
+
+    $results = $manager->apply(promotionCart([1000]));
+
+    expect($results)->toHaveCount(1)
+        ->and($results->sole()->identifier)->toBe('high-priority-exclusive');
+});
+
+it('uses registration order to resolve exclusive promotions with equal priority', function () {
+    $manager = app(PromotionManager::class);
+    $manager->register(TestEqualPriorityExclusivePromotion::class);
+    $manager->register(TestExclusivePromotion::class);
+
+    expect($manager->apply(promotionCart([1000]))->sole()->identifier)
+        ->toBe('equal-priority-exclusive');
+});
+
+it('does not let an inapplicable exclusive promotion suppress other promotions', function () {
+    $manager = app(PromotionManager::class);
+    $manager->register(TestInapplicableExclusivePromotion::class);
+    $manager->register(TestLowPriorityPromotion::class);
+
+    expect($manager->apply(promotionCart([1000]))->sole()->identifier)
+        ->toBe('low-priority');
 });
 
 /** @param array<int, int> $prices */
