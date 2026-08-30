@@ -83,5 +83,11 @@ function variantContextCart(): array
     $variants = $product->generateVariants([$size]);
     $variants->each->update(['stock' => 5, 'status' => Visibility::Visible]);
 
-    return [Cart::create(['currency' => Currency::EUR]), $product, $variants->first(), $variants->last(), $smallValue];
+    return [
+        Cart::create(['currency' => Currency::EUR]),
+        $product,
+        $product->variantFor([$size->slug => $smallValue->slug]),
+        $product->variantFor([$size->slug => $mediumValue->slug]),
+        $smallValue,
+    ];
 }

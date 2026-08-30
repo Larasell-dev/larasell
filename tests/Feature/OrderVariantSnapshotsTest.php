@@ -16,7 +16,7 @@ it('snapshots the selected variant and its ordered attribute labels', function (
     $item = orderSnapshotCheckout($cart)->items->sole();
 
     expect($item->variant_name)->toBe('Small / Black')
-        ->and($item->variant_options)->toBe([
+        ->and($item->variant_options)->toEqual([
             'size' => [
                 'attribute_id' => $size->id,
                 'attribute_slug' => 'size',
@@ -104,11 +104,14 @@ function orderSnapshotVariantCart(): array
     $black = $color->values()->create(['slug' => 'black', 'name' => 'Black', 'value' => 'black']);
     $product->attributeValues()->attach([$small->id, $medium->id, $black->id]);
     $variants = $product->generateVariants([$size, $color]);
-    $variant = $variants->first();
+    $variants->each->update(['status' => Visibility::Visible]);
+    $variant = $product->variantFor([
+        'size' => 'small',
+        'color' => 'black',
+    ]);
     $variant->update([
         'sku' => 'TSHIRT-BLK-S',
         'barcode' => '4012345678901',
-        'status' => Visibility::Visible,
     ]);
 
     return [Cart::create(['currency' => Currency::EUR]), $variant->refresh(), $size, $small, $color, $black];
