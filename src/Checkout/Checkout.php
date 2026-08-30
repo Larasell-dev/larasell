@@ -14,6 +14,7 @@ use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
+use Larasell\Larasell\Events\PromotionApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Product;
@@ -158,7 +159,7 @@ class Checkout
                 }
             }
 
-            $order->update(['discounts' => $discounts->map(fn (DiscountResult $discount): array => [
+            $discountSnapshots = $discounts->map(fn (DiscountResult $discount): array => [
                 'identifier' => $discount->identifier,
                 'name' => $discount->name,
                 ...($discount->code === null ? [] : ['code' => $discount->code]),
@@ -170,7 +171,12 @@ class Checkout
                         'amount' => $allocation->amount->toArray(),
                     ]
                 )->all(),
-            ])->all()]);
+            ])->all();
+            $order->update(['discounts' => $discountSnapshots]);
+
+            foreach ($discountSnapshots as $discountSnapshot) {
+                PromotionApplied::dispatch($order, $discountSnapshot);
+            }
 
             $lockedCart->clear();
 
