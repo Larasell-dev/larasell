@@ -16,6 +16,7 @@ use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
+use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Events\InventoryReservationReleased;
 use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Events\OrderCancelled;
@@ -152,6 +153,8 @@ class Order extends Model
                 $payment->transitionTo(PaymentStatus::Cancelled);
             }
 
+            $order->releasePromotionRedemptions();
+
             $restockedAt = null;
             $reservations = $order->inventoryReservations()
                 ->orderBy('product_id')
@@ -213,5 +216,42 @@ class Order extends Model
 
             return $order->refresh();
         });
+    }
+
+    private function releasePromotionRedemptions(): void
+    {
+        $redemptions = $this->promotionRedemptions()
+            ->where('status', PromotionRedemptionStatus::Reserved->value)
+            ->orderBy('promotion_identifier')
+            ->lockForUpdate()
+            ->get();
+        $releasedAt = now();
+
+        foreach ($redemptions as $redemption) {
+            $counter = $this->getConnection()
+                ->table('larasell_promotion_redemption_counters')
+                ->where('promotion_identifier', $redemption->promotion_identifier)
+                ->lockForUpdate()
+                ->first();
+
+            if ($counter === null || $counter->reserved_count < 1) {
+                throw new InvalidArgumentException(
+                    "Promotion [{$redemption->promotion_identifier}] has inconsistent redemption capacity."
+                );
+            }
+
+            $this->getConnection()
+                ->table('larasell_promotion_redemption_counters')
+                ->where('promotion_identifier', $redemption->promotion_identifier)
+                ->update([
+                    'reserved_count' => $counter->reserved_count - 1,
+                    'updated_at' => $releasedAt,
+                ]);
+
+            $redemption->update([
+                'status' => PromotionRedemptionStatus::Released,
+                'released_at' => $releasedAt,
+            ]);
+        }
     }
 }

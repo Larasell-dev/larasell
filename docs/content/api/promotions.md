@@ -288,6 +288,53 @@ When one or more exclusive promotions apply, only the applicable exclusive
 promotion with the highest priority is used. Registration order resolves a tie.
 An inapplicable exclusive promotion does not affect other promotions.
 
+## Redemption limits
+
+Implement `HasRedemptionLimit` to cap how many orders can use a promotion:
+
+```php
+use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
+
+final class LimitedSummerSale implements HasRedemptionLimit, Promotion
+{
+    public function limit(): int
+    {
+        return 100;
+    }
+
+    // ...
+}
+```
+
+The limit is global across all customers. Per-customer redemption limits are
+not currently supported.
+
+Checkout reserves one use of each applied limited promotion. A successful
+payment permanently redeems it. Cancelling an unpaid order releases its
+reserved uses. Redeemed uses remain counted when an order is later refunded or
+cancelled.
+
+Expired promotion reservations are processed by this command:
+
+```bash
+php artisan larasell:release-expired-promotions
+```
+
+The package does not schedule the command. Add it to the application scheduler:
+
+```php [routes/console.php]
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('larasell:release-expired-promotions')
+    ->everyMinute()
+    ->withoutOverlapping();
+```
+
+An expired promotion reservation cancels its unpaid order and releases its
+reserved capacity. The reservation lifetime comes from the selected payment
+method's `inventory_reservation_minutes` setting. The command supports a
+custom batch size with `--batch-size=250`.
+
 ## Order snapshots
 
 Checkout recalculates promotions inside its database transaction. The order

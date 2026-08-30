@@ -9,6 +9,7 @@ use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
+use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
 use Larasell\Larasell\Shipping\ShippingManager;
 
 class LarasellServiceProvider extends ServiceProvider
@@ -34,6 +35,7 @@ class LarasellServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ReleaseExpiredInventoryCommand::class,
+                ReleaseExpiredPromotionRedemptionsCommand::class,
             ]);
 
             $this->publishes([

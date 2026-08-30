@@ -19,6 +19,7 @@ use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\PromotionRedemption;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\ReleaseExpiredPromotionRedemptionsForOrder;
 
 final class LimitedPromotion implements HasRedemptionLimit, Promotion
 {
@@ -186,6 +187,69 @@ it('rolls back payment when reserved promotion capacity is inconsistent', functi
     expect($order->payments->sole()->fresh()->status)->toBe(PaymentStatus::Pending)
         ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
+});
+
+it('releases reserved promotion capacity when an order is cancelled', function () {
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    $order = promotionRedemptionOrder();
+
+    $order->cancel();
+    $order->cancel();
+
+    $redemption = $order->promotionRedemptions()->sole();
+
+    expect($redemption->status)->toBe(PromotionRedemptionStatus::Released)
+        ->and($redemption->released_at)->not->toBeNull()
+        ->and($redemption->redeemed_at)->toBeNull();
+
+    $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'reserved_count' => 0,
+        'redeemed_count' => 0,
+    ]);
+});
+
+it('releases an expired promotion redemption and cancels its unpaid order', function () {
+    $this->travelTo('2026-08-30 12:00:00');
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    $order = promotionRedemptionOrder();
+    $order->promotionRedemptions()->update(['expires_at' => now()->subMinute()]);
+
+    $released = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id);
+    $releasedAgain = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id);
+
+    expect($released)->toBeTrue()
+        ->and($releasedAgain)->toBeFalse()
+        ->and($order->fresh()->status)->toBe(OrderStatus::Cancelled)
+        ->and($order->fresh()->cancellation_reason)->toBe('Promotion redemption expired')
+        ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Released)
+        ->and($order->payments()->sole()->status)->toBe(PaymentStatus::Cancelled);
+});
+
+it('does not release a promotion redemption before it expires', function () {
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    $order = promotionRedemptionOrder();
+    $order->promotionRedemptions()->update(['expires_at' => now()->addMinute()]);
+
+    expect(app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id))->toBeFalse()
+        ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
+        ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
+});
+
+it('releases expired promotion redemptions through the cleanup command', function () {
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    LimitedPromotion::$limit = 2;
+    $expired = promotionRedemptionOrder();
+    $future = promotionRedemptionOrder();
+    $expired->promotionRedemptions()->update(['expires_at' => now()->subMinute()]);
+    $future->promotionRedemptions()->update(['expires_at' => now()->addMinute()]);
+
+    $this->artisan('larasell:release-expired-promotions', ['--batch-size' => 1])
+        ->expectsOutput('Released promotions for 1 expired order.')
+        ->assertSuccessful();
+
+    expect($expired->fresh()->status)->toBe(OrderStatus::Cancelled)
+        ->and($future->fresh()->status)->toBe(OrderStatus::PendingPayment);
 });
 
 afterEach(function () {
