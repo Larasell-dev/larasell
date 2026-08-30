@@ -48,6 +48,7 @@ use Larasell\Larasell\Price;
  * @property Collection<int, OrderItem> $items
  * @property Collection<int, InventoryReservation> $inventoryReservations
  * @property Collection<int, Payment> $payments
+ * @property Collection<int, PromotionRedemption> $promotionRedemptions
  */
 class Order extends Model
 {
@@ -93,6 +94,12 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(app(ModelRegistry::class)->payment->class());
+    }
+
+    /** @return HasMany<PromotionRedemption, $this> */
+    public function promotionRedemptions(): HasMany
+    {
+        return $this->hasMany(app(ModelRegistry::class)->promotionRedemption->class());
     }
 
     public function transitionTo(OrderStatus $status): void
