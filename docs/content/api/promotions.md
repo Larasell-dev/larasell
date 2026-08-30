@@ -276,3 +276,21 @@ Shipping allocations use the `shipping` target and have no order item ID. These
 values remain unchanged when promotion classes or products change later. A
 snapshot created by a coded promotion also contains its normalized `code`;
 automatic promotion snapshots omit that key.
+
+## Events
+
+Promotion lifecycle events are dispatched after their database transaction
+commits:
+
+- `Larasell\Larasell\Events\PromotionCodeApplied`
+- `Larasell\Larasell\Events\PromotionCodeRemoved`
+- `Larasell\Larasell\Events\PromotionApplied`
+
+Code events expose the affected `$cart` and normalized `$code` properties. They
+only fire when the stored codes actually change, so applying an attached code
+or removing a missing code does not dispatch a duplicate event.
+
+`PromotionApplied` exposes the `$order` and its `$discount` snapshot. One event
+is dispatched for each promotion recorded during checkout. Reading
+`$cart->discounts()` does not dispatch events because cart promotions are
+recalculated values rather than durable state changes.

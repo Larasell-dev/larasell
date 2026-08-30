@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Larasell\Larasell\Contracts\CodedPromotion;
 use Larasell\Larasell\Contracts\Promotion;
+use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
@@ -117,6 +118,7 @@ final class PromotionManager
         if (! in_array($code, $codes, true)) {
             $codes[] = $code;
             $cart->update(['promotion_codes' => $codes]);
+            PromotionCodeApplied::dispatch($cart, $code);
         }
 
         return $cart;

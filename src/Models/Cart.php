@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Events\PromotionCodeRemoved;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingOption;
@@ -190,12 +191,19 @@ class Cart extends Model
     public function removePromotionCode(string $code): self
     {
         $code = PromotionManager::normalizeCode($code);
+        $codes = $this->promotionCodes();
+
+        if (! in_array($code, $codes, true)) {
+            return $this;
+        }
+
         $this->update([
             'promotion_codes' => array_values(array_filter(
-                $this->promotionCodes(),
+                $codes,
                 fn (string $attached): bool => $attached !== $code,
             )),
         ]);
+        PromotionCodeRemoved::dispatch($this, $code);
 
         return $this;
     }
