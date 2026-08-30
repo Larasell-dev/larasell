@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/Larasell-dev/larasell/compare/v1.6.0...v1.7.0) (2026-08-30)
+
+
+### Features
+
+* make slugs translatable ([fb86ed5](https://github.com/Larasell-dev/larasell/commit/fb86ed5757f63198a5743c7ac35126a48fc23e85))
+* translatable category titles ([#57](https://github.com/Larasell-dev/larasell/issues/57)) ([03fb996](https://github.com/Larasell-dev/larasell/commit/03fb996f0211235784e7cecbc595d1fce7968065))
+
 ## [1.6.0](https://github.com/Larasell-dev/larasell/compare/v1.5.0...v1.6.0) (2026-08-30)
 
 
