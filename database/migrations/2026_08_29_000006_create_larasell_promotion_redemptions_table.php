@@ -19,7 +19,10 @@ return new class extends Migration
             $table->timestamp('released_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['promotion_identifier', 'order_id']);
+            $table->unique(
+                ['promotion_identifier', 'order_id'],
+                'promotion_redemption_order_unique',
+            );
         });
     }
 
