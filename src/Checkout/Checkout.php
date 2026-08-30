@@ -5,6 +5,9 @@ namespace Larasell\Larasell\Checkout;
 use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Discounts\DiscountAllocation;
+use Larasell\Larasell\Discounts\DiscountResult;
+use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
@@ -18,6 +21,7 @@ use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
+use Larasell\Larasell\Price;
 
 class Checkout
 {
@@ -26,6 +30,7 @@ class Checkout
         private readonly ModelRegistry $models,
         private readonly OrderNumberFactory $orderNumbers,
         private readonly PaymentManager $payments,
+        private readonly PromotionManager $promotions,
     ) {}
 
     /**
@@ -85,6 +90,15 @@ class Checkout
                     : $total->add($lineTotal);
             }
 
+            $discounts = $this->promotions->apply($lockedCart)
+                ->filter(fn (DiscountResult $discount): bool => $discount->total()->isPositive())
+                ->values();
+            $discountTotal = $discounts->reduce(
+                fn (Price $sum, DiscountResult $discount): Price => $sum->add($discount->total()),
+                Price::of(0),
+            );
+            $totalBeforeDiscounts = $shippingOption === null ? $total : $total->add($shippingOption->price);
+
             $order = $this->models->order->query()->create([
                 'number' => $this->orderNumbers->generate(),
                 'currency' => $lockedCart->currency,
@@ -96,14 +110,26 @@ class Checkout
                 'shipping_address' => $data['shipping_address'],
                 'status' => OrderStatus::PendingPayment,
                 'subtotal' => $total,
+                'discount_total' => $discountTotal,
+                'discounts' => [],
                 'shipping_method' => $shippingOption?->method,
                 'shipping_option' => $shippingOption?->handle,
                 'shipping_option_name' => $shippingOption?->name,
                 ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
-                'total' => $shippingOption === null ? $total : $total->add($shippingOption->price),
+                'total' => $totalBeforeDiscounts->subtract($discountTotal),
             ]);
 
+            $orderItemsByTarget = [];
+
             foreach ($items as $item) {
+                $target = 'line:'.$item->getKey();
+                $lineDiscountTotal = $discounts->reduce(
+                    fn (Price $sum, DiscountResult $discount): Price => $sum->add(
+                        collect($discount->allocations)
+                            ->firstWhere('target', $target)?->amount ?? Price::of(0)
+                    ),
+                    Price::of(0),
+                );
                 $orderItem = $order->items()->create([
                     'product_id' => $item->product->getKey(),
                     'product_name' => $item->product->name->get(),
@@ -111,8 +137,10 @@ class Checkout
                     'unit_price' => $item->product->price,
                     'quantity' => $item->quantity,
                     'inventory_quantity' => $item->product->stock === null ? 0 : $item->quantity,
+                    'discount_total' => $lineDiscountTotal,
                     'total' => $item->total(),
                 ]);
+                $orderItemsByTarget[$target] = $orderItem->getKey();
 
                 if ($item->product->stock !== null) {
                     $item->product->decrement('stock', $item->quantity);
@@ -129,6 +157,19 @@ class Checkout
                     InventoryReserved::dispatch($reservation);
                 }
             }
+
+            $order->update(['discounts' => $discounts->map(fn (DiscountResult $discount): array => [
+                'identifier' => $discount->identifier,
+                'name' => $discount->name,
+                'total' => $discount->total()->toArray(),
+                'allocations' => collect($discount->allocations)->map(
+                    fn (DiscountAllocation $allocation): array => [
+                        'target' => $allocation->target === 'shipping' ? 'shipping' : 'line',
+                        'order_item_id' => $orderItemsByTarget[$allocation->target] ?? null,
+                        'amount' => $allocation->amount->toArray(),
+                    ]
+                )->all(),
+            ])->all()]);
 
             $lockedCart->clear();
 

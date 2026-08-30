@@ -18,6 +18,7 @@ use Larasell\Larasell\Price;
  * @property Price $unit_price
  * @property int $quantity
  * @property int $inventory_quantity
+ * @property Price $discount_total
  * @property Price $total
  */
 class OrderItem extends Model
@@ -28,11 +29,16 @@ class OrderItem extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'discount_total' => '{"amount":"0"}',
+    ];
+
     protected $casts = [
         'product_id' => 'integer',
         'quantity' => 'integer',
         'inventory_quantity' => 'integer',
         'unit_price' => PriceCast::class,
+        'discount_total' => PriceCast::class,
         'total' => PriceCast::class,
     ];
 
