@@ -112,7 +112,9 @@ it('allows only one redemption per promotion and order', function () {
 
     PromotionRedemption::query()->create($attributes);
 
-    expect(fn () => PromotionRedemption::query()->create($attributes))
+    expect(fn () => DB::transaction(
+        fn () => PromotionRedemption::query()->create($attributes),
+    ))
         ->toThrow(QueryException::class);
 });
 
