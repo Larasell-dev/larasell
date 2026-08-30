@@ -522,14 +522,14 @@ class ProductController extends Controller
     private function categoryOptions(string $productModel): array
     {
         $categories = $productModel::query()->getModel()->categories()->getRelated()->newQuery()
-            ->orderBy('name')
             ->get()
+            ->sortBy(fn (Model $category): string => $category->getAttribute('name')->get(), SORT_NATURAL | SORT_FLAG_CASE)
             ->groupBy(fn (Model $category): string => (string) ($category->getAttribute('parent_id') ?? 'root'));
 
         $buildTree = function (string $parentId = 'root') use (&$buildTree, $categories): array {
             return $categories->get($parentId, collect())
                 ->map(fn (Model $category): array => [
-                    'label' => $category->getAttribute('name'),
+                    'label' => $category->getAttribute('name')->get(),
                     'value' => (string) $category->getKey(),
                     'children' => $buildTree((string) $category->getKey()),
                 ])
