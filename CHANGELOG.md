@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/Larasell-dev/larasell/compare/v1.4.1...v1.5.0) (2026-08-30)
+
+
+### Features
+
+* add checkout idempotency ([e18f56b](https://github.com/Larasell-dev/larasell/commit/e18f56b7118f3cc831c62e6c96b85b0233833f80))
+* add product variants ([#52](https://github.com/Larasell-dev/larasell/issues/52)) ([e8ab659](https://github.com/Larasell-dev/larasell/commit/e8ab659c8fe02a9ae697801d418f9890a3244c37))
+* add sku and barcodes ([#51](https://github.com/Larasell-dev/larasell/issues/51)) ([8789a3f](https://github.com/Larasell-dev/larasell/commit/8789a3fb74e781db0efb319460e29eb63d32c7f9))
+
 ## [1.4.1](https://github.com/Larasell-dev/larasell/compare/v1.4.0...v1.4.1) (2026-08-30)
 
 
