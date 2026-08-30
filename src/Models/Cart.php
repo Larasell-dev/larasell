@@ -257,6 +257,10 @@ class Cart extends Model
 
     public function assertVariantCanBePurchased(ProductVariant $variant, int $quantity): void
     {
+        if ($variant->status !== Visibility::Visible) {
+            throw new InvalidArgumentException('The product variant is unavailable.');
+        }
+
         $minimum = $variant->minimumQuantity();
         $maximum = $variant->maximumQuantity();
         $stock = $variant->availableStock();

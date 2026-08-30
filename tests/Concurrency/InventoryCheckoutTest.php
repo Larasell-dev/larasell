@@ -7,6 +7,7 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 
 it('allows only one concurrent checkout to purchase the final stock item', function () {
@@ -28,6 +29,7 @@ it('allows only one concurrent checkout to purchase the final stock item', funct
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
+    $variant = $product->defaultVariant();
     $cartIds = collect([1, 2])->map(function () use ($product): int {
         $cart = Cart::query()->create(['currency' => Currency::EUR]);
         $cart->add($product);
@@ -39,7 +41,7 @@ it('allows only one concurrent checkout to purchase the final stock item', funct
     config()->set('database.connections.inventory_blocker', config("database.connections.{$defaultConnection}"));
     $blocker = DB::connection('inventory_blocker');
     $blocker->beginTransaction();
-    $blocker->table($product->getTable())->where('id', $product->getKey())->lockForUpdate()->first();
+    $blocker->table($variant->getTable())->where('id', $variant->getKey())->lockForUpdate()->first();
 
     $children = $cartIds->map(function (int $cartId, int $index): array {
         [$parentSocket, $childSocket] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
@@ -96,6 +98,7 @@ it('allows only one concurrent checkout to purchase the final stock item', funct
 
     expect($results->filter(fn (string $result): bool => $result === 'succeeded'))->toHaveCount(1)
         ->and($results->filter(fn (string $result): bool => str_starts_with($result, 'failed:Cart item quantity exceeds available product stock.')))->toHaveCount(1)
+        ->and($variant->fresh()->stock)->toBe(0)
         ->and(Product::query()->findOrFail($product->getKey())->stock)->toBe(0)
         ->and(Order::query()->count())->toBe(1);
 });
@@ -189,4 +192,82 @@ it('returns one order for concurrent retries with the same idempotency key', fun
         ->and($results->unique()->count())->toBe(1)
         ->and(Order::query()->count())->toBe(1)
         ->and(Product::query()->findOrFail($product->getKey())->stock)->toBe(1);
+});
+
+it('does not block checkout of a different variant from the same product', function () {
+    if (DB::getDriverName() === 'sqlite') {
+        $this->markTestSkipped('SQLite does not provide row-level FOR UPDATE locking.');
+    }
+
+    if (! function_exists('pcntl_fork')) {
+        $this->markTestSkipped('The pcntl extension is required for the concurrency test.');
+    }
+
+    $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+
+    $product = Product::query()->create([
+        'slug' => 'independent-variant-stock',
+        'name' => 'Independent variant stock',
+        'price' => Price::of(1000),
+        'stock' => 10,
+        'allow_backorders' => false,
+        'status' => Visibility::Visible,
+    ]);
+    $size = ProductAttribute::query()->create(['slug' => 'size', 'name' => 'Size']);
+    $smallValue = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
+    $mediumValue = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
+    $product->attributeValues()->attach([$smallValue->id, $mediumValue->id]);
+    [$small, $medium] = $product->generateVariants([$size]);
+    $small->update(['stock' => 1, 'allow_backorders' => false]);
+    $medium->update(['stock' => 1, 'allow_backorders' => false]);
+    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart->add($medium);
+
+    $defaultConnection = config('database.default');
+    config()->set('database.connections.variant_blocker', config("database.connections.{$defaultConnection}"));
+    $blocker = DB::connection('variant_blocker');
+    $blocker->beginTransaction();
+    $blocker->table($small->getTable())->where('id', $small->getKey())->lockForUpdate()->first();
+
+    [$parentSocket, $childSocket] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
+    $pid = pcntl_fork();
+
+    if ($pid === -1) {
+        $blocker->rollBack();
+        throw new RuntimeException('Unable to fork variant checkout process.');
+    }
+
+    if ($pid === 0) {
+        fclose($parentSocket);
+        DB::purge();
+        fwrite($childSocket, "ready\n");
+
+        try {
+            app(Checkout::class)->create(Cart::query()->findOrFail($cart->getKey()), [
+                'customer_email' => 'medium@example.com',
+                'customer_name' => 'Medium Buyer',
+            ]);
+            fwrite($childSocket, "succeeded\n");
+        } catch (Throwable $exception) {
+            fwrite($childSocket, 'failed:'.$exception->getMessage()."\n");
+        }
+
+        fclose($childSocket);
+        exit(0);
+    }
+
+    fclose($childSocket);
+    stream_set_timeout($parentSocket, 3);
+    expect(fgets($parentSocket))->toBe("ready\n");
+    $result = trim((string) fgets($parentSocket));
+    $blocker->commit();
+    pcntl_waitpid($pid, $status);
+    fclose($parentSocket);
+    DB::purge();
+
+    expect($result)->toBe('succeeded')
+        ->and(pcntl_wifexited($status))->toBeTrue()
+        ->and(pcntl_wexitstatus($status))->toBe(0)
+        ->and($small->fresh()->stock)->toBe(1)
+        ->and($medium->fresh()->stock)->toBe(0);
 });

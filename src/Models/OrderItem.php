@@ -13,6 +13,7 @@ use Larasell\Larasell\Price;
  * @property int $id
  * @property int $order_id
  * @property int|null $product_id
+ * @property int|null $product_variant_id
  * @property string $product_name
  * @property string|null $product_slug
  * @property string|null $product_sku
@@ -37,6 +38,7 @@ class OrderItem extends Model
 
     protected $casts = [
         'product_id' => 'integer',
+        'product_variant_id' => 'integer',
         'quantity' => 'integer',
         'inventory_quantity' => 'integer',
         'unit_price' => PriceCast::class,
@@ -48,6 +50,12 @@ class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(app(ModelRegistry::class)->order->class());
+    }
+
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(app(ModelRegistry::class)->productVariant->class(), 'product_variant_id');
     }
 
     /** @return HasOne<InventoryReservation, $this> */

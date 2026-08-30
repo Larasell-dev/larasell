@@ -130,7 +130,7 @@ it('checks out a guest cart with the default cash payment method', function () {
         ->and($product->fresh()->stock)->toBe(3);
 });
 
-it('locks products in a deterministic order', function () {
+it('locks product variants in a deterministic order', function () {
     $firstProduct = Product::query()->create([
         'slug' => 'first-product',
         'name' => 'First product',
@@ -161,8 +161,11 @@ it('locks products in a deterministic order', function () {
     );
 
     expect($queries->contains(fn (string $query): bool => str_contains($query, 'from larasell_cart_items')
-        && str_contains($query, 'order by product_id asc')
-    ))->toBeTrue();
+        && str_contains($query, 'order by product_variant_id asc')
+    ))->toBeTrue()
+        ->and($queries->contains(fn (string $query): bool => str_contains($query, 'from larasell_product_variants')
+        && str_contains($query, 'order by id asc')
+        ))->toBeTrue();
 });
 
 it('keeps snapshots after the source product changes', function () {

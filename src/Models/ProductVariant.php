@@ -98,4 +98,34 @@ class ProductVariant extends Model
     {
         return $this->max_quantity ?? $this->product->max_quantity;
     }
+
+    public function decrementInventory(int $quantity): void
+    {
+        if ($this->stock === null) {
+            $this->product->decrement('stock', $quantity);
+
+            return;
+        }
+
+        $this->decrement('stock', $quantity);
+
+        if ($this->is_default) {
+            $this->product->decrement('stock', $quantity);
+        }
+    }
+
+    public function incrementInventory(int $quantity): void
+    {
+        if ($this->stock === null) {
+            $this->product->increment('stock', $quantity);
+
+            return;
+        }
+
+        $this->increment('stock', $quantity);
+
+        if ($this->is_default) {
+            $this->product->increment('stock', $quantity);
+        }
+    }
 }
