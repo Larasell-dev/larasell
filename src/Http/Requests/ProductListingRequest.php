@@ -49,16 +49,10 @@ class ProductListingRequest extends FormRequest
     public function products(): Builder
     {
         $category = $this->category();
-        $categoryIds = $category->descendants()
-            ->pluck('id')
-            ->push($category->id);
 
         $products = app(ModelRegistry::class)->product->query()
             ->visible()
-            ->whereHas(
-                'categories',
-                fn (Builder $query) => $query->whereIn($query->getModel()->qualifyColumn('id'), $categoryIds),
-            );
+            ->inCategoryTree($category);
 
         foreach ($this->attributeFilters() as $attributeSlug => $valueSlugs) {
             $products->whereHas(
