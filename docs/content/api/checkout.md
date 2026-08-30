@@ -51,6 +51,38 @@ class CheckoutController
 }
 ```
 
+## Idempotent checkout
+
+Pass a unique key generated for the customer's checkout submission to make
+retries return the original order and payment instead of creating duplicates:
+
+```php
+$result = $checkout->create(
+    cart: $cart,
+    data: $data,
+    paymentMethod: 'stripe',
+    paymentOptions: $paymentOptions,
+    idempotencyKey: $request->header('Idempotency-Key'),
+);
+```
+
+Keys must be non-empty strings of at most 255 characters. Generate a new key
+for each intentional checkout submission and retain it when retrying a request
+after a timeout or lost response. Do not derive it from the cart ID, because a
+cart may be used for more than one intentional checkout over its lifetime.
+
+Larasell stores a fingerprint of the cart, customer input, payment method, and
+payment options. Reusing a key with different input throws an
+`InvalidArgumentException`. Concurrent requests using the same key and input
+resolve to the same order and payment.
+
+Payment providers may be called again with the same persisted payment when an
+idempotent checkout is retried. Providers must therefore use the payment ID as
+their provider-side idempotency identity. If provider communication throws,
+Larasell keeps the local payment pending because its remote outcome is unknown
+and rethrows the exception. Retry checkout with the same key to recover the
+provider operation.
+
 `customer_id` is optional. Leave it `null` for guest checkout. The email,
 name, addresses, product details, and prices are always copied to the order,
 so later changes to customer or product records do not rewrite order history.

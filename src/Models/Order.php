@@ -28,6 +28,8 @@ use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 /**
  * @property int $id
  * @property string $number
+ * @property string|null $idempotency_key
+ * @property string|null $idempotency_fingerprint
  * @property Currency $currency
  * @property int|null $customer_id
  * @property string $customer_email
