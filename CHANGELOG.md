@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/Larasell-dev/larasell/compare/v1.5.0...v1.6.0) (2026-08-30)
+
+
+### Features
+
+* add scopes to query products by category easier ([c0c4c08](https://github.com/Larasell-dev/larasell/commit/c0c4c0892ff399d252fc56ea96e7fc9d321e0bed))
+
 ## [1.5.0](https://github.com/Larasell-dev/larasell/compare/v1.4.1...v1.5.0) (2026-08-30)
 
 
