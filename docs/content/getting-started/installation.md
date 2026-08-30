@@ -5,6 +5,8 @@ description: Install Larasell in a Laravel application.
 
 # Installation
 
+Larasell requires PHP 8.3 or newer and Laravel 13.23 or newer.
+
 Install Larasell with Composer:
 
 ```bash
