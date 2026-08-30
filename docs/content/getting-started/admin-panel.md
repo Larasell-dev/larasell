@@ -34,8 +34,9 @@ php artisan vendor:publish --tag=larasell-admin-assets
 The provider creates a separate `larasell-admin` auth guard and stores
 admin users in the `larasell_admin_users` table.
 
-The admin panel is a React Inertia app. Install and configure Inertia in
-the host Laravel application before registering the admin provider:
+The admin panel is a React Inertia app. Inertia is intentionally not a required
+dependency of the Larasell commerce core. Install and configure it in the host
+Laravel application before registering the admin provider:
 
 ```bash
 composer require inertiajs/inertia-laravel

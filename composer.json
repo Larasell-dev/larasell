@@ -27,6 +27,7 @@
     }
   },
   "require-dev": {
+    "inertiajs/inertia-laravel": "^3.0",
     "orchestra/testbench": "^11.0",
     "pestphp/pest": "^5.1",
     "laravel/pint": "^1.0",
@@ -35,7 +36,11 @@
   "require": {
     "ext-bcmath": "*",
     "ext-intl": "*",
-    "inertiajs/inertia-laravel": "^3.0"
+    "laravel/framework": "^13.23",
+    "php": "^8.3"
+  },
+  "suggest": {
+    "inertiajs/inertia-laravel": "Required when using the optional Larasell admin panel."
   },
   "scripts": {
     "pest": "pest tests/Unit tests/Feature tests/Admin tests/Concurrency",
