@@ -4,6 +4,7 @@ namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
@@ -18,6 +19,7 @@ class LarasellServiceProvider extends ServiceProvider
 
         $this->app->singleton(ShippingManager::class);
         $this->app->singleton(PaymentManager::class);
+        $this->app->singleton(PromotionManager::class);
         $this->app->singleton(ModelRegistry::class);
 
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
