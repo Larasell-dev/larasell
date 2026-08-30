@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Checkout;
 use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
@@ -25,6 +26,7 @@ use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
 class Checkout
 {
@@ -34,6 +36,8 @@ class Checkout
         private readonly OrderNumberFactory $orderNumbers,
         private readonly PaymentManager $payments,
         private readonly PromotionManager $promotions,
+        private readonly PromotionCustomerResolver $promotionCustomers,
+        private readonly PromotionRedemptionCounters $promotionRedemptions,
     ) {}
 
     /**
@@ -122,8 +126,8 @@ class Checkout
                 'total' => $totalBeforeDiscounts->subtract($discountTotal),
             ]);
 
-            foreach ($discounts as $discount) {
-                if ($discount->redemptionLimit !== null) {
+            foreach ($discounts->sortBy('identifier') as $discount) {
+                if ($discount->redemptionLimits !== null) {
                     $this->reservePromotionRedemption($order, $discount, $data, $method->inventoryReservationMinutes);
                 }
             }
@@ -282,35 +286,27 @@ class Checkout
         ?int $reservationMinutes,
     ): void {
         $now = now();
+        $customerIdentifier = $this->promotionCustomers->resolve(
+            $data['customer_id'] ?? null,
+            $data['customer_email'],
+        );
 
-        $this->database->table('larasell_promotion_redemption_counters')->insertOrIgnore([
-            'promotion_identifier' => $discount->identifier,
-            'reserved_count' => 0,
-            'redeemed_count' => 0,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $counter = $this->database->table('larasell_promotion_redemption_counters')
-            ->where('promotion_identifier', $discount->identifier)
-            ->lockForUpdate()
-            ->first();
-
-        if ($counter->reserved_count + $counter->redeemed_count >= $discount->redemptionLimit) {
-            throw new InvalidArgumentException(
-                "Promotion [{$discount->identifier}] has reached its redemption limit."
-            );
+        if (trim($customerIdentifier) === '') {
+            throw new InvalidArgumentException('The promotion customer resolver must return a customer identifier.');
         }
 
-        $this->database->table('larasell_promotion_redemption_counters')
-            ->where('promotion_identifier', $discount->identifier)
-            ->increment('reserved_count', 1, ['updated_at' => $now]);
+        $this->promotionRedemptions->reserve(
+            $discount->identifier,
+            $customerIdentifier,
+            $discount->redemptionLimits,
+            $now,
+        );
 
         $order->promotionRedemptions()->create([
             'promotion_identifier' => $discount->identifier,
-            'customer_identifier' => isset($data['customer_id'])
-                ? 'customer:'.$data['customer_id']
-                : 'email:'.strtolower(trim($data['customer_email'])),
+            'customer_identifier' => $customerIdentifier,
+            'global_limit' => $discount->redemptionLimits->global,
+            'customer_limit' => $discount->redemptionLimits->customer,
             'status' => PromotionRedemptionStatus::Reserved,
             'expires_at' => $reservationMinutes === null ? null : $now->copy()->addMinutes($reservationMinutes),
         ]);

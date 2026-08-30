@@ -297,7 +297,7 @@ use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 
 final class LimitedSummerSale implements HasRedemptionLimit, Promotion
 {
-    public function limit(): int
+    public function limit(): int|array
     {
         return 100;
     }
@@ -306,8 +306,43 @@ final class LimitedSummerSale implements HasRedemptionLimit, Promotion
 }
 ```
 
-The limit is global across all customers. Per-customer redemption limits are
-not currently supported.
+A plain integer defines a global limit. Return an array to define global and
+per-customer limits together:
+
+```php
+public function limit(): int|array
+{
+    return [
+        'global' => 1000,
+        'customer' => 1,
+    ];
+}
+```
+
+Either array key may be omitted, so `['customer' => 1]` creates a
+customer-only limit. All configured limits must be positive integers.
+
+By default, Larasell identifies a customer by `customer_id` when checkout
+provides one, and otherwise by normalized email address. Applications can
+replace this behavior by binding the resolver contract:
+
+```php [app/Providers/AppServiceProvider.php]
+use App\Commerce\PromotionCustomerResolver;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver as PromotionCustomerResolverContract;
+
+$this->app->bind(
+    PromotionCustomerResolverContract::class,
+    PromotionCustomerResolver::class,
+);
+```
+
+The custom resolver implements:
+
+```php
+public function resolve(?int $customerId, string $email): string;
+```
+
+It must return a stable, non-empty identifier for the customer.
 
 Checkout reserves one use of each applied limited promotion. A successful
 payment permanently redeems it. Cancelling an unpaid order releases its

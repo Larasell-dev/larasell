@@ -4,5 +4,6 @@ namespace Larasell\Larasell\Contracts\Promotions;
 
 interface HasRedemptionLimit
 {
-    public function limit(): int;
+    /** @return int|array{global?: int, customer?: int} */
+    public function limit(): int|array;
 }

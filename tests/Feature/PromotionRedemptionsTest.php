@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
+use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\PromotionManager;
@@ -23,9 +24,9 @@ use Larasell\Larasell\Promotions\ReleaseExpiredPromotionRedemptionsForOrder;
 
 final class LimitedPromotion implements HasRedemptionLimit, Promotion
 {
-    public static int $limit = 1;
+    public static int|array $limit = 1;
 
-    public function limit(): int
+    public function limit(): int|array
     {
         return self::$limit;
     }
@@ -37,6 +38,14 @@ final class LimitedPromotion implements HasRedemptionLimit, Promotion
             name: 'Limited promotion',
             allocations: $context->fixedAmountOff(Price::of(100)),
         );
+    }
+}
+
+final class TestPromotionCustomerResolver implements PromotionCustomerResolver
+{
+    public function resolve(?int $customerId, string $email): string
+    {
+        return 'resolved:'.strstr($email, '@', true);
     }
 }
 
@@ -148,9 +157,94 @@ it('rejects invalid promotion redemption limits', function () {
         ->toThrow(InvalidArgumentException::class, 'must be a positive integer');
 });
 
+it('rejects invalid structured promotion redemption limits', function (array $limit) {
+    LimitedPromotion::$limit = $limit;
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+
+    expect(fn () => promotionRedemptionOrder())->toThrow(InvalidArgumentException::class);
+})->with([
+    'empty limits' => [[]],
+    'zero global limit' => [['global' => 0]],
+    'non-integer customer limit' => [['customer' => '1']],
+    'unknown limit' => [['order' => 1]],
+]);
+
+it('enforces a redemption limit per customer', function () {
+    LimitedPromotion::$limit = ['global' => 3, 'customer' => 1];
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+    promotionRedemptionOrder();
+    $repeatCustomerCart = promotionRedemptionCart();
+
+    expect(fn () => app(Checkout::class)->create($repeatCustomerCart, [
+        'customer_email' => 'REDEMPTIONS@example.com',
+        'customer_name' => 'Repeat Customer',
+    ]))->toThrow(
+        InvalidArgumentException::class,
+        'Promotion [limited-promotion] has reached its customer redemption limit.',
+    );
+
+    $otherCustomerOrder = app(Checkout::class)->create(promotionRedemptionCart(), [
+        'customer_email' => 'other@example.com',
+        'customer_name' => 'Other Customer',
+    ])->order;
+
+    expect($repeatCustomerCart->fresh()->items)->toHaveCount(1)
+        ->and($otherCustomerOrder->promotionRedemptions()->sole()->customer_identifier)->toBe('email:other@example.com');
+
+    $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'reserved_count' => 2,
+    ]);
+    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'customer_identifier' => 'email:redemptions@example.com',
+        'reserved_count' => 1,
+    ]);
+    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'customer_identifier' => 'email:other@example.com',
+        'reserved_count' => 1,
+    ]);
+});
+
+it('supports customer-only redemption limits and a custom customer resolver', function () {
+    LimitedPromotion::$limit = ['customer' => 1];
+    $this->app->bind(PromotionCustomerResolver::class, TestPromotionCustomerResolver::class);
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+
+    $order = app(Checkout::class)->create(promotionRedemptionCart(), [
+        'customer_email' => 'buyer@example.com',
+        'customer_name' => 'Buyer',
+    ])->order;
+
+    expect($order->promotionRedemptions()->sole()->customer_identifier)->toBe('resolved:buyer');
+
+    $this->assertDatabaseMissing('larasell_promotion_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+    ]);
+    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'customer_identifier' => 'resolved:buyer',
+        'reserved_count' => 1,
+    ]);
+});
+
+it('uses the customer id as the default redemption identity when available', function () {
+    LimitedPromotion::$limit = ['customer' => 1];
+    app(PromotionManager::class)->register(LimitedPromotion::class);
+
+    $order = app(Checkout::class)->create(promotionRedemptionCart(), [
+        'customer_id' => 42,
+        'customer_email' => 'buyer@example.com',
+        'customer_name' => 'Buyer',
+    ])->order;
+
+    expect($order->promotionRedemptions()->sole()->customer_identifier)->toBe('customer:42');
+});
+
 it('redeems reserved promotion capacity when payment succeeds', function () {
     $this->travelTo(Carbon::parse('2026-08-30 12:00:00'));
-    LimitedPromotion::$limit = 2;
+    LimitedPromotion::$limit = ['global' => 2, 'customer' => 2];
     app(PromotionManager::class)->register(LimitedPromotion::class);
     $order = promotionRedemptionOrder();
     $expiresAt = $order->promotionRedemptions()->sole()->expires_at;
@@ -172,6 +266,12 @@ it('redeems reserved promotion capacity when payment succeeds', function () {
         'reserved_count' => 0,
         'redeemed_count' => 1,
     ]);
+    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'customer_identifier' => 'email:redemptions@example.com',
+        'reserved_count' => 0,
+        'redeemed_count' => 1,
+    ]);
 });
 
 it('rolls back payment when reserved promotion capacity is inconsistent', function () {
@@ -190,6 +290,7 @@ it('rolls back payment when reserved promotion capacity is inconsistent', functi
 });
 
 it('releases reserved promotion capacity when an order is cancelled', function () {
+    LimitedPromotion::$limit = ['global' => 1, 'customer' => 1];
     app(PromotionManager::class)->register(LimitedPromotion::class);
     $order = promotionRedemptionOrder();
 
@@ -204,6 +305,12 @@ it('releases reserved promotion capacity when an order is cancelled', function (
 
     $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
         'promotion_identifier' => 'limited-promotion',
+        'reserved_count' => 0,
+        'redeemed_count' => 0,
+    ]);
+    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+        'promotion_identifier' => 'limited-promotion',
+        'customer_identifier' => 'email:redemptions@example.com',
         'reserved_count' => 0,
         'redeemed_count' => 0,
     ]);

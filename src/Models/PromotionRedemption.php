@@ -13,6 +13,8 @@ use Larasell\Larasell\Enums\PromotionRedemptionStatus;
  * @property int $order_id
  * @property string $promotion_identifier
  * @property string|null $customer_identifier
+ * @property int|null $global_limit
+ * @property int|null $customer_limit
  * @property PromotionRedemptionStatus $status
  * @property Carbon|null $expires_at
  * @property Carbon|null $redeemed_at
@@ -28,6 +30,8 @@ class PromotionRedemption extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'global_limit' => 'integer',
+        'customer_limit' => 'integer',
         'status' => PromotionRedemptionStatus::class,
         'expires_at' => 'datetime',
         'redeemed_at' => 'datetime',

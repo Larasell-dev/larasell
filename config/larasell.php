@@ -16,6 +16,7 @@ use Larasell\Larasell\Models\Refund;
 use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\OfflinePaymentProvider;
+use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
 
 return [
     'models' => [
@@ -45,6 +46,10 @@ return [
         'generator' => SequentialOrderNumberGenerator::class,
         'prefix' => env('LARASELL_ORDER_NUMBER_PREFIX', 'LS-'),
         'padding' => 6,
+    ],
+
+    'promotions' => [
+        'customer_resolver' => DefaultPromotionCustomerResolver::class,
     ],
 
     'payments' => [

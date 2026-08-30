@@ -14,6 +14,7 @@ use Larasell\Larasell\Events\PromotionCodeApplied;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\RedemptionLimits;
 
 final class PromotionManager
 {
@@ -80,15 +81,9 @@ final class PromotionManager
 
         foreach ($selected as [$promotion, $result]) {
 
-            $redemptionLimit = $promotion instanceof HasRedemptionLimit
-                ? $promotion->limit()
+            $redemptionLimits = $promotion instanceof HasRedemptionLimit
+                ? RedemptionLimits::from($promotion->limit())
                 : null;
-
-            if ($redemptionLimit !== null && $redemptionLimit < 1) {
-                throw new InvalidArgumentException(
-                    "Promotion [{$result->identifier}] redemption limit must be a positive integer."
-                );
-            }
 
             $allocations = [];
 
@@ -110,7 +105,7 @@ final class PromotionManager
                 $result->name,
                 $allocations,
                 $promotion instanceof HasCode ? self::normalizeCode($promotion->code()) : null,
-                $redemptionLimit,
+                $redemptionLimits,
             ));
         }
 

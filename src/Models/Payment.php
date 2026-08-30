@@ -23,6 +23,7 @@ use Larasell\Larasell\Events\PaymentPending;
 use Larasell\Larasell\Events\PaymentSucceeded;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 use Larasell\Larasell\Refunds\RefundRequest;
 
 /**
@@ -284,31 +285,7 @@ class Payment extends Model
         $redeemedAt = now();
 
         foreach ($redemptions as $redemption) {
-            $counter = $this->getConnection()
-                ->table('larasell_promotion_redemption_counters')
-                ->where('promotion_identifier', $redemption->promotion_identifier)
-                ->lockForUpdate()
-                ->first();
-
-            if ($counter === null || $counter->reserved_count < 1) {
-                throw new InvalidArgumentException(
-                    "Promotion [{$redemption->promotion_identifier}] has inconsistent redemption capacity."
-                );
-            }
-
-            $this->getConnection()
-                ->table('larasell_promotion_redemption_counters')
-                ->where('promotion_identifier', $redemption->promotion_identifier)
-                ->update([
-                    'reserved_count' => $counter->reserved_count - 1,
-                    'redeemed_count' => $counter->redeemed_count + 1,
-                    'updated_at' => $redeemedAt,
-                ]);
-
-            $redemption->update([
-                'status' => PromotionRedemptionStatus::Redeemed,
-                'redeemed_at' => $redeemedAt,
-            ]);
+            app(PromotionRedemptionCounters::class)->redeem($redemption, $redeemedAt);
         }
     }
 

@@ -23,6 +23,7 @@ use Larasell\Larasell\Events\OrderCancelled;
 use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
 /**
  * @property int $id
@@ -228,30 +229,7 @@ class Order extends Model
         $releasedAt = now();
 
         foreach ($redemptions as $redemption) {
-            $counter = $this->getConnection()
-                ->table('larasell_promotion_redemption_counters')
-                ->where('promotion_identifier', $redemption->promotion_identifier)
-                ->lockForUpdate()
-                ->first();
-
-            if ($counter === null || $counter->reserved_count < 1) {
-                throw new InvalidArgumentException(
-                    "Promotion [{$redemption->promotion_identifier}] has inconsistent redemption capacity."
-                );
-            }
-
-            $this->getConnection()
-                ->table('larasell_promotion_redemption_counters')
-                ->where('promotion_identifier', $redemption->promotion_identifier)
-                ->update([
-                    'reserved_count' => $counter->reserved_count - 1,
-                    'updated_at' => $releasedAt,
-                ]);
-
-            $redemption->update([
-                'status' => PromotionRedemptionStatus::Released,
-                'released_at' => $releasedAt,
-            ]);
+            app(PromotionRedemptionCounters::class)->release($redemption, $releasedAt);
         }
     }
 }
