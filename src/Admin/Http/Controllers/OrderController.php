@@ -92,7 +92,7 @@ class OrderController extends Controller
                 'createdAt' => $order->getAttribute('created_at')->toIso8601String(),
                 'items' => $order->getRelation('items')->map(fn (Model $item): array => [
                     'id' => $item->getKey(),
-                    'name' => $item->getAttribute('product_name'),
+                    'name' => $item->getAttribute('product_name')->get(),
                     'slug' => $item->getAttribute('product_slug'),
                     'unitPrice' => $item->getAttribute('unit_price')->toArray(),
                     'quantity' => $item->getAttribute('quantity'),

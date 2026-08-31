@@ -40,8 +40,8 @@ it('keeps variant snapshots unchanged when catalog data changes', function () {
     [$cart, $variant, $size, $small] = orderSnapshotVariantCart();
     $cart->add($variant);
     $item = orderSnapshotCheckout($cart)->items->sole();
+    $productNameSnapshot = $item->product_name->all();
     $snapshot = $item->only([
-        'product_name',
         'product_slug',
         'product_sku',
         'product_barcode',
@@ -54,7 +54,10 @@ it('keeps variant snapshots unchanged when catalog data changes', function () {
     $size->update(['name' => 'Renamed size', 'slug' => 'renamed-size']);
     $small->update(['name' => 'Renamed small', 'slug' => 'renamed-small']);
 
-    expect($item->fresh()->only(array_keys($snapshot)))->toBe($snapshot);
+    $item->refresh();
+
+    expect($item->product_name->all())->toBe($productNameSnapshot)
+        ->and($item->only(array_keys($snapshot)))->toBe($snapshot);
 });
 
 it('keeps historical variant snapshots after the variant is deleted', function () {
@@ -83,7 +86,10 @@ it('snapshots simple products without variant options', function () {
 
     $item = orderSnapshotCheckout($cart)->items->sole();
 
-    expect($item->variant_name)->toBe('Simple product')
+    expect($item->product_name->all())->toEqual([
+        'en' => 'Simple product',
+        'de' => 'Einfaches Produkt',
+    ])->and($item->variant_name)->toBe('Simple product')
         ->and($item->variant_options)->toBe([]);
 });
 
