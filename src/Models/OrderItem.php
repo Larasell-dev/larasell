@@ -7,14 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Larasell\Larasell\Casts\PriceCast;
+use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Translatable;
 
 /**
  * @property int $id
  * @property int $order_id
  * @property int|null $product_id
  * @property int|null $product_variant_id
- * @property string $product_name
+ * @property Translatable $product_name
  * @property string|null $product_slug
  * @property string|null $product_sku
  * @property string|null $product_barcode
@@ -41,6 +43,7 @@ class OrderItem extends Model
     protected $casts = [
         'product_id' => 'integer',
         'product_variant_id' => 'integer',
+        'product_name' => TranslatableCast::class,
         'quantity' => 'integer',
         'inventory_quantity' => 'integer',
         'variant_options' => 'array',

@@ -191,7 +191,7 @@ class Checkout
                     $orderItem = $order->items()->create([
                         'product_id' => $item->product->getKey(),
                         'product_variant_id' => $item->variant->getKey(),
-                        'product_name' => $item->product->name->get(),
+                        'product_name' => $item->product->name,
                         'product_slug' => $item->product->slug->get(),
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
