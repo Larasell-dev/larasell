@@ -2,11 +2,13 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
@@ -49,6 +51,7 @@ use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
  * @property string|null $shipping_option
  * @property string|null $shipping_option_name
  * @property Price|null $shipping_price
+ * @property SupportCollection<string, mixed> $metadata
  * @property Collection<int, OrderItem> $items
  * @property Collection<int, InventoryReservation> $inventoryReservations
  * @property Collection<int, Payment> $payments
@@ -65,6 +68,7 @@ class Order extends Model
     protected $attributes = [
         'discount_total' => '{"amount":"0"}',
         'discounts' => '[]',
+        'metadata' => '[]',
     ];
 
     protected $casts = [
@@ -80,6 +84,7 @@ class Order extends Model
         'discounts' => 'array',
         'total' => PriceCast::class,
         'shipping_price' => PriceCast::class,
+        'metadata' => AsCollection::class,
     ];
 
     /** @return HasMany<OrderItem, $this> */

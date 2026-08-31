@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ use Larasell\Larasell\Shipping\ShippingOption;
  * @property int|null $user_id
  * @property string|null $shipping_option
  * @property array<int, string> $promotion_codes
+ * @property SupportCollection<string, mixed> $metadata
  * @property Collection<int, CartItem> $items
  */
 class Cart extends Model
@@ -35,11 +37,13 @@ class Cart extends Model
     protected $guarded = [];
 
     protected $attributes = [
+        'metadata' => '[]',
         'promotion_codes' => '[]',
     ];
 
     protected $casts = [
         'currency' => Currency::class,
+        'metadata' => AsCollection::class,
         'promotion_codes' => 'array',
         'user_id' => 'integer',
     ];

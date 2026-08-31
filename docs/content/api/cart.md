@@ -75,6 +75,36 @@ $formattedTotal = $total === null ? null : Price::format($total, $cart->currency
 
 Empty carts return `null` from `total()`.
 
+## Cart metadata
+
+Use metadata for application-specific information that applies to the whole
+cart, such as delivery instructions or a table number.
+
+```php
+$cart->metadata->put('delivery_instructions', 'Leave at reception');
+$cart->metadata->put('table_number', 12);
+
+$instructions = $cart->metadata->get('delivery_instructions');
+$fallback = $cart->metadata->get('missing_key', 'Not provided');
+
+$cart->metadata->forget('table_number');
+$cart->save();
+```
+
+Metadata is a Laravel collection backed by a JSON column. Collection mutations
+are persisted when the cart is saved. You can also replace the complete value
+when creating or updating a cart. Metadata is copied to the order during
+checkout.
+
+```php
+$cart->update([
+    'metadata' => ['delivery_instructions' => 'Leave at reception'],
+]);
+```
+
+Metadata is informational. Prices, discounts, inventory, and other trusted
+commerce data should be calculated by server-side APIs instead.
+
 ## Shipping methods
 
 Shipping methods receive the cart and may register one or more options. Each
