@@ -1,6 +1,15 @@
 {
   "name": "larasell-dev/larasell",
   "description": "An e-commerce package built on top of Laravel",
+  "keywords": [
+    "commerce",
+    "e-commerce",
+    "ecommerce",
+    "laravel",
+    "laravel-package",
+    "shop"
+  ],
+  "homepage": "https://larasell.dev",
   "type": "library",
   "license": "proprietary",
   "authors": [
@@ -9,6 +18,12 @@
       "email": "nils@larasell.dev"
     }
   ],
+  "support": {
+    "email": "nils@larasell.dev",
+    "issues": "https://github.com/Larasell-dev/larasell/issues",
+    "source": "https://github.com/Larasell-dev/larasell",
+    "docs": "https://larasell.dev"
+  },
   "autoload": {
     "psr-4": {
       "Larasell\\Larasell\\": "src"
