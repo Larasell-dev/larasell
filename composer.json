@@ -47,6 +47,27 @@
     "pint": "pint",
     "test": "@pest"
   },
+  "archive": {
+    "exclude": [
+      "/.build",
+      "/.github",
+      "/.gitignore",
+      "/.phpunit.result.cache",
+      "/.release-please-manifest.json",
+      "/composer.lock",
+      "/docs",
+      "/node_modules",
+      "/package-lock.json",
+      "/package.json",
+      "/phpunit.xml",
+      "/release-please-config.json",
+      "/tests",
+      "/tsconfig.json",
+      "/vendor",
+      "/version.txt",
+      "/vite.config.ts"
+    ]
+  },
   "config": {
     "allow-plugins": {
       "pestphp/pest-plugin": true
