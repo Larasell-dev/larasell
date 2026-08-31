@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Checkout;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Contracts\PaymentProvider;
@@ -167,6 +168,7 @@ class Checkout
                     'shipping_method' => $shippingOption?->method,
                     'shipping_option' => $shippingOption?->handle,
                     'shipping_option_name' => $shippingOption?->name,
+                    'metadata' => $lockedCart->metadata,
                     ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
                     'total' => $totalBeforeDiscounts->subtract($discountTotal),
                 ]);
@@ -376,6 +378,7 @@ class Checkout
         $input = [
             'cart_type' => $cart->getMorphClass(),
             'cart_id' => $cart->getKey(),
+            'metadata' => $cart->metadata,
             'items' => $items,
             'data' => $data,
             'payment_method' => $paymentMethod,
@@ -389,6 +392,10 @@ class Checkout
     {
         if ($value instanceof Address) {
             return $this->canonicalize($value->toArray());
+        }
+
+        if ($value instanceof Collection) {
+            return $this->canonicalize($value->all());
         }
 
         if (! is_array($value)) {
