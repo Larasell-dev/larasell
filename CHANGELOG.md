@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/Larasell-dev/larasell/compare/v1.7.0...v1.7.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* store translated product titles in order ([f03be0b](https://github.com/Larasell-dev/larasell/commit/f03be0bd0cf6de18f811c9e546ce33dcdbdb24db))
+
 ## [1.7.0](https://github.com/Larasell-dev/larasell/compare/v1.6.0...v1.7.0) (2026-08-30)
 
 
