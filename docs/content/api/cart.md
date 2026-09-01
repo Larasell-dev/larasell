@@ -105,6 +105,32 @@ $cart->update([
 Metadata is informational. Prices, discounts, inventory, and other trusted
 commerce data should be calculated by server-side APIs instead.
 
+## Cart item metadata
+
+Pass metadata as the third argument to `add`, or as the named `metadata`
+argument, for application-specific information that belongs to one cart line:
+
+```php
+$item = $cart->add($burger, quantity: 1, metadata: [
+    'belongs_to' => 'Alice',
+    'customizations' => [
+        'without' => ['onions'],
+        'extra' => ['cheese'],
+    ],
+]);
+```
+
+Metadata is part of a cart line's identity. Adding the same variant with the
+same metadata increases the existing line quantity. Different metadata creates
+a separate line, so two people can order differently customized versions of
+the same product. `set` and `remove` accept the same optional metadata argument
+to address the matching line.
+
+Cart item metadata is copied to the order item during checkout. Use it for
+descriptive application data. A customization that changes price, inventory,
+tax, or purchasing rules should be modeled and validated by the application as
+a product variant, add-on product, or another structured commerce concept.
+
 ## Shipping methods
 
 Shipping methods receive the cart and may register one or more options. Each

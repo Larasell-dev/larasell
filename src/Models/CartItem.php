@@ -2,9 +2,11 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Price;
 
 /**
@@ -13,6 +15,7 @@ use Larasell\Larasell\Price;
  * @property int $product_id
  * @property int $product_variant_id
  * @property int $quantity
+ * @property SupportCollection<string, mixed> $metadata
  * @property Product $product
  * @property ProductVariant $variant
  */
@@ -24,7 +27,12 @@ class CartItem extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'metadata' => '[]',
+    ];
+
     protected $casts = [
+        'metadata' => AsCollection::class,
         'quantity' => 'integer',
     ];
 
