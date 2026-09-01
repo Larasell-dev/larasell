@@ -10,7 +10,7 @@ final readonly class Address implements JsonSerializable
     /** @var array<int, string> */
     public array $street;
 
-    /** @param array<int, string>|string $street */
+    /** @param array<int, mixed>|string $street */
     public function __construct(
         public string $country,
         public string $firstName,
@@ -25,7 +25,7 @@ final readonly class Address implements JsonSerializable
         public ?string $company = null,
         public ?string $taxId = null,
     ) {
-        $this->street = is_array($street) ? array_values($street) : [$street];
+        $street = is_array($street) ? array_values($street) : [$street];
 
         foreach ([
             'country' => $country,
@@ -39,15 +39,17 @@ final readonly class Address implements JsonSerializable
             }
         }
 
-        if ($this->street === []) {
+        if ($street === []) {
             throw new InvalidArgumentException('The address must contain one or more non-empty street lines.');
         }
 
-        foreach ($this->street as $line) {
+        foreach ($street as $line) {
             if (! is_string($line) || trim($line) === '') {
                 throw new InvalidArgumentException('The address must contain one or more non-empty street lines.');
             }
         }
+
+        $this->street = $street;
 
         if ($email !== null && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new InvalidArgumentException('The address email must be valid.');

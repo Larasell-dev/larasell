@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 
-/** @implements CastsAttributes<Address|null, Address|array<string, mixed>|null> */
+/** @implements CastsAttributes<Address|null, mixed> */
 class AddressCast implements CastsAttributes
 {
     public function get(Model $model, string $key, mixed $value, array $attributes): ?Address

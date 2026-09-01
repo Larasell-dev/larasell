@@ -8,7 +8,7 @@ use Larasell\Larasell\Price;
 final class ProportionalDiscountAllocator
 {
     /**
-     * @param  array<string, Price>  $eligibleAmounts
+     * @param  array<string, mixed>  $eligibleAmounts
      * @return array<int, DiscountAllocation>
      */
     public function allocate(Price $discount, array $eligibleAmounts): array

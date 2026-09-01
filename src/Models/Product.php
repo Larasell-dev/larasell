@@ -260,7 +260,7 @@ class Product extends Model
     }
 
     /**
-     * @param  array<int, ProductAttribute>  $dimensions
+     * @param  array<int, mixed>  $dimensions
      * @return EloquentCollection<int, ProductVariant>
      */
     public function generateVariants(array $dimensions): EloquentCollection
@@ -398,7 +398,7 @@ class Product extends Model
     }
 
     /**
-     * @param  Collection<int, ProductAttributeValue>  $values
+     * @param  Collection<int, mixed>  $values
      */
     private function assertValidVariantValues(Collection $values): void
     {

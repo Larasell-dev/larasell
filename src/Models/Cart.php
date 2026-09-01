@@ -69,7 +69,7 @@ class Cart extends Model
             ->get()
             ->first(fn (CartItem $item): bool => $this->normalizeMetadata($item->metadata->all()) === $metadata);
 
-        $quantity = $quantity + ($item?->quantity ?? 0);
+        $quantity = $quantity + ($item->quantity ?? 0);
         $this->assertVariantCanBePurchased($variant, $quantity);
         $this->assertVariantCanBePurchased(
             $variant,
@@ -105,7 +105,7 @@ class Cart extends Model
         $variantQuantity = (int) $this->items()
             ->where('product_variant_id', $variant->getKey())
             ->sum('quantity');
-        $this->assertVariantCanBePurchased($variant, $variantQuantity - ($item?->quantity ?? 0) + $quantity);
+        $this->assertVariantCanBePurchased($variant, $variantQuantity - ($item->quantity ?? 0) + $quantity);
 
         if ($item !== null) {
             $item->update(['quantity' => $quantity]);
@@ -344,8 +344,10 @@ class Cart extends Model
     }
 
     /**
-     * @param  array<string, mixed>  $metadata
-     * @return array<string, mixed>
+     * @template TKey of array-key
+     *
+     * @param  array<TKey, mixed>  $metadata
+     * @return array<TKey, mixed>
      */
     private function normalizeMetadata(array $metadata): array
     {

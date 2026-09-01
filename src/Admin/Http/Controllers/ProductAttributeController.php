@@ -211,7 +211,7 @@ class ProductAttributeController extends Controller
             ? ['prohibited']
             : ['sometimes', 'integer', 'distinct'];
 
-        if ($valueModel !== null && $productAttribute !== null) {
+        if ($valueModel !== null) {
             $idRules[] = Rule::exists($valueModel->getTable(), $valueModel->getKeyName())
                 ->where('product_attribute_id', $productAttribute->getKey());
         }

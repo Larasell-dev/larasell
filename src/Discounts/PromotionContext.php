@@ -113,7 +113,7 @@ final readonly class PromotionContext
     public function percentageOffShipping(int|string $percentage): array
     {
         return $this->fixedAmountOffShipping(
-            $this->percentageAmount($this->shippingOption?->price ?? Price::of(0), $percentage),
+            $this->percentageAmount($this->shippingOption->price ?? Price::of(0), $percentage),
         );
     }
 

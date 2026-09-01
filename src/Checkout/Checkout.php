@@ -195,7 +195,7 @@ class Checkout
                     $lineDiscountTotal = $discounts->reduce(
                         fn (Price $sum, DiscountResult $discount): Price => $sum->add(
                             collect($discount->allocations)
-                                ->firstWhere('target', $target)?->amount ?? Price::of(0)
+                                ->firstWhere('target', $target)->amount ?? Price::of(0)
                         ),
                         Price::of(0),
                     );
