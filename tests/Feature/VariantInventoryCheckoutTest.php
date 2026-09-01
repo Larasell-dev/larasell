@@ -1,6 +1,5 @@
 <?php
 
-use InvalidArgumentException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;

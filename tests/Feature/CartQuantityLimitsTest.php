@@ -1,6 +1,5 @@
 <?php
 
-use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
