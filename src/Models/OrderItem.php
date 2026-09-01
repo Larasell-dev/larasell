@@ -2,10 +2,12 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Price;
@@ -27,6 +29,7 @@ use Larasell\Larasell\Translatable;
  * @property int $inventory_quantity
  * @property Price $discount_total
  * @property Price $total
+ * @property SupportCollection<string, mixed> $metadata
  */
 class OrderItem extends Model
 {
@@ -38,6 +41,7 @@ class OrderItem extends Model
 
     protected $attributes = [
         'discount_total' => '{"amount":"0"}',
+        'metadata' => '[]',
     ];
 
     protected $casts = [
@@ -46,6 +50,7 @@ class OrderItem extends Model
         'product_name' => TranslatableCast::class,
         'quantity' => 'integer',
         'inventory_quantity' => 'integer',
+        'metadata' => AsCollection::class,
         'variant_options' => 'array',
         'unit_price' => PriceCast::class,
         'discount_total' => PriceCast::class,

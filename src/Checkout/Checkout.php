@@ -123,6 +123,15 @@ class Checkout
                     ->get()
                     ->keyBy(fn (ProductVariant $variant): int => (int) $variant->getKey());
 
+                foreach ($items->groupBy('product_variant_id') as $variantId => $variantItems) {
+                    /** @var ProductVariant|null $variant */
+                    $variant = $variants->get($variantId);
+
+                    if ($variant !== null) {
+                        $lockedCart->assertVariantCanBePurchased($variant, (int) $variantItems->sum('quantity'));
+                    }
+                }
+
                 foreach ($items as $item) {
                     /** @var ProductVariant|null $variant */
                     $variant = $variants->get($item->product_variant_id);
@@ -202,6 +211,7 @@ class Checkout
                         'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,
                         'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,
+                        'metadata' => $item->metadata,
                         'discount_total' => $lineDiscountTotal,
                         'total' => $item->total(),
                     ]);

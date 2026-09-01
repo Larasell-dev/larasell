@@ -56,49 +56,82 @@ class Cart extends Model
         return $this->hasMany($this->cartItemModel());
     }
 
-    public function add(Product|ProductVariant $purchasable, int $quantity = 1): CartItem
+    /** @param array<string, mixed> $metadata */
+    public function add(Product|ProductVariant $purchasable, int $quantity = 1, array $metadata = []): CartItem
     {
         $this->assertValidQuantity($quantity);
+        $addedQuantity = $quantity;
         $variant = $this->resolveVariant($purchasable);
+        $metadata = $this->normalizeMetadata($metadata);
 
         $item = $this->items()
             ->where('product_variant_id', $variant->getKey())
-            ->first();
+            ->get()
+            ->first(fn (CartItem $item): bool => $this->normalizeMetadata($item->metadata->all()) === $metadata);
 
         $quantity = $quantity + ($item?->quantity ?? 0);
         $this->assertVariantCanBePurchased($variant, $quantity);
-
-        return $this->items()->updateOrCreate(
-            ['product_variant_id' => $variant->getKey()],
-            [
-                'product_id' => $variant->product_id,
-                'quantity' => $quantity,
-            ]
+        $this->assertVariantCanBePurchased(
+            $variant,
+            (int) $this->items()->where('product_variant_id', $variant->getKey())->sum('quantity') + $addedQuantity,
         );
+
+        if ($item !== null) {
+            $item->update(['quantity' => $quantity]);
+
+            return $item;
+        }
+
+        return $this->items()->create([
+            'product_id' => $variant->product_id,
+            'product_variant_id' => $variant->getKey(),
+            'quantity' => $quantity,
+            'metadata' => $metadata,
+        ]);
     }
 
-    public function set(Product|ProductVariant $purchasable, int $quantity): CartItem
+    /** @param array<string, mixed> $metadata */
+    public function set(Product|ProductVariant $purchasable, int $quantity, array $metadata = []): CartItem
     {
         $this->assertValidQuantity($quantity);
         $variant = $this->resolveVariant($purchasable);
         $this->assertVariantCanBePurchased($variant, $quantity);
+        $metadata = $this->normalizeMetadata($metadata);
 
-        return $this->items()->updateOrCreate(
-            ['product_variant_id' => $variant->getKey()],
-            [
-                'product_id' => $variant->product_id,
-                'quantity' => $quantity,
-            ]
-        );
+        $item = $this->items()
+            ->where('product_variant_id', $variant->getKey())
+            ->get()
+            ->first(fn (CartItem $item): bool => $this->normalizeMetadata($item->metadata->all()) === $metadata);
+        $variantQuantity = (int) $this->items()
+            ->where('product_variant_id', $variant->getKey())
+            ->sum('quantity');
+        $this->assertVariantCanBePurchased($variant, $variantQuantity - ($item?->quantity ?? 0) + $quantity);
+
+        if ($item !== null) {
+            $item->update(['quantity' => $quantity]);
+
+            return $item;
+        }
+
+        return $this->items()->create([
+            'product_id' => $variant->product_id,
+            'product_variant_id' => $variant->getKey(),
+            'quantity' => $quantity,
+            'metadata' => $metadata,
+        ]);
     }
 
-    public function remove(Product|ProductVariant $purchasable): void
+    /** @param array<string, mixed> $metadata */
+    public function remove(Product|ProductVariant $purchasable, array $metadata = []): void
     {
         $variant = $this->resolveVariant($purchasable);
+        $metadata = $this->normalizeMetadata($metadata);
 
         $this->items()
             ->where('product_variant_id', $variant->getKey())
-            ->delete();
+            ->get()
+            ->filter(fn (CartItem $item): bool => $this->normalizeMetadata($item->metadata->all()) === $metadata)
+            ->each->delete();
     }
 
     public function clear(): void
@@ -307,5 +340,24 @@ class Cart extends Model
         }
 
         return $variant->loadMissing('product');
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function normalizeMetadata(array $metadata): array
+    {
+        foreach ($metadata as &$value) {
+            if (is_array($value)) {
+                $value = $this->normalizeMetadata($value);
+            }
+        }
+
+        if (! array_is_list($metadata)) {
+            ksort($metadata);
+        }
+
+        return $metadata;
     }
 }
