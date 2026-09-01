@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection as SupportCollection;
+use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Price;
@@ -30,6 +31,10 @@ use Larasell\Larasell\Translatable;
  * @property int $inventory_quantity
  * @property Price $discount_total
  * @property Price $total
+ * @property string|null $tax_category
+ * @property Price|null $taxable_amount
+ * @property Price|null $tax_total
+ * @property array<string, mixed>|null $tax_snapshot
  * @property SupportCollection<string, mixed> $metadata
  */
 class OrderItem extends Model
@@ -57,6 +62,9 @@ class OrderItem extends Model
         'unit_price' => PriceCast::class,
         'discount_total' => PriceCast::class,
         'total' => PriceCast::class,
+        'taxable_amount' => NullablePriceCast::class,
+        'tax_total' => NullablePriceCast::class,
+        'tax_snapshot' => 'array',
     ];
 
     /** @return BelongsTo<Order, $this> */

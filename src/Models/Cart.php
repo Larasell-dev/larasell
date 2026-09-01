@@ -18,6 +18,9 @@ use Larasell\Larasell\Events\PromotionCodeRemoved;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingOption;
+use Larasell\Larasell\Taxes\CartTaxEstimate;
+use Larasell\Larasell\Taxes\CartTaxEstimateRequest;
+use Larasell\Larasell\Taxes\CartTaxEstimator;
 
 /**
  * @property int $id
@@ -215,6 +218,11 @@ class Cart extends Model
         }
 
         return $total->subtract($this->discountTotal());
+    }
+
+    public function taxEstimate(?CartTaxEstimateRequest $request = null): CartTaxEstimate
+    {
+        return app(CartTaxEstimator::class)->estimate($this, $request);
     }
 
     /** @return SupportCollection<int, DiscountResult> */

@@ -29,6 +29,7 @@ use Larasell\Larasell\Translatable;
  * @property Translatable $name
  * @property Translatable|null $description
  * @property Price $price
+ * @property string $tax_category
  * @property int|null $stock
  * @property int|null $min_quantity
  * @property int|null $max_quantity
@@ -48,6 +49,10 @@ class Product extends Model
     protected $table = 'larasell_products';
 
     protected $guarded = [];
+
+    protected $attributes = [
+        'tax_category' => 'standard',
+    ];
 
     protected $casts = [
         'slug' => TranslatableCast::class,

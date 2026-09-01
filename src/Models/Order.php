@@ -13,6 +13,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
+use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
@@ -20,6 +21,7 @@ use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
+use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Events\InventoryReservationReleased;
 use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Events\OrderCancelled;
@@ -48,10 +50,15 @@ use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
  * @property Price $discount_total
  * @property array<int, array<string, mixed>> $discounts
  * @property Price $total
+ * @property TaxPriceMode|null $tax_price_mode
+ * @property Price|null $tax_total
+ * @property array<string, mixed>|null $tax_snapshot
  * @property string|null $shipping_method
  * @property string|null $shipping_option
  * @property string|null $shipping_option_name
  * @property Price|null $shipping_price
+ * @property Price|null $shipping_tax_total
+ * @property array<string, mixed>|null $shipping_tax_snapshot
  * @property SupportCollection<string, mixed> $metadata
  * @property Collection<int, OrderItem> $items
  * @property Collection<int, InventoryReservation> $inventoryReservations
@@ -85,7 +92,12 @@ class Order extends Model
         'discount_total' => PriceCast::class,
         'discounts' => 'array',
         'total' => PriceCast::class,
+        'tax_price_mode' => TaxPriceMode::class,
+        'tax_total' => NullablePriceCast::class,
+        'tax_snapshot' => 'array',
         'shipping_price' => PriceCast::class,
+        'shipping_tax_total' => NullablePriceCast::class,
+        'shipping_tax_snapshot' => 'array',
         'metadata' => AsCollection::class,
     ];
 
