@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Contracts\RefundProvider;
 use Larasell\Larasell\Enums\Currency;
@@ -14,8 +13,6 @@ use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Refunds\RefundRequest;
 use Larasell\Larasell\Refunds\RefundResult;
-
-uses(RefreshDatabase::class);
 
 class SuccessfulRefundProvider implements PaymentProvider, RefundProvider
 {

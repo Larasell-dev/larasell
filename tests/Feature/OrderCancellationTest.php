@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
@@ -9,8 +8,6 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
-
-uses(RefreshDatabase::class);
 
 /** @return array<string, string> */
 function cancellationCheckoutData(): array

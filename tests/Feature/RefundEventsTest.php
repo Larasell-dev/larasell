@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
@@ -12,8 +11,6 @@ use Larasell\Larasell\Events\RefundSucceeded;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Price;
-
-uses(RefreshDatabase::class);
 
 /** @return array<class-string> */
 function refundEvents(): array

@@ -1,14 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Price;
-
-uses(RefreshDatabase::class);
 
 function offlinePaymentOrder(): Order
 {
