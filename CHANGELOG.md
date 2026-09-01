@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/Larasell-dev/larasell/compare/v1.9.0...v1.10.0) (2026-09-01)
+
+
+### Features
+
+* add taxes ([#67](https://github.com/Larasell-dev/larasell/issues/67)) ([8093bce](https://github.com/Larasell-dev/larasell/commit/8093bce780ed6fe2dcbf43fe5bd46b95d56e0679))
+
 ## [1.9.0](https://github.com/Larasell-dev/larasell/compare/v1.8.0...v1.9.0) (2026-09-01)
 
 
