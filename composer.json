@@ -60,7 +60,7 @@
   },
   "scripts": {
     "pest": "pest tests --parallel",
-    "pest:ci": "pest tests",
+    "pest:ci": "pest tests --parallel --processes=4",
     "phpstan": "phpstan analyse",
     "pint": "pint",
     "test": "@pest"
