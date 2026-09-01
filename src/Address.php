@@ -10,7 +10,7 @@ final readonly class Address implements JsonSerializable
     /** @var array<int, string> */
     public array $street;
 
-    /** @param array<int, string>|string $street */
+    /** @param array<int, mixed>|string $street */
     public function __construct(
         public string $country,
         public string $firstName,
@@ -25,7 +25,7 @@ final readonly class Address implements JsonSerializable
         public ?string $company = null,
         public ?string $taxId = null,
     ) {
-        $this->street = is_array($street) ? array_values($street) : [$street];
+        $street = is_array($street) ? array_values($street) : [$street];
 
         foreach ([
             'country' => $country,
@@ -39,42 +39,45 @@ final readonly class Address implements JsonSerializable
             }
         }
 
-        if ($this->street === []) {
+        if ($street === []) {
             throw new InvalidArgumentException('The address must contain one or more non-empty street lines.');
         }
 
-        foreach ($this->street as $line) {
+        foreach ($street as $line) {
             if (! is_string($line) || trim($line) === '') {
                 throw new InvalidArgumentException('The address must contain one or more non-empty street lines.');
             }
         }
+
+        $this->street = $street;
 
         if ($email !== null && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new InvalidArgumentException('The address email must be valid.');
         }
     }
 
-    /**
-     * @param array{
-     *     country: string,
-     *     first_name: string,
-     *     last_name: string,
-     *     street: array<int, string>|string,
-     *     city: string,
-     *     postcode: string,
-     *     title?: string|null,
-     *     state?: string|null,
-     *     email?: string|null,
-     *     phone?: string|null
-     *     company?: string|null,
-     *     tax_id?: string|null
-     * } $address
-     */
+    /** @param array<array-key, mixed> $address */
     public static function fromArray(array $address): self
     {
         foreach (['country', 'first_name', 'last_name', 'street', 'city', 'postcode'] as $field) {
             if (! array_key_exists($field, $address)) {
                 throw new InvalidArgumentException("The address field [{$field}] is required.");
+            }
+        }
+
+        foreach (['country', 'first_name', 'last_name', 'city', 'postcode'] as $field) {
+            if (! is_string($address[$field])) {
+                throw new InvalidArgumentException("The address field [{$field}] must be a string.");
+            }
+        }
+
+        if (! is_string($address['street']) && ! is_array($address['street'])) {
+            throw new InvalidArgumentException('The address field [street] must be a string or array.');
+        }
+
+        foreach (['title', 'state', 'email', 'phone', 'company', 'tax_id'] as $field) {
+            if (isset($address[$field]) && ! is_string($address[$field])) {
+                throw new InvalidArgumentException("The address field [{$field}] must be a string or null.");
             }
         }
 

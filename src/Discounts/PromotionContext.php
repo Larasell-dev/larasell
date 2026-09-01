@@ -113,7 +113,7 @@ final readonly class PromotionContext
     public function percentageOffShipping(int|string $percentage): array
     {
         return $this->fixedAmountOffShipping(
-            $this->percentageAmount($this->shippingOption?->price ?? Price::of(0), $percentage),
+            $this->percentageAmount($this->shippingOption->price ?? Price::of(0), $percentage),
         );
     }
 
@@ -136,6 +136,7 @@ final readonly class PromotionContext
         ));
     }
 
+    /** @return numeric-string */
     private function validatePercentage(int|string $percentage): string
     {
         $percentage = (string) $percentage;
@@ -144,6 +145,7 @@ final readonly class PromotionContext
             : 0;
 
         if (! preg_match('/^\d+(?:\.\d+)?$/', $percentage)
+            || ! is_numeric($percentage)
             || bccomp($percentage, '100', $scale) === 1) {
             throw new InvalidArgumentException('A discount percentage must be between 0 and 100.');
         }

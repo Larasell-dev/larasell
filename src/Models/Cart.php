@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +31,7 @@ use Larasell\Larasell\Shipping\ShippingOption;
  */
 class Cart extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_carts';
@@ -69,7 +71,7 @@ class Cart extends Model
             ->get()
             ->first(fn (CartItem $item): bool => $this->normalizeMetadata($item->metadata->all()) === $metadata);
 
-        $quantity = $quantity + ($item?->quantity ?? 0);
+        $quantity = $quantity + ($item->quantity ?? 0);
         $this->assertVariantCanBePurchased($variant, $quantity);
         $this->assertVariantCanBePurchased(
             $variant,
@@ -105,7 +107,7 @@ class Cart extends Model
         $variantQuantity = (int) $this->items()
             ->where('product_variant_id', $variant->getKey())
             ->sum('quantity');
-        $this->assertVariantCanBePurchased($variant, $variantQuantity - ($item?->quantity ?? 0) + $quantity);
+        $this->assertVariantCanBePurchased($variant, $variantQuantity - ($item->quantity ?? 0) + $quantity);
 
         if ($item !== null) {
             $item->update(['quantity' => $quantity]);
@@ -284,6 +286,7 @@ class Cart extends Model
         return $shippingOption === null ? $subtotal : $subtotal->add($shippingOption->price);
     }
 
+    /** @return class-string<CartItem> */
     protected function cartItemModel(): string
     {
         return app(ModelRegistry::class)->cartItem->class();
@@ -343,8 +346,10 @@ class Cart extends Model
     }
 
     /**
-     * @param  array<string, mixed>  $metadata
-     * @return array<string, mixed>
+     * @template TKey of array-key
+     *
+     * @param  array<TKey, mixed>  $metadata
+     * @return array<TKey, mixed>
      */
     private function normalizeMetadata(array $metadata): array
     {

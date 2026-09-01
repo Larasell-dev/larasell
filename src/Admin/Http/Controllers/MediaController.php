@@ -2,7 +2,6 @@
 
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -12,21 +11,23 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\ProductImage;
 
 class MediaController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
-        /** @var class-string<Model> $imageModel */
         $imageModel = app(ModelRegistry::class)->productImage->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $images = $imageModel::query()
             ->latest()
             ->latest($imageModel::query()->getModel()->getKeyName())
             ->paginate(24)
             ->withQueryString()
-            ->through(fn (Model $image): array => [
+            ->through(fn (ProductImage $image): array => [
                 'id' => $image->getKey(),
                 'alt' => $image->getAttribute('alt'),
                 'name' => data_get($image->getAttribute('meta'), 'original_name')
@@ -45,8 +46,8 @@ class MediaController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'images' => $images->items(),
             'pagination' => [
@@ -63,7 +64,6 @@ class MediaController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        /** @var class-string<Model> $imageModel */
         $imageModel = app(ModelRegistry::class)->productImage->class();
         $ids = $request->validate([
             'ids' => ['required', 'array', 'min:1'],

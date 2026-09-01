@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,7 @@ use Larasell\Larasell\Translatable;
  */
 class Category extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_categories';
@@ -67,6 +69,7 @@ class Category extends Model
         return $this->onlyVisible($this->children())->with('descendants');
     }
 
+    /** @return Builder<Category> */
     public function siblings(): Builder
     {
         return $this->onlyVisible(
@@ -78,6 +81,7 @@ class Category extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     #[Scope]
     protected function root(Builder $query): Builder
@@ -98,23 +102,29 @@ class Category extends Model
         )->withTimestamps();
     }
 
+    /** @return class-string<Category> */
     protected function categoryModel(): string
     {
         return app(ModelRegistry::class)->category->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();
     }
 
+    /** @return Builder<Category> */
     protected function newRelatedCategoryQuery(): Builder
     {
         return app(ModelRegistry::class)->category->query();
     }
 
     /**
-     * @param  Builder<self>|Relation<self, self, mixed>  $query
+     * @template TQuery of Builder<self>|Relation<self, $this, mixed>
+     *
+     * @param  TQuery  $query
+     * @return TQuery
      */
     private function onlyVisible(Builder|Relation $query): Builder|Relation
     {

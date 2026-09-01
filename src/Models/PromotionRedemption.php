@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,7 @@ use Larasell\Larasell\Enums\PromotionRedemptionStatus;
  */
 class PromotionRedemption extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_promotion_redemptions';

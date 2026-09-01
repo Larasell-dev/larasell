@@ -3,22 +3,25 @@
 namespace Larasell\Larasell\Http\Requests;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
+use Larasell\Larasell\Database\TrustedSqlExpression;
+use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Product;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductListingRequest extends FormRequest
 {
-    private ?Model $resolvedCategory = null;
+    private ?Category $resolvedCategory = null;
 
     public function authorize(): bool
     {
         return true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
@@ -27,7 +30,7 @@ class ProductListingRequest extends FormRequest
         ];
     }
 
-    public function category(): Model
+    public function category(): Category
     {
         if ($this->resolvedCategory !== null) {
             return $this->resolvedCategory;
@@ -46,6 +49,7 @@ class ProductListingRequest extends FormRequest
             ->firstOrFail();
     }
 
+    /** @return Builder<Product> */
     public function products(): Builder
     {
         $category = $this->category();
@@ -67,9 +71,9 @@ class ProductListingRequest extends FormRequest
         }
 
         return match ($this->sort()) {
-            'name' => $products->orderByRaw($this->translatedNameExpression($products).' asc'),
-            'price_asc' => $products->orderByRaw($this->priceAmountExpression($products).' asc'),
-            'price_desc' => $products->orderByRaw($this->priceAmountExpression($products).' desc'),
+            'name' => $products->orderBy(new TrustedSqlExpression($this->translatedNameExpression($products))),
+            'price_asc' => $products->orderBy(new TrustedSqlExpression($this->priceAmountExpression($products))),
+            'price_desc' => $products->orderByDesc(new TrustedSqlExpression($this->priceAmountExpression($products))),
             default => $products,
         };
     }
@@ -99,6 +103,7 @@ class ProductListingRequest extends FormRequest
         };
     }
 
+    /** @param Builder<Product> $query */
     private function priceAmountExpression(Builder $query): string
     {
         $driver = $query->getModel()->getConnection()->getDriverName();
@@ -113,6 +118,7 @@ class ProductListingRequest extends FormRequest
         };
     }
 
+    /** @param Builder<Product> $query */
     private function translatedNameExpression(Builder $query): string
     {
         $driver = $query->getModel()->getConnection()->getDriverName();

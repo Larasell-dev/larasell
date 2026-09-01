@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,7 @@ use Larasell\Larasell\Enums\ProductAttributeType;
  */
 class ProductAttribute extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_product_attributes';
@@ -36,6 +38,7 @@ class ProductAttribute extends Model
         );
     }
 
+    /** @return class-string<ProductAttributeValue> */
     protected function productAttributeValueModel(): string
     {
         return app(ModelRegistry::class)->productAttributeValue->class();

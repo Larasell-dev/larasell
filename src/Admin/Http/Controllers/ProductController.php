@@ -18,23 +18,26 @@ use Inertia\Response;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 
 class ProductController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $products = $productModel::query()
             ->latest('id')
             ->paginate(25)
             ->withQueryString()
-            ->through(fn (Model $product): array => [
+            ->through(fn (Product $product): array => [
                 'id' => $product->getKey(),
                 'name' => $this->productName($product)->get(),
                 'price' => $product->getAttribute('price')->toArray(),
@@ -56,8 +59,8 @@ class ProductController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'products' => $products->items(),
             'productImages' => Inertia::defer(function () use ($productIds, $productModel): array {
@@ -65,7 +68,7 @@ class ProductController extends Controller
                     ->with('images')
                     ->whereKey($productIds)
                     ->get()
-                    ->mapWithKeys(function (Model $product): array {
+                    ->mapWithKeys(function (Product $product): array {
                         $image = $product->getRelation('images')->first();
 
                         return [$product->getKey() => $image === null ? null : [
@@ -89,9 +92,8 @@ class ProductController extends Controller
 
     public function create(Request $request): Response
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return Inertia::render('Products/Create', [
             'homeUrl' => route('larasell.admin.home'),
@@ -105,15 +107,14 @@ class ProductController extends Controller
             'productAttributes' => $this->productAttributeValueOptions($productModel),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
         ])->rootView('larasell-admin::admin');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
         $data = $this->validatedProductData($request);
         $data['slug'] = $this->uniqueSlug($productModel, $data['name']);
@@ -121,7 +122,7 @@ class ProductController extends Controller
         $attributeValueIds = $data['attribute_value_ids'];
         unset($data['category_ids'], $data['attribute_value_ids']);
 
-        $product = DB::transaction(function () use ($categoryIds, $data, $attributeValueIds, $productModel): Model {
+        $product = DB::transaction(function () use ($categoryIds, $data, $attributeValueIds, $productModel): Product {
             $product = $productModel::query()->create($data);
             $product->categories()->sync($categoryIds);
             $product->attributeValues()->sync($attributeValueIds);
@@ -134,9 +135,8 @@ class ProductController extends Controller
 
     public function show(Request $request, string $adminProduct): Response
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $product = $productModel::query()->findOrFail($adminProduct);
 
         return Inertia::render('Products/Show', [
@@ -148,8 +148,8 @@ class ProductController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'product' => [
                 'id' => $product->getKey(),
@@ -194,7 +194,7 @@ class ProductController extends Controller
                 ])->all(),
             'images' => Inertia::defer(fn (): array => $product->images()
                 ->get()
-                ->map(fn (Model $image): array => [
+                ->map(fn (ProductImage $image): array => [
                     'id' => $image->getKey(),
                     'url' => $image->url(),
                     'alt' => $image->getAttribute('alt'),
@@ -301,7 +301,7 @@ class ProductController extends Controller
         $path = $file->store('products/'.$product->getKey(), $disk);
 
         try {
-            $image = DB::transaction(function () use ($file, $path, $product): Model {
+            $image = DB::transaction(function () use ($file, $path, $product): ProductImage {
                 $image = $product->images()->getRelated()->newInstance([
                     'path' => $path,
                     'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
@@ -372,7 +372,11 @@ class ProductController extends Controller
         $attributes = $attributeModel::query()
             ->whereKey($data['attribute_ids'])
             ->get()
-            ->sortBy(fn (Model $attribute): int => array_search((string) $attribute->getKey(), array_map('strval', $data['attribute_ids']), true))
+            ->sortBy(function (Model $attribute) use ($data): int {
+                $position = array_search((string) $attribute->getKey(), array_values(array_map('strval', $data['attribute_ids'])), true);
+
+                return $position === false ? PHP_INT_MAX : $position;
+            })
             ->values()
             ->all();
 
@@ -401,15 +405,16 @@ class ProductController extends Controller
             'variants.*.max_quantity' => ['present', 'nullable', 'integer', 'min:1'],
             'variants.*.status' => ['required', Rule::enum(Visibility::class)],
         ]);
+        $variantData = is_array($data['variants']) ? $data['variants'] : [];
 
-        $ids = collect($data['variants'])->pluck('id')->map(fn ($id): int => (int) $id);
+        $ids = collect($variantData)->pluck('id')->map(fn ($id): int => (int) $id);
         $variants = $product->variants()->whereKey($ids)->get()->keyBy('id');
         if ($variants->count() !== $ids->count()) {
             throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
         }
 
         foreach (['sku', 'barcode'] as $identifier) {
-            $values = collect($data['variants'])->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
+            $values = collect($variantData)->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
             if ($values->duplicates()->isNotEmpty() || DB::table($variantTable)->whereNotIn('id', $ids)->whereIn($identifier, $values)->exists()) {
                 throw ValidationException::withMessages(["variants.{$identifier}" => "Variant {$identifier}s must be unique."]);
             }
@@ -418,6 +423,10 @@ class ProductController extends Controller
         DB::transaction(function () use ($data, $variants): void {
             foreach ($data['variants'] as $input) {
                 $variant = $variants->get($input['id']);
+                if ($variant === null) {
+                    throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
+                }
+
                 if ($input['min_quantity'] !== null && $input['max_quantity'] !== null && $input['min_quantity'] > $input['max_quantity']) {
                     throw ValidationException::withMessages(['variants' => 'Variant minimum quantity cannot exceed maximum quantity.']);
                 }
@@ -437,15 +446,14 @@ class ProductController extends Controller
         return back();
     }
 
-    private function findProduct(string $id): Model
+    private function findProduct(string $id): Product
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->findOrFail($id);
     }
 
-    private function productName(Model $product): Translatable
+    private function productName(Product $product): Translatable
     {
         $name = $product->getAttribute('name');
 
@@ -456,7 +464,7 @@ class ProductController extends Controller
         return $name;
     }
 
-    private function productDescription(Model $product): ?Translatable
+    private function productDescription(Product $product): ?Translatable
     {
         $description = $product->getAttribute('description');
 
@@ -467,7 +475,7 @@ class ProductController extends Controller
         return $description;
     }
 
-    private function translatedDescription(Model $product, ?string $description): ?Translatable
+    private function translatedDescription(Product $product, ?string $description): ?Translatable
     {
         $translations = $this->productDescription($product);
 
@@ -479,7 +487,7 @@ class ProductController extends Controller
             ?? Translatable::fromString($description);
     }
 
-    /** @param class-string<Model> $model */
+    /** @param class-string<Product> $model */
     private function uniqueSlug(string $model, string $name): string
     {
         $base = Str::slug($name) ?: 'product';
@@ -493,6 +501,7 @@ class ProductController extends Controller
         return $slug;
     }
 
+    /** @return array<string, mixed> */
     private function validatedProductData(Request $request): array
     {
         $data = $request->validate([
@@ -518,7 +527,10 @@ class ProductController extends Controller
         return $data;
     }
 
-    /** @param class-string<Model> $productModel */
+    /**
+     * @param  class-string<Product>  $productModel
+     * @return array<int, mixed>
+     */
     private function categoryOptions(string $productModel): array
     {
         $categories = $productModel::query()->getModel()->categories()->getRelated()->newQuery()
@@ -542,7 +554,6 @@ class ProductController extends Controller
 
     private function categoryTable(): string
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel()->categories()->getRelated()->getTable();
@@ -550,13 +561,15 @@ class ProductController extends Controller
 
     private function categoryKeyName(): string
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel()->categories()->getRelated()->getKeyName();
     }
 
-    /** @param class-string<Model> $productModel */
+    /**
+     * @param  class-string<Product>  $productModel
+     * @return array<int, mixed>
+     */
     private function productAttributeValueOptions(string $productModel): array
     {
         $valueModel = $productModel::query()->getModel()->attributeValues()->getRelated();
@@ -589,9 +602,8 @@ class ProductController extends Controller
         return $this->productModelInstance()->attributeValues()->getRelated()->getKeyName();
     }
 
-    private function productModelInstance(): Model
+    private function productModelInstance(): Product
     {
-        /** @var class-string<Model> $productModel */
         $productModel = app(ModelRegistry::class)->product->class();
 
         return $productModel::query()->getModel();

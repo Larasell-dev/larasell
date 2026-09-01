@@ -11,7 +11,7 @@ final readonly class DiscountResult
     /** @var array<int, DiscountAllocation> */
     public array $allocations;
 
-    /** @param array<int, DiscountAllocation> $allocations */
+    /** @param array<int, mixed> $allocations */
     public function __construct(
         public string $identifier,
         public string $name,

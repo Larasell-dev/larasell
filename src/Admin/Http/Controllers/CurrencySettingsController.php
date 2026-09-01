@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -13,9 +14,11 @@ use Larasell\Larasell\Settings\CurrencySettings;
 
 class CurrencySettingsController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request, CurrencySettings $settings): Response
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $enabled = $settings->enabled();
 
         return Inertia::render('Settings/Currencies/Index', [
@@ -36,12 +39,18 @@ class CurrencySettingsController extends Controller
             'currencies.*' => ['required', 'string', 'distinct', Rule::enum(Currency::class)],
         ]);
 
-        $settings->save(array_map(fn (string $code): Currency => Currency::from($code), $data['currencies']));
+        $currencies = array_values(array_map(
+            fn (mixed $code): Currency => Currency::from((string) $code),
+            $data['currencies'],
+        ));
+
+        $settings->save($currencies);
 
         return redirect()->route('larasell.admin.settings.currencies.index');
     }
 
-    private function layoutProps(object $admin): array
+    /** @return array<string, mixed> */
+    private function layoutProps(Model $admin): array
     {
         return [
             'homeUrl' => route('larasell.admin.home'),
@@ -50,7 +59,10 @@ class CurrencySettingsController extends Controller
             'productsUrl' => route('larasell.admin.products.index'),
             'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'logoutUrl' => route('larasell.admin.logout'),
-            'user' => ['name' => $admin->name, 'email' => $admin->email],
+            'user' => [
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
+            ],
         ];
     }
 }

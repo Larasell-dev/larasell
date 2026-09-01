@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -41,6 +42,7 @@ use Larasell\Larasell\Translatable;
  */
 class Product extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_products';
@@ -129,6 +131,7 @@ class Product extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     #[Scope]
     protected function visible(Builder $query): Builder
@@ -138,6 +141,7 @@ class Product extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     #[Scope]
     protected function inCategory(Builder $query, Category $category): Builder
@@ -150,6 +154,7 @@ class Product extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     #[Scope]
     protected function inCategoryTree(Builder $query, Category $category): Builder
@@ -169,6 +174,7 @@ class Product extends Model
 
     /**
      * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     #[Scope]
     protected function withAttributeValues(Builder $query): Builder
@@ -260,7 +266,7 @@ class Product extends Model
     }
 
     /**
-     * @param  array<int, ProductAttribute>  $dimensions
+     * @param  array<int, mixed>  $dimensions
      * @return EloquentCollection<int, ProductVariant>
      */
     public function generateVariants(array $dimensions): EloquentCollection
@@ -284,7 +290,7 @@ class Product extends Model
 
         $combinations = $dimensions->reduce(
             fn (Collection $combinations, ProductAttribute $dimension): Collection => $combinations->flatMap(
-                fn (array $combination): Collection => $values->get($dimension->id)->map(
+                fn (array $combination): Collection => $values->get($dimension->id, collect())->map(
                     fn (ProductAttributeValue $value): array => [...$combination, $value],
                 ),
             ),
@@ -398,7 +404,7 @@ class Product extends Model
     }
 
     /**
-     * @param  Collection<int, ProductAttributeValue>  $values
+     * @param  Collection<int, mixed>  $values
      */
     private function assertValidVariantValues(Collection $values): void
     {
@@ -426,7 +432,7 @@ class Product extends Model
     }
 
     /**
-     * @param  Collection<int, ProductAttributeValue>  $values
+     * @param  Collection<array-key, ProductAttributeValue>  $values
      */
     private static function combinationKey(Collection $values): string
     {
@@ -454,26 +460,31 @@ class Product extends Model
         ];
     }
 
+    /** @return class-string<Category> */
     protected function categoryModel(): string
     {
         return app(ModelRegistry::class)->category->class();
     }
 
+    /** @return class-string<ProductImage> */
     protected function productImageModel(): string
     {
         return app(ModelRegistry::class)->productImage->class();
     }
 
+    /** @return class-string<ProductAttributeValue> */
     protected function productAttributeValueModel(): string
     {
         return app(ModelRegistry::class)->productAttributeValue->class();
     }
 
+    /** @return class-string<ProductAttribute> */
     protected function productAttributeModel(): string
     {
         return app(ModelRegistry::class)->productAttribute->class();
     }
 
+    /** @return class-string<ProductVariant> */
     protected function productVariantModel(): string
     {
         return app(ModelRegistry::class)->productVariant->class();

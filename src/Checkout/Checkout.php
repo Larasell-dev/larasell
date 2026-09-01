@@ -113,7 +113,7 @@ class Checkout
                     throw new InvalidArgumentException('Cannot checkout an empty cart.');
                 }
 
-                $total = null;
+                $total = Price::of(0);
 
                 $variants = $this->models->productVariant->query()
                     ->with(['product.variantDimensions', 'attributeValues.attribute'])
@@ -145,9 +145,7 @@ class Checkout
                     $lockedCart->assertVariantCanBePurchased($variant, $item->quantity);
 
                     $lineTotal = $item->total();
-                    $total = $total === null
-                        ? $lineTotal
-                        : $total->add($lineTotal);
+                    $total = $total->add($lineTotal);
                 }
 
                 $discounts = $this->promotions->apply($lockedCart)
@@ -195,7 +193,7 @@ class Checkout
                     $lineDiscountTotal = $discounts->reduce(
                         fn (Price $sum, DiscountResult $discount): Price => $sum->add(
                             collect($discount->allocations)
-                                ->firstWhere('target', $target)?->amount ?? Price::of(0)
+                                ->firstWhere('target', $target)->amount ?? Price::of(0)
                         ),
                         Price::of(0),
                     );
@@ -332,8 +330,12 @@ class Checkout
     }
 
     /** @return array{Order, Payment}|null */
-    private function existingCheckout(string $key, string $fingerprint): ?array
+    private function existingCheckout(string $key, ?string $fingerprint): ?array
     {
+        if ($fingerprint === null) {
+            throw new InvalidArgumentException('An idempotency fingerprint is required.');
+        }
+
         /** @var Order|null $order */
         $order = $this->models->order->query()->where('idempotency_key', $key)->first();
 
@@ -480,18 +482,24 @@ class Checkout
             throw new InvalidArgumentException('The promotion customer resolver must return a customer identifier.');
         }
 
+        $limits = $discount->redemptionLimits;
+
+        if ($limits === null) {
+            throw new InvalidArgumentException('Promotion redemption limits are required.');
+        }
+
         $this->promotionRedemptions->reserve(
             $discount->identifier,
             $customerIdentifier,
-            $discount->redemptionLimits,
+            $limits,
             $now,
         );
 
         $redemption = $order->promotionRedemptions()->create([
             'promotion_identifier' => $discount->identifier,
             'customer_identifier' => $customerIdentifier,
-            'global_limit' => $discount->redemptionLimits->global,
-            'customer_limit' => $discount->redemptionLimits->customer,
+            'global_limit' => $limits->global,
+            'customer_limit' => $limits->customer,
             'status' => PromotionRedemptionStatus::Reserved,
             'expires_at' => $reservationMinutes === null ? null : $now->copy()->addMinutes($reservationMinutes),
         ]);

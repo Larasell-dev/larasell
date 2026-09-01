@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ use InvalidArgumentException;
  */
 class ProductAttributeValue extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_product_attribute_values';
@@ -85,11 +87,13 @@ class ProductAttributeValue extends Model
         );
     }
 
+    /** @return class-string<ProductAttribute> */
     protected function productAttributeModel(): string
     {
         return app(ModelRegistry::class)->productAttribute->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();

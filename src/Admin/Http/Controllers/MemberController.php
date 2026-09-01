@@ -14,10 +14,12 @@ use Larasell\Larasell\Admin\Models\AdminUser;
 
 class MemberController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
         $model = $this->model();
-        $currentMember = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $currentMember = $this->adminUser($request);
         $memberCount = $model::query()->count();
 
         return Inertia::render('Settings/Members/Index', [
@@ -96,22 +98,23 @@ class MemberController extends Controller
     public function destroy(Request $request, DeleteMember $deleteMember, string $adminMember): RedirectResponse
     {
         $member = $this->model()::query()->findOrFail($adminMember);
-        $currentMember = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $currentMember = $this->adminUser($request);
 
         $deleteMember->handle($member, $currentMember);
 
         return redirect()->route('larasell.admin.settings.members.index');
     }
 
-    /** @return class-string<Model> */
+    /** @return class-string<AdminUser> */
     private function model(): string
     {
         return config('larasell-admin.models.admin_user', AdminUser::class);
     }
 
+    /** @return array<string, mixed> */
     private function layoutProps(Request $request): array
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return [
             'homeUrl' => route('larasell.admin.home'),
@@ -121,7 +124,10 @@ class MemberController extends Controller
             'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
-            'user' => ['name' => $admin->name, 'email' => $admin->email],
+            'user' => [
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
+            ],
         ];
     }
 }

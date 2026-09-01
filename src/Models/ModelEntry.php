@@ -37,6 +37,17 @@ final readonly class ModelEntry
     /** @return Builder<TModel> */
     public function query(): Builder
     {
-        return $this->new()->newQuery();
+        return $this->queryFor($this->new());
+    }
+
+    /**
+     * @template T of Model
+     *
+     * @param  T  $model
+     * @return Builder<T>
+     */
+    private function queryFor(Model $model): Builder
+    {
+        return $model->newQuery()->setModel($model);
     }
 }

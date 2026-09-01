@@ -168,7 +168,7 @@ final class PromotionManager
         return strtoupper(trim($code));
     }
 
-    /** @return array<string, HasCode> */
+    /** @return array<string, HasCode&Promotion> */
     private function codedPromotions(): array
     {
         $coded = [];
@@ -199,7 +199,7 @@ final class PromotionManager
 
     private function context(Cart $cart): PromotionContext
     {
-        /** @var Collection<int, CartItem> $items */
+        /** @var \Illuminate\Database\Eloquent\Collection<int, CartItem> $items */
         $items = $cart->purchasableItems();
         $subtotal = $items->reduce(
             fn (Price $total, CartItem $item): Price => $total->add($item->total()),

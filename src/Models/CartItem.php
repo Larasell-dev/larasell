@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsCollection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,7 @@ use Larasell\Larasell\Price;
  */
 class CartItem extends Model
 {
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'larasell_cart_items';
@@ -88,16 +90,19 @@ class CartItem extends Model
         return $this->unitPrice()->multiply($this->quantity);
     }
 
+    /** @return class-string<Cart> */
     protected function cartModel(): string
     {
         return app(ModelRegistry::class)->cart->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();
     }
 
+    /** @return class-string<ProductVariant> */
     protected function productVariantModel(): string
     {
         return app(ModelRegistry::class)->productVariant->class();

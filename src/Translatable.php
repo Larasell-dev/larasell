@@ -11,7 +11,7 @@ final readonly class Translatable implements JsonSerializable
     /** @var non-empty-array<string, string> */
     private array $translations;
 
-    /** @param non-empty-array<string, string> $translations */
+    /** @param array<array-key, mixed> $translations */
     public function __construct(array $translations)
     {
         $validated = [];
