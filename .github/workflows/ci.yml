@@ -78,7 +78,7 @@ jobs:
             username: postgres
             password: password
             mysql_image: ''
-            postgres_image: postgres:17
+            postgres_image: postgres:17-alpine
 
     services:
       mysql:
@@ -89,10 +89,11 @@ jobs:
         ports:
           - 3306:3306
         options: >-
+          --tmpfs=/var/lib/mysql
           --health-cmd="mysqladmin ping --host=127.0.0.1 --password=password"
-          --health-interval=10s
+          --health-interval=1s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=30
       postgres:
         image: ${{ matrix.database.postgres_image }}
         env:
@@ -101,10 +102,11 @@ jobs:
         ports:
           - 5432:5432
         options: >-
+          --tmpfs=/var/lib/postgresql/data
           --health-cmd="pg_isready --username=postgres --dbname=larasell"
-          --health-interval=10s
+          --health-interval=1s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=30
 
     env:
       DB_CONNECTION: ${{ matrix.database.connection }}
