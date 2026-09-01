@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/Larasell-dev/larasell/compare/v1.10.0...v1.11.0) (2026-09-01)
+
+
+### Features
+
+* provide breakdown to payment provider ([02aa057](https://github.com/Larasell-dev/larasell/commit/02aa057a4c8b52d3d99cd57a847dc9c17cd8d459))
+
 ## [1.10.0](https://github.com/Larasell-dev/larasell/compare/v1.9.0...v1.10.0) (2026-09-01)
 
 
