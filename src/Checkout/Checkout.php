@@ -32,7 +32,6 @@ use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
-use Larasell\Larasell\Taxes\CartTaxEstimateRequest;
 use Larasell\Larasell\Taxes\CartTaxEstimator;
 use Larasell\Larasell\Taxes\Exceptions\TaxCalculationException;
 use Larasell\Larasell\Taxes\TaxLineResult;
@@ -164,16 +163,14 @@ class Checkout
                     Price::of(0),
                 );
                 $taxEstimate = $this->taxes->estimate(
-                    $lockedCart,
-                    new CartTaxEstimateRequest(
-                        shippingAddress: $data['shipping_address'],
-                        billingAddress: $data['billing_address'],
-                        customerIdentifier: isset($data['customer_id'])
-                            ? (string) $data['customer_id']
-                            : $data['customer_email'],
-                        metadata: ['checkout' => true],
-                    ),
-                    $discounts,
+                    cart: $lockedCart,
+                    shippingAddress: $data['shipping_address'],
+                    billingAddress: $data['billing_address'],
+                    customerIdentifier: isset($data['customer_id'])
+                        ? (string) $data['customer_id']
+                        : $data['customer_email'],
+                    metadata: ['checkout' => true],
+                    discounts: $discounts,
                 );
 
                 if ($taxEstimate->tax->status !== TaxResultStatus::Calculated) {

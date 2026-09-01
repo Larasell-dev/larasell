@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Taxes;
 
 use Illuminate\Contracts\Config\Repository;
+use Larasell\Larasell\Address;
 use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Enums\TaxPriceMode;
@@ -17,10 +18,19 @@ final readonly class CartTaxEstimator
         private Repository $config,
     ) {}
 
-    /** @param iterable<int, DiscountResult>|null $discounts */
-    public function estimate(Cart $cart, ?CartTaxEstimateRequest $request = null, ?iterable $discounts = null): CartTaxEstimate
-    {
-        $request ??= new CartTaxEstimateRequest;
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @param  iterable<int, DiscountResult>|null  $discounts
+     */
+    public function estimate(
+        Cart $cart,
+        ?Address $shippingAddress = null,
+        ?Address $billingAddress = null,
+        ?Address $originAddress = null,
+        ?string $customerIdentifier = null,
+        array $metadata = [],
+        ?iterable $discounts = null,
+    ): CartTaxEstimate {
         $priceMode = TaxPriceMode::from($this->config->get('larasell.taxes.price_mode', TaxPriceMode::Exclusive->value));
         $items = $cart->purchasableItems();
 
@@ -79,12 +89,12 @@ final readonly class CartTaxEstimator
             lines: $lines,
             currency: $cart->currency,
             priceMode: $priceMode,
-            shippingAddress: $request->shippingAddress,
-            billingAddress: $request->billingAddress,
-            originAddress: $request->originAddress,
-            customerIdentifier: $request->customerIdentifier,
+            shippingAddress: $shippingAddress,
+            billingAddress: $billingAddress,
+            originAddress: $originAddress,
+            customerIdentifier: $customerIdentifier,
             transactionIdentifier: 'cart:'.$cart->getKey(),
-            metadata: $request->metadata,
+            metadata: $metadata,
         );
 
         return new CartTaxEstimate(

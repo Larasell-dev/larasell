@@ -149,13 +149,11 @@ shipment, provide a custom rate resolver or calculator for that policy.
 Pass the location information currently available in the storefront:
 
 ```php
-use Larasell\Larasell\Taxes\CartTaxEstimateRequest;
-
-$estimate = $cart->taxEstimate(new CartTaxEstimateRequest(
+$estimate = $cart->taxEstimate(
     shippingAddress: $shippingAddress,
     billingAddress: $billingAddress,
     customerIdentifier: (string) $customer?->getKey(),
-));
+);
 
 $estimate->subtotal;
 $estimate->shippingAmount;

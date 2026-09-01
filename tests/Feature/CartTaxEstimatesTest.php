@@ -15,7 +15,6 @@ use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingMethod;
-use Larasell\Larasell\Taxes\CartTaxEstimateRequest;
 use Larasell\Larasell\Taxes\ConfiguredTaxCalculator;
 
 final class CartTaxEstimatePromotion implements Promotion
@@ -67,9 +66,9 @@ it('estimates exclusive cart tax after promotion allocations', function () {
     app(PromotionManager::class)->register(CartTaxEstimatePromotion::class);
     $cart = cartForTaxEstimate(1000);
 
-    $estimate = $cart->taxEstimate(new CartTaxEstimateRequest(
+    $estimate = $cart->taxEstimate(
         shippingAddress: cartTaxAddress('DE'),
-    ));
+    );
 
     expect($estimate->tax->status)->toBe(TaxResultStatus::Calculated)
         ->and($estimate->subtotal?->amount())->toBe('1000')
@@ -85,9 +84,9 @@ it('keeps inclusive totals unchanged while extracting tax after discounts', func
     app(PromotionManager::class)->register(CartTaxEstimatePromotion::class);
     $cart = cartForTaxEstimate(1190);
 
-    $estimate = $cart->taxEstimate(new CartTaxEstimateRequest(
+    $estimate = $cart->taxEstimate(
         shippingAddress: cartTaxAddress('DE'),
-    ));
+    );
 
     expect($estimate->amountBeforeTax()?->amount())->toBe('1090')
         ->and($estimate->tax->taxAmount()->amount())->toBe('174')
@@ -109,9 +108,9 @@ it('uses promotion allocations after cumulative target caps', function () {
     ]);
     $cart->add($secondProduct);
 
-    $estimate = $cart->taxEstimate(new CartTaxEstimateRequest(
+    $estimate = $cart->taxEstimate(
         shippingAddress: cartTaxAddress('DE'),
-    ));
+    );
 
     expect($estimate->discountAmount->amount())->toBe('1000')
         ->and($estimate->tax->lines[0]->discountAmount->amount())->toBe('1000')
@@ -125,9 +124,9 @@ it('includes selected shipping as its own taxable estimate line', function () {
     app(ShippingManager::class)->register(CartTaxEstimateShippingMethod::class);
     $cart = cartForTaxEstimate(1000)->selectShippingOption('tax-estimate-shipping');
 
-    $estimate = $cart->taxEstimate(new CartTaxEstimateRequest(
+    $estimate = $cart->taxEstimate(
         shippingAddress: cartTaxAddress('DE'),
-    ));
+    );
 
     expect($estimate->shippingAmount?->amount())->toBe('500')
         ->and($estimate->tax->lines)->toHaveCount(2)
@@ -147,9 +146,9 @@ it('returns unavailable tax and no exclusive payable total without an address', 
 
 it('returns a provisional estimate from the billing fallback', function () {
     useConfiguredCartTaxes(TaxPriceMode::Exclusive);
-    $estimate = cartForTaxEstimate(1000)->taxEstimate(new CartTaxEstimateRequest(
+    $estimate = cartForTaxEstimate(1000)->taxEstimate(
         billingAddress: cartTaxAddress('DE'),
-    ));
+    );
 
     expect($estimate->tax->status)->toBe(TaxResultStatus::Provisional)
         ->and($estimate->tax->taxAmount()->amount())->toBe('190')
