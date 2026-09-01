@@ -28,6 +28,7 @@ use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
+use Larasell\Larasell\Payments\PaymentBreakdownFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Price;
@@ -47,6 +48,7 @@ class Checkout
         private readonly PromotionManager $promotions,
         private readonly PromotionCustomerResolver $promotionCustomers,
         private readonly PromotionRedemptionCounters $promotionRedemptions,
+        private readonly PaymentBreakdownFactory $paymentBreakdowns,
         private readonly CartTaxEstimator $taxes,
         private readonly TaxSnapshotFactory $taxSnapshots,
     ) {}
@@ -352,6 +354,7 @@ class Checkout
                 $paymentMethod,
                 $order,
                 $payment,
+                $this->paymentBreakdowns->make($order, $payment),
                 $paymentOptions,
             ));
         } catch (\Throwable $exception) {

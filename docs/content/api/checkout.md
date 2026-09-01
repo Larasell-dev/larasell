@@ -267,7 +267,28 @@ and return a `Larasell\Larasell\Payments\PaymentResult` from `initiate()`.
 
 Checkout creates the local order and pending payment before invoking a provider.
 The provider therefore receives stable models that can be included in provider
-metadata and idempotency keys:
+metadata and idempotency keys. The request's `$breakdown` contains final product
+and shipping amounts after discounts, tax, and rounding:
+
+```php
+$request->breakdown->lines;    // list of PaymentLine
+$request->breakdown->shipping; // PaymentLine|null
+$request->breakdown->total;    // equals $request->payment->amount
+```
+
+`PaymentLine::$amount` is the final amount for the complete order line, not a
+unit price. Its `quantity` preserves the purchased quantity for display and
+metadata. A provider that multiplies unit prices by quantity should submit the
+line with provider quantity `1`, using Larasell's line amount directly, and
+include the purchased quantity in its label or description. This avoids
+fractional-cent errors when a discount or tax allocation cannot be divided
+evenly across the purchased quantity.
+
+The breakdown constructor validates that all product and shipping amounts add
+up exactly to the persisted payment amount. Providers must not recalculate
+discounts or taxes from catalog prices.
+
+The complete request can then be used to create a provider payment:
 
 ```php
 use Larasell\Larasell\Contracts\PaymentProvider;
