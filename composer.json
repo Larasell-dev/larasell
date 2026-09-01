@@ -43,6 +43,7 @@
   },
   "require-dev": {
     "inertiajs/inertia-laravel": "^3.0",
+    "larastan/larastan": "^3.0",
     "orchestra/testbench": "^11.0",
     "pestphp/pest": "^5.1",
     "laravel/pint": "^1.0",
@@ -59,6 +60,7 @@
   },
   "scripts": {
     "pest": "pest tests/Unit tests/Feature tests/Admin tests/Concurrency",
+    "phpstan": "phpstan analyse",
     "pint": "pint",
     "test": "@pest"
   },
@@ -74,6 +76,7 @@
       "/node_modules",
       "/package-lock.json",
       "/package.json",
+      "/phpstan.neon",
       "/phpunit.xml",
       "/release-please-config.json",
       "/tests",
