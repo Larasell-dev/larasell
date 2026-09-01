@@ -59,7 +59,8 @@
     "inertiajs/inertia-laravel": "Required when using the optional Larasell admin panel."
   },
   "scripts": {
-    "pest": "pest tests/Unit tests/Feature tests/Admin tests/Concurrency",
+    "pest": "pest tests --parallel",
+    "pest:ci": "pest tests",
     "phpstan": "phpstan analyse",
     "pint": "pint",
     "test": "@pest"
