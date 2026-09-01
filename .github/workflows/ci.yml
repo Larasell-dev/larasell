@@ -138,4 +138,4 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run Pest
-        run: composer pest
+        run: composer pest:ci
