@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Collection;
-use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;

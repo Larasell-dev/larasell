@@ -1,6 +1,5 @@
 <?php
 
-use InvalidArgumentException;
 use Larasell\Larasell\Enums\ProductAttributeType;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\ProductAttribute;
