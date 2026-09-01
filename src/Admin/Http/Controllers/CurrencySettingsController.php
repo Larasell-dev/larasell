@@ -50,7 +50,10 @@ class CurrencySettingsController extends Controller
             'productsUrl' => route('larasell.admin.products.index'),
             'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'logoutUrl' => route('larasell.admin.logout'),
-            'user' => ['name' => $admin->name, 'email' => $admin->email],
+            'user' => [
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
+            ],
         ];
     }
 }

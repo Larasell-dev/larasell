@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Enums\ProductAttributeType;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\ProductAttribute;
 
 class ProductAttributeController extends Controller
 {
@@ -22,7 +23,6 @@ class ProductAttributeController extends Controller
 
     public function index(Request $request): Response
     {
-        /** @var class-string<Model> $productAttributeModel */
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
@@ -50,8 +50,8 @@ class ProductAttributeController extends Controller
             'productAttributeCreateUrl' => route('larasell.admin.product-attributes.create'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'productAttributes' => $productAttributes->items(),
             'pagination' => [
@@ -80,8 +80,8 @@ class ProductAttributeController extends Controller
             'productAttributeStoreUrl' => route('larasell.admin.product-attributes.store'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
         ])->rootView('larasell-admin::admin');
     }
@@ -90,10 +90,9 @@ class ProductAttributeController extends Controller
     {
         $data = $this->validatedData($request);
 
-        /** @var class-string<Model> $productAttributeModel */
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
 
-        $productAttribute = DB::transaction(function () use ($data, $productAttributeModel): Model {
+        $productAttribute = DB::transaction(function () use ($data, $productAttributeModel): ProductAttribute {
             $productAttribute = $productAttributeModel::query()->create([
                 'name' => $data['name'],
                 'slug' => $this->uniqueSlug($productAttributeModel, $data['name']),
@@ -110,7 +109,6 @@ class ProductAttributeController extends Controller
 
     public function show(Request $request, string $adminProductAttribute): Response
     {
-        /** @var class-string<Model> $productAttributeModel */
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
         $productAttribute = $productAttributeModel::query()->with(['values' => fn ($query) => $query->orderBy('position')])->findOrFail($adminProductAttribute);
@@ -133,15 +131,14 @@ class ProductAttributeController extends Controller
             ],
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
         ])->rootView('larasell-admin::admin');
     }
 
     public function update(Request $request, string $adminProductAttribute): RedirectResponse
     {
-        /** @var class-string<Model> $productAttributeModel */
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
         $productAttribute = $productAttributeModel::query()->findOrFail($adminProductAttribute);
         $data = $this->validatedData($request, $productAttribute);
@@ -158,14 +155,13 @@ class ProductAttributeController extends Controller
 
     public function destroy(string $adminProductAttribute): RedirectResponse
     {
-        /** @var class-string<Model> $productAttributeModel */
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
         $productAttributeModel::query()->findOrFail($adminProductAttribute)->delete();
 
         return redirect()->route('larasell.admin.product-attributes.index');
     }
 
-    /** @param class-string<Model> $model */
+    /** @param class-string<ProductAttribute> $model */
     private function uniqueSlug(string $model, string $name): string
     {
         $base = Str::slug($name) ?: 'value';
@@ -179,7 +175,7 @@ class ProductAttributeController extends Controller
         return $slug;
     }
 
-    private function uniqueValueSlug(Model $productAttribute, string $name): string
+    private function uniqueValueSlug(ProductAttribute $productAttribute, string $name): string
     {
         $base = Str::slug($name) ?: 'value';
         $slug = $base;
@@ -193,7 +189,7 @@ class ProductAttributeController extends Controller
     }
 
     /** @return array{name: string, type: string, values?: array<int, array{id?: mixed, value: mixed}>} */
-    private function validatedData(Request $request, ?Model $productAttribute = null): array
+    private function validatedData(Request $request, ?ProductAttribute $productAttribute = null): array
     {
         $request->merge([
             'values' => collect($request->input('values', []))
@@ -234,7 +230,7 @@ class ProductAttributeController extends Controller
     }
 
     /** @param array{name: string, type: string, values?: array<int, array{id?: mixed, value: mixed}>} $data */
-    private function syncValues(Model $productAttribute, array $data): void
+    private function syncValues(ProductAttribute $productAttribute, array $data): void
     {
         if ($data['type'] === ProductAttributeType::Boolean->value) {
             $trueValue = $productAttribute->values()->updateOrCreate(

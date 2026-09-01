@@ -15,7 +15,6 @@ class OrderController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        /** @var class-string<Model> $orderModel */
         $orderModel = app(ModelRegistry::class)->order->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
 
@@ -43,8 +42,8 @@ class OrderController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'orders' => $orders->items(),
             'pagination' => [
@@ -61,7 +60,6 @@ class OrderController extends Controller
 
     public function show(Request $request, string $adminOrder): Response
     {
-        /** @var class-string<Model> $orderModel */
         $orderModel = app(ModelRegistry::class)->order->class();
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
         $order = $orderModel::query()->with(['items', 'payments'])->findOrFail($adminOrder);
@@ -75,8 +73,8 @@ class OrderController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
             'order' => [
                 'id' => $order->getKey(),

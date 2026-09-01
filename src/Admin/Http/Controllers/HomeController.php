@@ -22,8 +22,8 @@ class HomeController extends Controller
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
             'user' => [
-                'name' => $admin->name,
-                'email' => $admin->email,
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
             ],
         ])->rootView('larasell-admin::admin');
     }

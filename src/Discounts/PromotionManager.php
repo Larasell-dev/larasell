@@ -168,7 +168,7 @@ final class PromotionManager
         return strtoupper(trim($code));
     }
 
-    /** @return array<string, HasCode> */
+    /** @return array<string, HasCode&Promotion> */
     private function codedPromotions(): array
     {
         $coded = [];

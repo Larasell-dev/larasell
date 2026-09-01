@@ -65,7 +65,7 @@ final readonly class Address implements JsonSerializable
      *     title?: string|null,
      *     state?: string|null,
      *     email?: string|null,
-     *     phone?: string|null
+     *     phone?: string|null,
      *     company?: string|null,
      *     tax_id?: string|null
      * } $address

@@ -2,17 +2,17 @@
 
 namespace Larasell\Larasell\Routing;
 
-use Illuminate\Database\Eloquent\Model;
+use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class CategoryUrl
 {
-    public static function make(Model $category, string $prefix = 'c'): string
+    public static function make(Category $category, string $prefix = 'c'): string
     {
         return '/'.trim($prefix, '/').'/'.(new self)->path($category);
     }
 
-    private function path(Model $category): string
+    private function path(Category $category): string
     {
         return collect($this->segments($category))->implode('/');
     }
@@ -20,7 +20,7 @@ class CategoryUrl
     /**
      * @return array<int, string>
      */
-    private function segments(Model $category): array
+    private function segments(Category $category): array
     {
         $segments = [];
 
@@ -35,7 +35,7 @@ class CategoryUrl
         return $segments;
     }
 
-    private function parent(Model $category): ?Model
+    private function parent(Category $category): ?Category
     {
         if (! $category->parent_id) {
             return null;

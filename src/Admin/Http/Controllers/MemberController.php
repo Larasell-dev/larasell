@@ -103,7 +103,7 @@ class MemberController extends Controller
         return redirect()->route('larasell.admin.settings.members.index');
     }
 
-    /** @return class-string<Model> */
+    /** @return class-string<AdminUser> */
     private function model(): string
     {
         return config('larasell-admin.models.admin_user', AdminUser::class);
@@ -121,7 +121,10 @@ class MemberController extends Controller
             'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
-            'user' => ['name' => $admin->name, 'email' => $admin->email],
+            'user' => [
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
+            ],
         ];
     }
 }

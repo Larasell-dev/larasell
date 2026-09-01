@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class SettingsController extends Controller
         ])->rootView('larasell-admin::admin');
     }
 
-    private function layoutProps(object $admin): array
+    private function layoutProps(User $admin): array
     {
         return [
             'homeUrl' => route('larasell.admin.home'),
@@ -30,7 +31,10 @@ class SettingsController extends Controller
             'productAttributesUrl' => route('larasell.admin.product-attributes.index'),
             'settingsUrl' => route('larasell.admin.settings.index'),
             'logoutUrl' => route('larasell.admin.logout'),
-            'user' => ['name' => $admin->name, 'email' => $admin->email],
+            'user' => [
+                'name' => $admin->getAttribute('name'),
+                'email' => $admin->getAttribute('email'),
+            ],
         ];
     }
 }
