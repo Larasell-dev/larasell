@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Tests\AdminTestCase;
+use Larasell\Larasell\Tests\ConcurrencyTestCase;
 use Larasell\Larasell\Tests\TestCase;
 
 /*
@@ -23,7 +24,7 @@ pest()->extend(AdminTestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Admin');
 
-pest()->extend(TestCase::class)
+pest()->extend(ConcurrencyTestCase::class)
     ->in('Concurrency');
 
 /*

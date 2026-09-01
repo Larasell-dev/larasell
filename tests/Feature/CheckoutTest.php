@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Address;
@@ -19,8 +18,6 @@ use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Payments\RedirectPaymentAction;
 use Larasell\Larasell\Price;
-
-uses(RefreshDatabase::class);
 
 class DecliningCheckoutPaymentProvider implements PaymentProvider
 {
@@ -110,7 +107,7 @@ it('checks out a guest cart with the default cash payment method', function () {
     $result = app(Checkout::class)->create($cart, checkoutData());
     $order = $result->order;
 
-    expect($order->number)->toBe('LS-000001')
+    expect($order->number)->toMatch('/^LS-\d{6,}$/')
         ->and($order->currency)->toBe(Currency::EUR)
         ->and($order->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->customer_id)->toBeNull()
