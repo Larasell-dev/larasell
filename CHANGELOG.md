@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/Larasell-dev/larasell/compare/v1.7.2...v1.8.0) (2026-09-01)
+
+
+### Features
+
+* add cart metadata ([020d4e1](https://github.com/Larasell-dev/larasell/commit/020d4e1f7854acb9c254d98a3cae4db7276cc5ed))
+
 ## [1.7.2](https://github.com/Larasell-dev/larasell/compare/v1.7.1...v1.7.2) (2026-08-31)
 
 
