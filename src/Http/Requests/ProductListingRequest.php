@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
+use Larasell\Larasell\Database\TrustedSqlExpression;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Product;
@@ -70,9 +71,9 @@ class ProductListingRequest extends FormRequest
         }
 
         return match ($this->sort()) {
-            'name' => $products->orderByRaw($this->translatedNameExpression($products).' asc'),
-            'price_asc' => $products->orderByRaw($this->priceAmountExpression($products).' asc'),
-            'price_desc' => $products->orderByRaw($this->priceAmountExpression($products).' desc'),
+            'name' => $products->orderBy(new TrustedSqlExpression($this->translatedNameExpression($products))),
+            'price_asc' => $products->orderBy(new TrustedSqlExpression($this->priceAmountExpression($products))),
+            'price_desc' => $products->orderByDesc(new TrustedSqlExpression($this->priceAmountExpression($products))),
             default => $products,
         };
     }

@@ -25,7 +25,7 @@ final class CurrencySettings
             ->values()
             ->all();
 
-        return $currencies === [] ? [Currency::USD] : $currencies;
+        return $currencies === [] ? [Currency::USD] : array_values($currencies);
     }
 
     /** @return list<string> */

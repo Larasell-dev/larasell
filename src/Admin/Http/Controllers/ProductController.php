@@ -370,7 +370,11 @@ class ProductController extends Controller
         $attributes = $attributeModel::query()
             ->whereKey($data['attribute_ids'])
             ->get()
-            ->sortBy(fn (Model $attribute): int => array_search((string) $attribute->getKey(), array_map('strval', $data['attribute_ids']), true))
+            ->sortBy(function (Model $attribute) use ($data): int {
+                $position = array_search((string) $attribute->getKey(), array_values(array_map('strval', $data['attribute_ids'])), true);
+
+                return $position === false ? PHP_INT_MAX : $position;
+            })
             ->values()
             ->all();
 

@@ -17,7 +17,9 @@ final class ProportionalDiscountAllocator
             throw new InvalidArgumentException('A discount amount cannot be negative.');
         }
 
+        /** @var array<string, numeric-string> $eligible */
         $eligible = [];
+        /** @var numeric-string $eligibleTotal */
         $eligibleTotal = '0';
 
         foreach ($eligibleAmounts as $target => $amount) {
@@ -51,7 +53,9 @@ final class ProportionalDiscountAllocator
         $discountAmount = bccomp($discount->amount(), $eligibleTotal, 0) === 1
             ? $eligibleTotal
             : $discount->amount();
+        /** @var numeric-string $allocatedTotal */
         $allocatedTotal = '0';
+        /** @var array<string, array{amount: numeric-string, remainder: numeric-string}> $shares */
         $shares = [];
 
         foreach ($eligible as $target => $eligibleAmount) {

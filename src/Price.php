@@ -11,6 +11,7 @@ use RuntimeException;
 final readonly class Price implements JsonSerializable
 {
     public function __construct(
+        /** @var numeric-string */
         private string $amount,
     ) {
         if (! preg_match('/^-?\d+$/', $amount)) {
@@ -24,14 +25,17 @@ final readonly class Price implements JsonSerializable
         return new self(self::normalizeAmount($amount));
     }
 
-    /**
-     * @param  array{amount: int|string}  $value
-     */
+    /** @param array<array-key, mixed> $value */
     public static function fromArray(array $value): self
     {
+        if (! isset($value['amount']) || (! is_int($value['amount']) && ! is_string($value['amount']))) {
+            throw new InvalidArgumentException('A price payload must contain an integer amount.');
+        }
+
         return self::of($value['amount']);
     }
 
+    /** @return numeric-string */
     public function amount(): string
     {
         return $this->amount;
@@ -94,6 +98,7 @@ final readonly class Price implements JsonSerializable
         return $this->toArray();
     }
 
+    /** @return numeric-string */
     private static function normalizeAmount(int|string $amount): string
     {
         $amount = (string) $amount;
@@ -105,7 +110,12 @@ final readonly class Price implements JsonSerializable
         $negative = str_starts_with($amount, '-');
         $normalized = ltrim($negative ? substr($amount, 1) : $amount, '0');
         $normalized = $normalized === '' ? '0' : $normalized;
+        $normalized = $negative && $normalized !== '0' ? '-'.$normalized : $normalized;
 
-        return $negative && $normalized !== '0' ? '-'.$normalized : $normalized;
+        if (! is_numeric($normalized)) {
+            throw new InvalidArgumentException('Price amount could not be normalized.');
+        }
+
+        return $normalized;
     }
 }

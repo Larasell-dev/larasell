@@ -264,7 +264,7 @@ class ProductAttributeController extends Controller
             ];
 
             if (isset($input['id'])) {
-                $existingValue = $productAttribute->values()->findOrFail($input['id']);
+                $existingValue = $productAttribute->values()->whereKey($input['id'])->firstOrFail();
                 $existingValue->fill($attributes)->save();
                 $keptIds[] = $existingValue->getKey();
             } else {

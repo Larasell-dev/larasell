@@ -56,27 +56,28 @@ final readonly class Address implements JsonSerializable
         }
     }
 
-    /**
-     * @param array{
-     *     country: string,
-     *     first_name: string,
-     *     last_name: string,
-     *     street: array<int, string>|string,
-     *     city: string,
-     *     postcode: string,
-     *     title?: string|null,
-     *     state?: string|null,
-     *     email?: string|null,
-     *     phone?: string|null,
-     *     company?: string|null,
-     *     tax_id?: string|null
-     * } $address
-     */
+    /** @param array<array-key, mixed> $address */
     public static function fromArray(array $address): self
     {
         foreach (['country', 'first_name', 'last_name', 'street', 'city', 'postcode'] as $field) {
             if (! array_key_exists($field, $address)) {
                 throw new InvalidArgumentException("The address field [{$field}] is required.");
+            }
+        }
+
+        foreach (['country', 'first_name', 'last_name', 'city', 'postcode'] as $field) {
+            if (! is_string($address[$field])) {
+                throw new InvalidArgumentException("The address field [{$field}] must be a string.");
+            }
+        }
+
+        if (! is_string($address['street']) && ! is_array($address['street'])) {
+            throw new InvalidArgumentException('The address field [street] must be a string or array.');
+        }
+
+        foreach (['title', 'state', 'email', 'phone', 'company', 'tax_id'] as $field) {
+            if (isset($address[$field]) && ! is_string($address[$field])) {
+                throw new InvalidArgumentException("The address field [{$field}] must be a string or null.");
             }
         }
 

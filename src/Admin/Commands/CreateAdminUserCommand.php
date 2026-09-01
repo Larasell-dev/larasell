@@ -48,6 +48,10 @@ class CreateAdminUserCommand extends Command
             'password' => ['required', Password::defaults()],
         ])->validate();
 
+        if (! is_string($name) || ! is_string($email) || ! is_string($plainPassword)) {
+            throw new \InvalidArgumentException('Admin user credentials must be strings.');
+        }
+
         $model = config('larasell-admin.models.admin_user', AdminUser::class);
 
         $model::query()->create([

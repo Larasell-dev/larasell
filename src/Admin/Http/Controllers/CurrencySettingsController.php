@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -36,13 +37,18 @@ class CurrencySettingsController extends Controller
             'currencies.*' => ['required', 'string', 'distinct', Rule::enum(Currency::class)],
         ]);
 
-        $settings->save(array_map(fn (string $code): Currency => Currency::from($code), $data['currencies']));
+        $currencies = array_values(array_map(
+            fn (mixed $code): Currency => Currency::from((string) $code),
+            $data['currencies'],
+        ));
+
+        $settings->save($currencies);
 
         return redirect()->route('larasell.admin.settings.currencies.index');
     }
 
     /** @return array<string, mixed> */
-    private function layoutProps(object $admin): array
+    private function layoutProps(Model $admin): array
     {
         return [
             'homeUrl' => route('larasell.admin.home'),
