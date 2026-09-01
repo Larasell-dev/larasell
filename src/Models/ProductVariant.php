@@ -18,6 +18,7 @@ use Larasell\Larasell\Price;
  * @property string|null $sku
  * @property string|null $barcode
  * @property Price|null $price
+ * @property string|null $tax_category
  * @property int|null $stock
  * @property bool|null $allow_backorders
  * @property int|null $min_quantity
@@ -81,6 +82,11 @@ class ProductVariant extends Model
     public function effectiveBarcode(): ?string
     {
         return $this->barcode ?? $this->product->barcode;
+    }
+
+    public function effectiveTaxCategory(): string
+    {
+        return $this->tax_category ?? $this->product->tax_category;
     }
 
     public function availableStock(): ?int

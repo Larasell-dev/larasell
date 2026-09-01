@@ -92,6 +92,11 @@ Applicable promotions are recalculated during checkout. Their identifiers,
 names, totals, and product or shipping allocations are stored on the order.
 See the [Promotions API](/api/promotions) for the snapshot structure.
 
+Taxes are recalculated authoritatively during checkout. Provisional or
+unavailable tax stops checkout, while successful calculations are stored on the
+order, its items, and shipping. See [Taxes](/api/taxes) for configuration,
+estimate handling, and tax snapshot fields.
+
 Both addresses accept an `Address` value object or an associative array. An
 address requires `country`, `first_name`, `last_name`, `street`, `city`, and
 `postcode`. `street` may be a string or an ordered array of lines. `title`,

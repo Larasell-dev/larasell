@@ -16,6 +16,7 @@ use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
+use Larasell\Larasell\Enums\TaxResultStatus;
 use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
@@ -31,6 +32,10 @@ use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
+use Larasell\Larasell\Taxes\CartTaxEstimator;
+use Larasell\Larasell\Taxes\Exceptions\TaxCalculationException;
+use Larasell\Larasell\Taxes\TaxLineResult;
+use Larasell\Larasell\Taxes\TaxSnapshotFactory;
 
 class Checkout
 {
@@ -42,6 +47,8 @@ class Checkout
         private readonly PromotionManager $promotions,
         private readonly PromotionCustomerResolver $promotionCustomers,
         private readonly PromotionRedemptionCounters $promotionRedemptions,
+        private readonly CartTaxEstimator $taxes,
+        private readonly TaxSnapshotFactory $taxSnapshots,
     ) {}
 
     /**
@@ -155,7 +162,40 @@ class Checkout
                     fn (Price $sum, DiscountResult $discount): Price => $sum->add($discount->total()),
                     Price::of(0),
                 );
-                $totalBeforeDiscounts = $shippingOption === null ? $total : $total->add($shippingOption->price);
+                $taxEstimate = $this->taxes->estimate(
+                    cart: $lockedCart,
+                    shippingAddress: $data['shipping_address'],
+                    billingAddress: $data['billing_address'],
+                    customerIdentifier: isset($data['customer_id'])
+                        ? (string) $data['customer_id']
+                        : $data['customer_email'],
+                    metadata: ['checkout' => true],
+                    discounts: $discounts,
+                );
+
+                if ($taxEstimate->tax->status !== TaxResultStatus::Calculated) {
+                    throw new TaxCalculationException(
+                        $taxEstimate->tax->reason ?? 'Checkout requires an authoritative tax calculation.'
+                    );
+                }
+
+                $orderTotal = $taxEstimate->total();
+
+                if ($orderTotal === null) {
+                    throw new TaxCalculationException('Checkout could not determine an authoritative total including tax.');
+                }
+
+                $taxLines = [];
+
+                foreach ($taxEstimate->tax->lines as $taxLine) {
+                    $taxLines[$taxLine->lineIdentifier] = $taxLine;
+                }
+
+                $shippingTaxLine = $shippingOption === null ? null : ($taxLines['shipping'] ?? null);
+
+                if ($shippingOption !== null && ! $shippingTaxLine instanceof TaxLineResult) {
+                    throw new TaxCalculationException('The tax calculation did not return the shipping line.');
+                }
 
                 $order = $this->models->order->query()->create([
                     'number' => $this->orderNumbers->generate(),
@@ -172,12 +212,19 @@ class Checkout
                     'subtotal' => $total,
                     'discount_total' => $discountTotal,
                     'discounts' => [],
+                    'tax_price_mode' => $taxEstimate->tax->priceMode,
+                    'tax_total' => $taxEstimate->tax->taxAmount(),
+                    'tax_snapshot' => $this->taxSnapshots->order($taxEstimate->tax),
                     'shipping_method' => $shippingOption?->method,
                     'shipping_option' => $shippingOption?->handle,
                     'shipping_option_name' => $shippingOption?->name,
                     'metadata' => $lockedCart->metadata,
                     ...($shippingOption === null ? [] : ['shipping_price' => $shippingOption->price]),
-                    'total' => $totalBeforeDiscounts->subtract($discountTotal),
+                    ...($shippingTaxLine === null ? [] : [
+                        'shipping_tax_total' => $shippingTaxLine->taxAmount,
+                        'shipping_tax_snapshot' => $this->taxSnapshots->line($shippingTaxLine, $taxEstimate->tax->priceMode),
+                    ]),
+                    'total' => $orderTotal,
                 ]);
 
                 foreach ($discounts->sortBy('identifier') as $discount) {
@@ -197,6 +244,12 @@ class Checkout
                         ),
                         Price::of(0),
                     );
+                    $taxLine = $taxLines[$target] ?? null;
+
+                    if (! $taxLine instanceof TaxLineResult) {
+                        throw new TaxCalculationException("The tax calculation did not return cart line [{$target}].");
+                    }
+
                     $orderItem = $order->items()->create([
                         'product_id' => $item->product->getKey(),
                         'product_variant_id' => $item->variant->getKey(),
@@ -211,6 +264,10 @@ class Checkout
                         'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,
                         'metadata' => $item->metadata,
                         'discount_total' => $lineDiscountTotal,
+                        'tax_category' => $taxLine->category,
+                        'taxable_amount' => $taxLine->taxableAmount,
+                        'tax_total' => $taxLine->taxAmount,
+                        'tax_snapshot' => $this->taxSnapshots->line($taxLine, $taxEstimate->tax->priceMode),
                         'total' => $item->total(),
                     ]);
                     $orderItemsByTarget[$target] = $orderItem->getKey();

@@ -190,6 +190,9 @@ stores a snapshot of its method, handle, name, and price on the order.
 See the [Promotions API](/api/promotions) for defining automatic discounts and
 reading their allocations.
 
+See [Taxes](/api/taxes) for classifying products, showing calculated or
+provisional cart tax estimates, and handling unavailable totals.
+
 ## Stock and backorders
 
 Products allow backorders by default. When a product has

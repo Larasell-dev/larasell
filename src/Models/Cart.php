@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
 use InvalidArgumentException;
+use Larasell\Larasell\Address;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
@@ -18,6 +19,8 @@ use Larasell\Larasell\Events\PromotionCodeRemoved;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingOption;
+use Larasell\Larasell\Taxes\CartTaxEstimate;
+use Larasell\Larasell\Taxes\CartTaxEstimator;
 
 /**
  * @property int $id
@@ -215,6 +218,24 @@ class Cart extends Model
         }
 
         return $total->subtract($this->discountTotal());
+    }
+
+    /** @param array<string, mixed> $metadata */
+    public function taxEstimate(
+        ?Address $shippingAddress = null,
+        ?Address $billingAddress = null,
+        ?Address $originAddress = null,
+        ?string $customerIdentifier = null,
+        array $metadata = [],
+    ): CartTaxEstimate {
+        return app(CartTaxEstimator::class)->estimate(
+            cart: $this,
+            shippingAddress: $shippingAddress,
+            billingAddress: $billingAddress,
+            originAddress: $originAddress,
+            customerIdentifier: $customerIdentifier,
+            metadata: $metadata,
+        );
     }
 
     /** @return SupportCollection<int, DiscountResult> */
