@@ -3,16 +3,16 @@
 namespace Larasell\Larasell\Http\Requests;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
+use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductListingRequest extends FormRequest
 {
-    private ?Model $resolvedCategory = null;
+    private ?Category $resolvedCategory = null;
 
     public function authorize(): bool
     {
@@ -27,7 +27,7 @@ class ProductListingRequest extends FormRequest
         ];
     }
 
-    public function category(): Model
+    public function category(): Category
     {
         if ($this->resolvedCategory !== null) {
             return $this->resolvedCategory;

@@ -426,7 +426,7 @@ class Product extends Model
     }
 
     /**
-     * @param  Collection<int, ProductAttributeValue>  $values
+     * @param  Collection<array-key, ProductAttributeValue>  $values
      */
     private static function combinationKey(Collection $values): string
     {

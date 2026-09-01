@@ -116,7 +116,7 @@ class Category extends Model
     }
 
     /**
-     * @param  Builder<self>|Relation<self, self, mixed>  $query
+     * @param  Builder<self>|Relation<self, $this, mixed>  $query
      */
     private function onlyVisible(Builder|Relation $query): Builder|Relation
     {
