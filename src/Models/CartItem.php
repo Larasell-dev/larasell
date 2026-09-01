@@ -88,16 +88,19 @@ class CartItem extends Model
         return $this->unitPrice()->multiply($this->quantity);
     }
 
+    /** @return class-string<Cart> */
     protected function cartModel(): string
     {
         return app(ModelRegistry::class)->cart->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();
     }
 
+    /** @return class-string<ProductVariant> */
     protected function productVariantModel(): string
     {
         return app(ModelRegistry::class)->productVariant->class();

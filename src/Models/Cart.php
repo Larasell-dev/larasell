@@ -284,6 +284,7 @@ class Cart extends Model
         return $shippingOption === null ? $subtotal : $subtotal->add($shippingOption->price);
     }
 
+    /** @return class-string<CartItem> */
     protected function cartItemModel(): string
     {
         return app(ModelRegistry::class)->cartItem->class();

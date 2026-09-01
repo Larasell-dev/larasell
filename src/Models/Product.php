@@ -454,26 +454,31 @@ class Product extends Model
         ];
     }
 
+    /** @return class-string<Category> */
     protected function categoryModel(): string
     {
         return app(ModelRegistry::class)->category->class();
     }
 
+    /** @return class-string<ProductImage> */
     protected function productImageModel(): string
     {
         return app(ModelRegistry::class)->productImage->class();
     }
 
+    /** @return class-string<ProductAttributeValue> */
     protected function productAttributeValueModel(): string
     {
         return app(ModelRegistry::class)->productAttributeValue->class();
     }
 
+    /** @return class-string<ProductAttribute> */
     protected function productAttributeModel(): string
     {
         return app(ModelRegistry::class)->productAttribute->class();
     }
 
+    /** @return class-string<ProductVariant> */
     protected function productVariantModel(): string
     {
         return app(ModelRegistry::class)->productVariant->class();

@@ -36,6 +36,7 @@ class ProductAttribute extends Model
         );
     }
 
+    /** @return class-string<ProductAttributeValue> */
     protected function productAttributeValueModel(): string
     {
         return app(ModelRegistry::class)->productAttributeValue->class();

@@ -85,11 +85,13 @@ class ProductAttributeValue extends Model
         );
     }
 
+    /** @return class-string<ProductAttribute> */
     protected function productAttributeModel(): string
     {
         return app(ModelRegistry::class)->productAttribute->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();

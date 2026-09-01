@@ -43,6 +43,7 @@ class ProductImage extends Model
         return Storage::disk(config('larasell.images.disk'))->url($this->path);
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();

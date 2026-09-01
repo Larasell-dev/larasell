@@ -98,11 +98,13 @@ class Category extends Model
         )->withTimestamps();
     }
 
+    /** @return class-string<Category> */
     protected function categoryModel(): string
     {
         return app(ModelRegistry::class)->category->class();
     }
 
+    /** @return class-string<Product> */
     protected function productModel(): string
     {
         return app(ModelRegistry::class)->product->class();
