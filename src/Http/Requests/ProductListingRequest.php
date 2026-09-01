@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Product;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductListingRequest extends FormRequest
@@ -19,6 +20,7 @@ class ProductListingRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
@@ -46,6 +48,7 @@ class ProductListingRequest extends FormRequest
             ->firstOrFail();
     }
 
+    /** @return Builder<Product> */
     public function products(): Builder
     {
         $category = $this->category();
@@ -99,6 +102,7 @@ class ProductListingRequest extends FormRequest
         };
     }
 
+    /** @param Builder<Product> $query */
     private function priceAmountExpression(Builder $query): string
     {
         $driver = $query->getModel()->getConnection()->getDriverName();
@@ -113,6 +117,7 @@ class ProductListingRequest extends FormRequest
         };
     }
 
+    /** @param Builder<Product> $query */
     private function translatedNameExpression(Builder $query): string
     {
         $driver = $query->getModel()->getConnection()->getDriverName();

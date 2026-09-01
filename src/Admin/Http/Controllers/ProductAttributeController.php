@@ -191,8 +191,10 @@ class ProductAttributeController extends Controller
     /** @return array{name: string, type: string, values?: array<int, array{id?: mixed, value: mixed}>} */
     private function validatedData(Request $request, ?ProductAttribute $productAttribute = null): array
     {
+        $values = $request->input('values', []);
+
         $request->merge([
-            'values' => collect($request->input('values', []))
+            'values' => collect(is_array($values) ? $values : [])
                 ->filter(function (mixed $value): bool {
                     if (! is_array($value) || ! array_key_exists('value', $value)) {
                         return false;

@@ -109,6 +109,7 @@ class MemberController extends Controller
         return config('larasell-admin.models.admin_user', AdminUser::class);
     }
 
+    /** @return array<string, mixed> */
     private function layoutProps(Request $request): array
     {
         $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));

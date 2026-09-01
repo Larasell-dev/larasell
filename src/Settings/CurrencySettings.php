@@ -18,7 +18,7 @@ final class CurrencySettings
     {
         $codes = $this->models->setting->query()->where('key', self::KEY)->first()?->getAttribute('value')['enabled'] ?? [Currency::USD->value];
 
-        $currencies = collect($codes)
+        $currencies = collect(is_array($codes) ? $codes : [])
             ->map(fn (mixed $code): ?Currency => is_string($code) ? Currency::tryFrom($code) : null)
             ->filter()
             ->unique(fn (Currency $currency): string => $currency->value)

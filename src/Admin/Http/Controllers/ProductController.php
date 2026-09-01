@@ -399,15 +399,16 @@ class ProductController extends Controller
             'variants.*.max_quantity' => ['present', 'nullable', 'integer', 'min:1'],
             'variants.*.status' => ['required', Rule::enum(Visibility::class)],
         ]);
+        $variantData = is_array($data['variants']) ? $data['variants'] : [];
 
-        $ids = collect($data['variants'])->pluck('id')->map(fn ($id): int => (int) $id);
+        $ids = collect($variantData)->pluck('id')->map(fn ($id): int => (int) $id);
         $variants = $product->variants()->whereKey($ids)->get()->keyBy('id');
         if ($variants->count() !== $ids->count()) {
             throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
         }
 
         foreach (['sku', 'barcode'] as $identifier) {
-            $values = collect($data['variants'])->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
+            $values = collect($variantData)->pluck($identifier)->filter(fn ($value): bool => $value !== null && $value !== '');
             if ($values->duplicates()->isNotEmpty() || DB::table($variantTable)->whereNotIn('id', $ids)->whereIn($identifier, $values)->exists()) {
                 throw ValidationException::withMessages(["variants.{$identifier}" => "Variant {$identifier}s must be unique."]);
             }
@@ -490,6 +491,7 @@ class ProductController extends Controller
         return $slug;
     }
 
+    /** @return array<string, mixed> */
     private function validatedProductData(Request $request): array
     {
         $data = $request->validate([
@@ -515,7 +517,10 @@ class ProductController extends Controller
         return $data;
     }
 
-    /** @param class-string<Product> $productModel */
+    /**
+     * @param  class-string<Product>  $productModel
+     * @return array<int, mixed>
+     */
     private function categoryOptions(string $productModel): array
     {
         $categories = $productModel::query()->getModel()->categories()->getRelated()->newQuery()
@@ -551,7 +556,10 @@ class ProductController extends Controller
         return $productModel::query()->getModel()->categories()->getRelated()->getKeyName();
     }
 
-    /** @param class-string<Product> $productModel */
+    /**
+     * @param  class-string<Product>  $productModel
+     * @return array<int, mixed>
+     */
     private function productAttributeValueOptions(string $productModel): array
     {
         $valueModel = $productModel::query()->getModel()->attributeValues()->getRelated();

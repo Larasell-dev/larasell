@@ -41,6 +41,7 @@ class CurrencySettingsController extends Controller
         return redirect()->route('larasell.admin.settings.currencies.index');
     }
 
+    /** @return array<string, mixed> */
     private function layoutProps(object $admin): array
     {
         return [

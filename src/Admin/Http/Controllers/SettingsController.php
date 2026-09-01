@@ -21,6 +21,7 @@ class SettingsController extends Controller
         ])->rootView('larasell-admin::admin');
     }
 
+    /** @return array<string, mixed> */
     private function layoutProps(User $admin): array
     {
         return [

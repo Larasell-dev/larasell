@@ -30,7 +30,7 @@ class ShippingManager
     public function options(Cart $cart): Collection
     {
         $options = collect($this->methods)
-            ->flatMap(fn (string $method) => $this->container->make($method)->options($cart))
+            ->flatMap(fn (string $method): Collection => $this->container->make($method)->options($cart))
             ->values();
 
         $duplicate = $options->groupBy('handle')->first(fn (Collection $group) => $group->count() > 1);
