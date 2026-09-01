@@ -12,6 +12,7 @@ final readonly class PaymentRequest
         public string $method,
         public Order $order,
         public Payment $payment,
+        public PaymentBreakdown $breakdown,
         public array $options = [],
     ) {}
 
