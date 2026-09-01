@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/Larasell-dev/larasell/compare/v1.8.0...v1.9.0) (2026-09-01)
+
+
+### Features
+
+* add line item metadata ([eaf3973](https://github.com/Larasell-dev/larasell/commit/eaf3973f98872611f323a59afeb425b493813353))
+
 ## [1.8.0](https://github.com/Larasell-dev/larasell/compare/v1.7.2...v1.8.0) (2026-09-01)
 
 
