@@ -14,10 +14,12 @@ use Larasell\Larasell\Admin\Models\AdminUser;
 
 class MemberController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
         $model = $this->model();
-        $currentMember = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $currentMember = $this->adminUser($request);
         $memberCount = $model::query()->count();
 
         return Inertia::render('Settings/Members/Index', [
@@ -96,7 +98,7 @@ class MemberController extends Controller
     public function destroy(Request $request, DeleteMember $deleteMember, string $adminMember): RedirectResponse
     {
         $member = $this->model()::query()->findOrFail($adminMember);
-        $currentMember = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $currentMember = $this->adminUser($request);
 
         $deleteMember->handle($member, $currentMember);
 
@@ -112,7 +114,7 @@ class MemberController extends Controller
     /** @return array<string, mixed> */
     private function layoutProps(Request $request): array
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return [
             'homeUrl' => route('larasell.admin.home'),

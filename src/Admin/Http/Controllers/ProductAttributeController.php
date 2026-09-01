@@ -17,6 +17,8 @@ use Larasell\Larasell\Models\ProductAttribute;
 
 class ProductAttributeController extends Controller
 {
+    use ResolvesAdminUser;
+
     private const BOOLEAN_FALSE_VALUE_SLUG = '__boolean_false';
 
     private const BOOLEAN_TRUE_VALUE_SLUG = '__boolean_true';
@@ -24,7 +26,7 @@ class ProductAttributeController extends Controller
     public function index(Request $request): Response
     {
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $productAttributes = $productAttributeModel::query()
             ->withCount('values')
@@ -68,7 +70,7 @@ class ProductAttributeController extends Controller
 
     public function create(Request $request): Response
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return Inertia::render('ProductAttributes/Create', [
             'homeUrl' => route('larasell.admin.home'),
@@ -110,7 +112,7 @@ class ProductAttributeController extends Controller
     public function show(Request $request, string $adminProductAttribute): Response
     {
         $productAttributeModel = app(ModelRegistry::class)->productAttribute->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $productAttribute = $productAttributeModel::query()->with(['values' => fn ($query) => $query->orderBy('position')])->findOrFail($adminProductAttribute);
 
         return Inertia::render('ProductAttributes/Show', [

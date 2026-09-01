@@ -9,9 +9,11 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function __invoke(Request $request): Response
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return Inertia::render('Home', [
             'homeUrl' => route('larasell.admin.home'),

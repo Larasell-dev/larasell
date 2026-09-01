@@ -14,9 +14,11 @@ use Larasell\Larasell\Settings\CurrencySettings;
 
 class CurrencySettingsController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request, CurrencySettings $settings): Response
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $enabled = $settings->enabled();
 
         return Inertia::render('Settings/Currencies/Index', [

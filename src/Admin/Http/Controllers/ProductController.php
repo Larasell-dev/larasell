@@ -26,10 +26,12 @@ use Larasell\Larasell\Translatable;
 
 class ProductController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $products = $productModel::query()
             ->latest('id')
@@ -91,7 +93,7 @@ class ProductController extends Controller
     public function create(Request $request): Response
     {
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return Inertia::render('Products/Create', [
             'homeUrl' => route('larasell.admin.home'),
@@ -134,7 +136,7 @@ class ProductController extends Controller
     public function show(Request $request, string $adminProduct): Response
     {
         $productModel = app(ModelRegistry::class)->product->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $product = $productModel::query()->findOrFail($adminProduct);
 
         return Inertia::render('Products/Show', [
@@ -421,6 +423,10 @@ class ProductController extends Controller
         DB::transaction(function () use ($data, $variants): void {
             foreach ($data['variants'] as $input) {
                 $variant = $variants->get($input['id']);
+                if ($variant === null) {
+                    throw ValidationException::withMessages(['variants' => 'Every variant must belong to this product.']);
+                }
+
                 if ($input['min_quantity'] !== null && $input['max_quantity'] !== null && $input['min_quantity'] > $input['max_quantity']) {
                     throw ValidationException::withMessages(['variants' => 'Variant minimum quantity cannot exceed maximum quantity.']);
                 }

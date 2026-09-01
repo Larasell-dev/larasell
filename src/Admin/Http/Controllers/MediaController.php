@@ -15,10 +15,12 @@ use Larasell\Larasell\Models\ProductImage;
 
 class MediaController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function index(Request $request): Response
     {
         $imageModel = app(ModelRegistry::class)->productImage->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $images = $imageModel::query()
             ->latest()

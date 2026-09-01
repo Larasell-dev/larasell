@@ -13,10 +13,12 @@ use Larasell\Larasell\Models\ModelRegistry;
 
 class OrderController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function __invoke(Request $request): Response
     {
         $orderModel = app(ModelRegistry::class)->order->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         $orders = $orderModel::query()
             ->latest('id')
@@ -61,7 +63,7 @@ class OrderController extends Controller
     public function show(Request $request, string $adminOrder): Response
     {
         $orderModel = app(ModelRegistry::class)->order->class();
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
         $order = $orderModel::query()->with(['items', 'payments'])->findOrFail($adminOrder);
 
         return Inertia::render('Orders/Show', [

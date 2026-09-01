@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Admin\Http\Controllers;
 
-use Illuminate\Foundation\Auth\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Inertia\Inertia;
@@ -10,9 +10,11 @@ use Inertia\Response;
 
 class SettingsController extends Controller
 {
+    use ResolvesAdminUser;
+
     public function __invoke(Request $request): Response
     {
-        $admin = $request->user(config('larasell-admin.guard', 'larasell-admin'));
+        $admin = $this->adminUser($request);
 
         return Inertia::render('Settings/Index', [
             ...$this->layoutProps($admin),
@@ -22,7 +24,7 @@ class SettingsController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function layoutProps(User $admin): array
+    private function layoutProps(Model $admin): array
     {
         return [
             'homeUrl' => route('larasell.admin.home'),

@@ -290,7 +290,7 @@ class Product extends Model
 
         $combinations = $dimensions->reduce(
             fn (Collection $combinations, ProductAttribute $dimension): Collection => $combinations->flatMap(
-                fn (array $combination): Collection => $values->get($dimension->id)->map(
+                fn (array $combination): Collection => $values->get($dimension->id, collect())->map(
                     fn (ProductAttributeValue $value): array => [...$combination, $value],
                 ),
             ),
