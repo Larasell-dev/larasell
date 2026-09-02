@@ -106,6 +106,16 @@ it('sorts products by their name in the current locale', function () {
         ->assertExactJson(['table', 'lamp']);
 });
 
+it('accepts name as an explicit sort option', function () {
+    $category = categoryForListing();
+    productForListing(['slug' => 'z-lamp', 'name' => 'Z Lamp'], $category);
+    productForListing(['slug' => 'a-table', 'name' => 'A Table'], $category);
+
+    $this->getJson('/c/shirts?sort=name')
+        ->assertOk()
+        ->assertExactJson(['a-table', 'z-lamp']);
+});
+
 it('resolves a category by its slug in the current locale', function () {
     App::setLocale('de');
     $category = categoryForListing([
