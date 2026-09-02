@@ -1,9 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react'
 
-type Price = {
-  amount: string
-}
-
 type Product = {
   id: number | string
   image: {
@@ -11,7 +7,7 @@ type Product = {
     url: string
   } | null
   name: string
-  price: Price
+  price: string
   slug: string
 }
 
@@ -19,12 +15,11 @@ type Props = {
   category: {
     name: string
   }
-  currency: string
   products: Product[]
   sort: string
 }
 
-export default function ProductIndex({ category, currency, products, sort }: Props) {
+export default function ProductIndex({ category, products, sort }: Props) {
   return (
     <main>
       <Head title={category.name} />
@@ -53,7 +48,7 @@ export default function ProductIndex({ category, currency, products, sort }: Pro
                   <img src={product.image.url} alt={product.image.alt ?? product.name} />
                 )}
                 <h2>{product.name}</h2>
-                <p>{formatPrice(product.price, currency)}</p>
+                <p>{product.price}</p>
               </Link>
             </li>
           ))}
@@ -61,11 +56,4 @@ export default function ProductIndex({ category, currency, products, sort }: Pro
       )}
     </main>
   )
-}
-
-function formatPrice(price: Price, currency: string) {
-  const formatter = new Intl.NumberFormat(undefined, { currency, style: 'currency' })
-  const fractionDigits = formatter.resolvedOptions().maximumFractionDigits ?? 2
-
-  return formatter.format(Number(price.amount) / (10 ** fractionDigits))
 }
