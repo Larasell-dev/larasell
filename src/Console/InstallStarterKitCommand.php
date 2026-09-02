@@ -25,9 +25,14 @@ class InstallStarterKitCommand extends Command
             $installations[$file->getPathname()] = base_path($relativePath);
         }
 
+        $replaceable = [
+            base_path('routes/web.php'),
+            base_path('vite.config.js'),
+        ];
         $conflicts = array_filter(
             $installations,
-            fn (string $destination): bool => $files->exists($destination),
+            fn (string $destination): bool => $files->exists($destination)
+                && ! in_array($destination, $replaceable, true),
         );
 
         if ($conflicts !== [] && ! $this->option('force')) {
@@ -49,7 +54,9 @@ class InstallStarterKitCommand extends Command
             $files->copy($sourceFile, $destination);
         }
 
-        $this->registerOrderConfirmationRoute($files);
+        if (! $this->registerInertiaMiddleware($files)) {
+            return self::FAILURE;
+        }
 
         $this->components->info('Larasell starter kit installed.');
 
@@ -80,6 +87,7 @@ class InstallStarterKitCommand extends Command
                 'npm',
                 'install',
                 '@inertiajs/react',
+                '@inertiajs/vite',
                 'react',
                 'react-dom',
             ]);
@@ -101,7 +109,33 @@ class InstallStarterKitCommand extends Command
             if (! $result->successful()) {
                 return $this->dependencyInstallationFailed($result);
             }
+
+            if (! $this->configureSsrBuildScript($files)) {
+                return false;
+            }
         }
+
+        return true;
+    }
+
+    private function configureSsrBuildScript(Filesystem $files): bool
+    {
+        $packagePath = base_path('package.json');
+        $package = json_decode($files->get($packagePath), true);
+
+        if (! is_array($package)) {
+            $this->components->error('Unable to configure SSR in package.json.');
+
+            return false;
+        }
+
+        $package['scripts'] = is_array($package['scripts'] ?? null) ? $package['scripts'] : [];
+        $package['scripts']['build'] = 'vite build && vite build --ssr';
+
+        $files->put(
+            $packagePath,
+            json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL,
+        );
 
         return true;
     }
@@ -127,28 +161,42 @@ class InstallStarterKitCommand extends Command
         return false;
     }
 
-    private function registerOrderConfirmationRoute(Filesystem $files): void
+    private function registerInertiaMiddleware(Filesystem $files): bool
     {
-        $routesPath = base_path('routes/web.php');
+        $bootstrapPath = base_path('bootstrap/app.php');
 
-        if (! $files->exists($routesPath)) {
-            return;
+        if (! $files->exists($bootstrapPath)) {
+            return true;
         }
 
-        $routes = $files->get($routesPath);
+        $bootstrap = $files->get($bootstrapPath);
 
-        if (str_contains($routes, "name('orders.confirmation')")) {
-            return;
+        if (str_contains($bootstrap, 'HandleInertiaRequests::class')) {
+            return true;
         }
 
-        $route = <<<'PHP'
+        $middlewareImport = "use Illuminate\\Foundation\\Configuration\\Middleware;\n";
+        $middlewareCallback = "->withMiddleware(function (Middleware \$middleware): void {\n";
 
-\Illuminate\Support\Facades\Route::get(
-    '/orders/{publicId}/confirmation',
-    [\App\Http\Controllers\OrderController::class, 'show'],
-)->name('orders.confirmation');
-PHP;
+        if (! str_contains($bootstrap, $middlewareImport) || ! str_contains($bootstrap, $middlewareCallback)) {
+            $this->components->error('Unable to register the Inertia middleware in bootstrap/app.php.');
 
-        $files->append($routesPath, $route.PHP_EOL);
+            return false;
+        }
+
+        $bootstrap = str_replace(
+            $middlewareImport,
+            "use App\\Http\\Middleware\\HandleInertiaRequests;\n{$middlewareImport}",
+            $bootstrap,
+        );
+        $bootstrap = str_replace(
+            $middlewareCallback,
+            $middlewareCallback."        \$middleware->web(append: [HandleInertiaRequests::class]);\n",
+            $bootstrap,
+        );
+
+        $files->put($bootstrapPath, $bootstrap);
+
+        return true;
     }
 }
