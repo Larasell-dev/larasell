@@ -49,6 +49,8 @@ class InstallStarterKitCommand extends Command
             $files->copy($sourceFile, $destination);
         }
 
+        $this->registerOrderConfirmationRoute($files);
+
         $this->components->info('Larasell starter kit installed.');
 
         return self::SUCCESS;
@@ -123,5 +125,30 @@ class InstallStarterKitCommand extends Command
         }
 
         return false;
+    }
+
+    private function registerOrderConfirmationRoute(Filesystem $files): void
+    {
+        $routesPath = base_path('routes/web.php');
+
+        if (! $files->exists($routesPath)) {
+            return;
+        }
+
+        $routes = $files->get($routesPath);
+
+        if (str_contains($routes, "name('orders.confirmation')")) {
+            return;
+        }
+
+        $route = <<<'PHP'
+
+\Illuminate\Support\Facades\Route::get(
+    '/orders/{publicId}/confirmation',
+    [\App\Http\Controllers\OrderController::class, 'show'],
+)->name('orders.confirmation');
+PHP;
+
+        $files->append($routesPath, $route.PHP_EOL);
     }
 }

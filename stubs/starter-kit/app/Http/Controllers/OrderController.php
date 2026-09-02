@@ -7,9 +7,9 @@ use Inertia\Response;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\OrderItem;
 
-class OrderConfirmationController extends Controller
+class OrderController extends Controller
 {
-    public function __invoke(string $publicId): Response
+    public function show(string $publicId): Response
     {
         $order = Order::query()
             ->with('items')
