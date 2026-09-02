@@ -1,5 +1,4 @@
 import { Head } from '@inertiajs/react'
-import Header from '../Components/Header'
 
 type Order = {
   customerEmail: string
@@ -19,42 +18,38 @@ type Order = {
 
 export default function OrderConfirmation({ order }: { order: Order }) {
   return (
-    <>
+    <main>
       <Head title={`Order ${order.number}`} />
-      <Header />
+      <h1>Order confirmed</h1>
+      <p>Thank you, {order.customerName}. Your order has been received.</p>
 
-      <main>
-        <h1>Order confirmed</h1>
-        <p>Thank you, {order.customerName}. Your order has been received.</p>
+      <dl>
+        <dt>Order number</dt>
+        <dd>{order.number}</dd>
+        <dt>Email</dt>
+        <dd>{order.customerEmail}</dd>
+        <dt>Status</dt>
+        <dd>{formatStatus(order.status)}</dd>
+      </dl>
 
-        <dl>
-          <dt>Order number</dt>
-          <dd>{order.number}</dd>
-          <dt>Email</dt>
-          <dd>{order.customerEmail}</dd>
-          <dt>Status</dt>
-          <dd>{formatStatus(order.status)}</dd>
-        </dl>
+      <h2>Items</h2>
+      <ul>
+        {order.items.map((item) => (
+          <li key={item.id}>
+            <span>{item.name}</span>{' '}
+            <span>{item.quantity} x {item.unitPrice}</span>{' '}
+            <span>{item.total}</span>
+          </li>
+        ))}
+      </ul>
 
-        <h2>Items</h2>
-        <ul>
-          {order.items.map((item) => (
-            <li key={item.id}>
-              <span>{item.name}</span>{' '}
-              <span>{item.quantity} x {item.unitPrice}</span>{' '}
-              <span>{item.total}</span>
-            </li>
-          ))}
-        </ul>
-
-        <dl>
-          <dt>Subtotal</dt>
-          <dd>{order.subtotal}</dd>
-          <dt>Total</dt>
-          <dd>{order.total}</dd>
-        </dl>
-      </main>
-    </>
+      <dl>
+        <dt>Subtotal</dt>
+        <dd>{order.subtotal}</dd>
+        <dt>Total</dt>
+        <dd>{order.total}</dd>
+      </dl>
+    </main>
   )
 }
 
