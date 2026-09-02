@@ -3,6 +3,7 @@
 namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
+use Larasell\Larasell\Console\InstallStarterKitCommand;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Contracts\TaxCalculator;
@@ -58,6 +59,7 @@ class LarasellServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                InstallStarterKitCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,
             ]);
