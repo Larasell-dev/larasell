@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\App;
+use App\Support\StorefrontLocale;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
@@ -16,7 +16,7 @@ class ProductController extends Controller
     {
         $category = $request->category();
         $currency = $currencies->enabled()[0];
-        $locale = App::currentLocale();
+        $locale = StorefrontLocale::current();
 
         return Inertia::render('Products/Index', [
             'category' => [
