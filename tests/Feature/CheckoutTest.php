@@ -108,6 +108,8 @@ it('checks out a guest cart with the default cash payment method', function () {
     $order = $result->order;
 
     expect($order->number)->toMatch('/^LS-\d{6,}$/')
+        ->and($order->public_id)->toBeUuid()
+        ->and($order->public_id)->not->toBe((string) $order->getKey())
         ->and($order->currency)->toBe(Currency::EUR)
         ->and($order->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->customer_id)->toBeNull()

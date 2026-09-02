@@ -5,6 +5,23 @@ description: Generate customizable, concurrency-safe order numbers.
 
 # Order Numbers
 
+Every order has three identifiers with separate purposes:
+
+- `id` is the internal database primary key.
+- `public_id` is an opaque UUID suitable for storefront URLs and external API
+  references.
+- `number` is the human-readable reference used in emails, invoices, and
+  customer support.
+
+The package generates `public_id` automatically and enforces its uniqueness in
+the database. It is intentionally independent of the configurable order number.
+Do not expose the sequential `id` in storefront URLs.
+
+An unguessable public identifier prevents order enumeration, but it does not
+replace authorization. Applications remain responsible for checking customer
+ownership or otherwise controlling guest access before exposing personal,
+payment, or fulfillment information.
+
 Use `OrderNumberFactory` when creating an order. It allocates the sequence in
 the database, so concurrent requests cannot receive the same sequence.
 

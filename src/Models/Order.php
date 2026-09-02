@@ -4,12 +4,14 @@ namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
@@ -32,6 +34,7 @@ use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $number
  * @property string|null $idempotency_key
  * @property string|null $idempotency_fingerprint
@@ -70,6 +73,8 @@ class Order extends Model
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
+    use HasUuids;
+
     protected $table = 'larasell_orders';
 
     protected $guarded = [];
@@ -100,6 +105,17 @@ class Order extends Model
         'shipping_tax_snapshot' => 'array',
         'metadata' => AsCollection::class,
     ];
+
+    /** @return array<int, string> */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
+
+    public function newUniqueId(): string
+    {
+        return (string) Str::uuid();
+    }
 
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
