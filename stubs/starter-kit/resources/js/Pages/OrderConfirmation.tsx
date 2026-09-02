@@ -1,24 +1,19 @@
 import { Head } from '@inertiajs/react'
 
-type Price = {
-  amount: string
-}
-
 type Order = {
-  currency: string
   customerEmail: string
   customerName: string
   items: Array<{
     id: number | string
     name: string
     quantity: number
-    total: Price
-    unitPrice: Price
+    total: string
+    unitPrice: string
   }>
   number: string
   status: string
-  subtotal: Price
-  total: Price
+  subtotal: string
+  total: string
 }
 
 export default function OrderConfirmation({ order }: { order: Order }) {
@@ -43,27 +38,20 @@ export default function OrderConfirmation({ order }: { order: Order }) {
         {order.items.map((item) => (
           <li key={item.id}>
             <span>{item.name}</span>{' '}
-            <span>{item.quantity} x {formatPrice(item.unitPrice, order.currency)}</span>{' '}
-            <span>{formatPrice(item.total, order.currency)}</span>
+            <span>{item.quantity} x {item.unitPrice}</span>{' '}
+            <span>{item.total}</span>
           </li>
         ))}
       </ul>
 
       <dl>
         <dt>Subtotal</dt>
-        <dd>{formatPrice(order.subtotal, order.currency)}</dd>
+        <dd>{order.subtotal}</dd>
         <dt>Total</dt>
-        <dd>{formatPrice(order.total, order.currency)}</dd>
+        <dd>{order.total}</dd>
       </dl>
     </main>
   )
-}
-
-function formatPrice(price: Price, currency: string) {
-  const formatter = new Intl.NumberFormat(undefined, { currency, style: 'currency' })
-  const fractionDigits = formatter.resolvedOptions().maximumFractionDigits ?? 2
-
-  return formatter.format(Number(price.amount) / (10 ** fractionDigits))
 }
 
 function formatStatus(status: string) {
