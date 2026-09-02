@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Http\Requests\ProductDetailRequest;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
@@ -41,6 +42,30 @@ class ProductController extends Controller
                 })
                 ->all(),
             'sort' => $request->sort(),
+        ]);
+    }
+
+    public function show(ProductDetailRequest $request, CurrencySettings $currencies): Response
+    {
+        $currency = $currencies->enabled()[0];
+        $locale = App::currentLocale();
+        $product = $request->product()->load('images');
+
+        return Inertia::render('Products/Show', [
+            'product' => [
+                'id' => $product->getKey(),
+                'name' => $product->name->get(),
+                'slug' => $product->slug->get(),
+                'description' => $product->description?->get(),
+                'price' => Price::format($product->price, $currency, $locale),
+                'images' => $product->images
+                    ->map(fn ($image): array => [
+                        'id' => $image->getKey(),
+                        'alt' => $image->alt,
+                        'url' => $image->url(),
+                    ])
+                    ->all(),
+            ],
         ]);
     }
 }
