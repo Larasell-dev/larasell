@@ -25,7 +25,7 @@ class ProductListingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sort' => ['nullable', Rule::in(['price_asc', 'price_desc'])],
+            'sort' => ['nullable', Rule::in(['name', 'price_asc', 'price_desc'])],
             'attributes' => ['nullable', 'array'],
         ];
     }
