@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react'
 import { useTranslation } from '@larasell-dev/inertia-i18n/react'
+import LocaleSwitcher from './LocaleSwitcher'
 
 type NavigationItem = {
   children: NavigationItem[]
@@ -24,6 +25,8 @@ export default function Header() {
           <NavigationItems items={navigation} />
         </nav>
       )}
+
+      <LocaleSwitcher />
     </header>
   )
 }
