@@ -1,5 +1,7 @@
 <?php
 
+use Larasell\Larasell\Cart\Exceptions\InsufficientCartStockException;
+use Larasell\Larasell\Cart\Exceptions\UnavailableCartItemException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -32,12 +34,12 @@ it('revalidates variant stock and availability after the cart was populated', fu
     $variant->update(['stock' => 1]);
 
     expect(fn () => variantCheckout($cart))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds available variant stock.');
+        ->toThrow(InsufficientCartStockException::class, 'Cart item quantity exceeds available variant stock.');
 
     $variant->update(['stock' => 5, 'status' => Visibility::Hidden]);
 
     expect(fn () => variantCheckout($cart))
-        ->toThrow(InvalidArgumentException::class, 'The product variant is unavailable.');
+        ->toThrow(UnavailableCartItemException::class, 'The product variant is unavailable.');
 });
 
 it('restores stock to the selected variant when an order is cancelled', function () {

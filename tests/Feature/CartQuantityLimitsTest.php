@@ -1,5 +1,7 @@
 <?php
 
+use Larasell\Larasell\Cart\Exceptions\CartQuantityBelowMinimumException;
+use Larasell\Larasell\Cart\Exceptions\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
@@ -13,8 +15,12 @@ it('checks product min and max quantities when adding products to the cart', fun
     ]);
 
     if ($exceptionMessage !== null) {
+        $exception = str_contains($exceptionMessage, 'below')
+            ? CartQuantityBelowMinimumException::class
+            : CartQuantityExceedsMaximumException::class;
+
         expect(fn () => $cart->add($product, $quantity))
-            ->toThrow(InvalidArgumentException::class, $exceptionMessage);
+            ->toThrow($exception, $exceptionMessage);
 
         expect($cart->items()->count())->toBe(0);
 
@@ -48,7 +54,7 @@ it('checks max quantity against the final quantity when adding an existing produ
     $cart->add($product, 3);
 
     expect(fn () => $cart->add($product, 3))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds the product maximum quantity.');
+        ->toThrow(CartQuantityExceedsMaximumException::class, 'Cart item quantity exceeds the product maximum quantity.');
 
     expect($cart->items()->first()->quantity)->toBe(3);
 });
@@ -71,14 +77,14 @@ it('checks product min and max quantities when setting cart item quantities', fu
     ]);
 
     expect(fn () => $cart->set($product, 2))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity is below the product minimum quantity.');
+        ->toThrow(CartQuantityBelowMinimumException::class, 'Cart item quantity is below the product minimum quantity.');
 
     $item = $cart->set($product, 4);
 
     expect($item->quantity)->toBe(4);
 
     expect(fn () => $cart->set($product, 6))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds the product maximum quantity.');
+        ->toThrow(CartQuantityExceedsMaximumException::class, 'Cart item quantity exceeds the product maximum quantity.');
 
     expect($cart->items()->first()->quantity)->toBe(4);
 });
@@ -92,7 +98,7 @@ it('checks product max quantity before available stock', function () {
     ]);
 
     expect(fn () => $cart->add($product, 6))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds the product maximum quantity.');
+        ->toThrow(CartQuantityExceedsMaximumException::class, 'Cart item quantity exceeds the product maximum quantity.');
 });
 
 function product(array $attributes = []): Product

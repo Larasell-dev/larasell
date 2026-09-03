@@ -1,5 +1,6 @@
 <?php
 
+use Larasell\Larasell\Cart\Exceptions\InsufficientCartStockException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -120,8 +121,24 @@ it('enforces variant stock across customized lines', function () {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $cart->add($product, 2, ['belongs_to' => 'Alice']);
 
-    expect(fn () => $cart->add($product, 2, ['belongs_to' => 'Bob']))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds available product stock.');
+    try {
+        $cart->add($product, 2, ['belongs_to' => 'Bob']);
+    } catch (InsufficientCartStockException $exception) {
+        expect($exception->getMessage())->toBe('Cart item quantity exceeds available product stock.')
+            ->and($exception->reason())->toBe('insufficient_stock')
+            ->and($exception->requestedQuantity)->toBe(4)
+            ->and($exception->availableStock)->toBe(3)
+            ->and($exception->context())->toMatchArray([
+                'reason' => 'insufficient_stock',
+                'product_id' => $product->id,
+                'requested_quantity' => 4,
+                'available_stock' => 3,
+            ]);
+
+        return;
+    }
+
+    $this->fail('Expected insufficient cart stock exception.');
 });
 
 /** @return array<string, mixed> */

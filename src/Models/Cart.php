@@ -9,8 +9,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
-use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Cart\Exceptions\CartQuantityBelowMinimumException;
+use Larasell\Larasell\Cart\Exceptions\CartQuantityExceedsMaximumException;
+use Larasell\Larasell\Cart\Exceptions\InsufficientCartStockException;
+use Larasell\Larasell\Cart\Exceptions\InvalidCartItemException;
+use Larasell\Larasell\Cart\Exceptions\InvalidCartQuantityException;
+use Larasell\Larasell\Cart\Exceptions\StaleSelectedShippingOptionException;
+use Larasell\Larasell\Cart\Exceptions\UnavailableCartItemException;
+use Larasell\Larasell\Cart\Exceptions\UnavailableShippingOptionException;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
@@ -186,7 +193,7 @@ class Cart extends Model
         $handle = $option instanceof ShippingOption ? $option->handle : $option;
 
         if ($this->shippingOptions()->firstWhere('handle', $handle) === null) {
-            throw new InvalidArgumentException("Shipping option [{$handle}] is not available for this cart.");
+            throw new UnavailableShippingOptionException($handle);
         }
 
         $this->update(['shipping_option' => $handle]);
@@ -203,7 +210,7 @@ class Cart extends Model
         $option = $this->shippingOptions()->firstWhere('handle', $this->shipping_option);
 
         if ($option === null) {
-            throw new InvalidArgumentException("Selected shipping option [{$this->shipping_option}] is no longer available for this cart.");
+            throw new StaleSelectedShippingOptionException($this->shipping_option);
         }
 
         return $option;
@@ -316,7 +323,7 @@ class Cart extends Model
     private function assertValidQuantity(int $quantity): void
     {
         if ($quantity < 1) {
-            throw new InvalidArgumentException('Cart item quantity must be at least 1.');
+            throw new InvalidCartQuantityException($quantity);
         }
     }
 
@@ -328,24 +335,23 @@ class Cart extends Model
     public function assertVariantCanBePurchased(ProductVariant $variant, int $quantity): void
     {
         if ($variant->status !== Visibility::Visible) {
-            throw new InvalidArgumentException('The product variant is unavailable.');
+            throw new UnavailableCartItemException($variant);
         }
 
         $minimum = $variant->minimumQuantity();
         $maximum = $variant->maximumQuantity();
         $stock = $variant->availableStock();
-        $subject = $variant->is_default ? 'product' : 'variant';
 
         if ($minimum !== null && $quantity < $minimum) {
-            throw new InvalidArgumentException("Cart item quantity is below the {$subject} minimum quantity.");
+            throw new CartQuantityBelowMinimumException($variant, $quantity, $minimum);
         }
 
         if ($maximum !== null && $quantity > $maximum) {
-            throw new InvalidArgumentException("Cart item quantity exceeds the {$subject} maximum quantity.");
+            throw new CartQuantityExceedsMaximumException($variant, $quantity, $maximum);
         }
 
         if (! $variant->allowsBackorders() && $stock !== null && $quantity > $stock) {
-            throw new InvalidArgumentException("Cart item quantity exceeds available {$subject} stock.");
+            throw new InsufficientCartStockException($variant, $quantity, $stock);
         }
     }
 
@@ -356,11 +362,11 @@ class Cart extends Model
             : $purchasable;
 
         if (! $variant->exists || ! $variant->product()->exists()) {
-            throw new InvalidArgumentException('The product variant is not persisted or has no product.');
+            throw new InvalidCartItemException($variant);
         }
 
         if ($variant->status !== Visibility::Visible) {
-            throw new InvalidArgumentException('The product variant is unavailable.');
+            throw new UnavailableCartItemException($variant);
         }
 
         return $variant->loadMissing('product');

@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Collection;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Cart\Exceptions\MissingRequiredShippingAddressException;
+use Larasell\Larasell\Cart\Exceptions\StaleSelectedShippingOptionException;
+use Larasell\Larasell\Cart\Exceptions\UnavailableShippingOptionException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -69,7 +72,7 @@ it('requires a shipping address when the selected option requires one', function
     unset($data['shipping_address']);
 
     expect(fn () => app(Checkout::class)->create($cart, $data))
-        ->toThrow(InvalidArgumentException::class, 'A shipping_address is required for the selected shipping option.');
+        ->toThrow(MissingRequiredShippingAddressException::class, 'A shipping_address is required for the selected shipping option.');
 });
 
 it('checks out without addresses when the selected option does not require one', function () {
@@ -105,7 +108,7 @@ it('rejects unavailable shipping options', function () {
     $cart->add(shippingProduct());
 
     expect(fn () => $cart->selectShippingOption('express'))
-        ->toThrow(InvalidArgumentException::class, 'Shipping option [express] is not available for this cart.');
+        ->toThrow(UnavailableShippingOptionException::class, 'Shipping option [express] is not available for this cart.');
 });
 
 it('rejects a selected option that becomes unavailable', function () {
@@ -118,7 +121,7 @@ it('rejects a selected option that becomes unavailable', function () {
     $cart->remove($secondProduct);
 
     expect(fn () => $cart->total())
-        ->toThrow(InvalidArgumentException::class, 'Selected shipping option [express] is no longer available for this cart.');
+        ->toThrow(StaleSelectedShippingOptionException::class, 'Selected shipping option [express] is no longer available for this cart.');
 });
 
 it('snapshots selected shipping details and charges them at checkout', function () {

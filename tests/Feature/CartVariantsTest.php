@@ -1,5 +1,7 @@
 <?php
 
+use Larasell\Larasell\Cart\Exceptions\CartQuantityBelowMinimumException;
+use Larasell\Larasell\Cart\Exceptions\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
@@ -95,7 +97,7 @@ it('resolves commerce values from the selected variant', function () {
     $cart = Cart::create(['currency' => Currency::USD]);
 
     expect(fn () => $cart->add($variant, 1))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity is below the variant minimum quantity.');
+        ->toThrow(CartQuantityBelowMinimumException::class, 'Cart item quantity is below the variant minimum quantity.');
 
     $item = $cart->add($variant, 2);
 
@@ -107,7 +109,7 @@ it('resolves commerce values from the selected variant', function () {
         ->and($item->allowsBackorders())->toBeFalse();
 
     expect(fn () => $cart->add($variant, 2))
-        ->toThrow(InvalidArgumentException::class, 'Cart item quantity exceeds the variant maximum quantity.');
+        ->toThrow(CartQuantityExceedsMaximumException::class, 'Cart item quantity exceeds the variant maximum quantity.');
 });
 
 it('inherits nullable variant commerce values from the product', function () {
