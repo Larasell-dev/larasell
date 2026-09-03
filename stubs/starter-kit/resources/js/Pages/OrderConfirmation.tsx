@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react'
+import { useI18n } from '../i18n'
 
 type Order = {
   customerEmail: string
@@ -16,23 +17,25 @@ type Order = {
   total: string
 }
 
-export default function OrderConfirmation({ order }: { order: Order }) {
+function OrderConfirmation({ order }: { order: Order }) {
+  const { t } = useI18n()
+
   return (
     <main>
-      <Head title={`Order ${order.number}`} />
-      <h1>Order confirmed</h1>
-      <p>Thank you, {order.customerName}. Your order has been received.</p>
+      <Head title={t('orders.confirmation.title', { number: order.number })} />
+      <h1>{t('orders.confirmation.heading')}</h1>
+      <p>{t('orders.confirmation.message', { name: order.customerName })}</p>
 
       <dl>
-        <dt>Order number</dt>
+        <dt>{t('orders.order_number')}</dt>
         <dd>{order.number}</dd>
-        <dt>Email</dt>
+        <dt>{t('orders.email')}</dt>
         <dd>{order.customerEmail}</dd>
-        <dt>Status</dt>
+        <dt>{t('orders.status')}</dt>
         <dd>{formatStatus(order.status)}</dd>
       </dl>
 
-      <h2>Items</h2>
+      <h2>{t('orders.items')}</h2>
       <ul>
         {order.items.map((item) => (
           <li key={item.id}>
@@ -44,14 +47,18 @@ export default function OrderConfirmation({ order }: { order: Order }) {
       </ul>
 
       <dl>
-        <dt>Subtotal</dt>
+        <dt>{t('orders.subtotal')}</dt>
         <dd>{order.subtotal}</dd>
-        <dt>Total</dt>
+        <dt>{t('orders.total')}</dt>
         <dd>{order.total}</dd>
       </dl>
     </main>
   )
 }
+
+OrderConfirmation.translation = ['orders']
+
+export default OrderConfirmation
 
 function formatStatus(status: string) {
   return status

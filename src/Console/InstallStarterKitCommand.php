@@ -102,6 +102,7 @@ class InstallStarterKitCommand extends Command
                 '--save-dev',
                 '@types/react',
                 '@types/react-dom',
+                '@types/node',
                 '@vitejs/plugin-react',
                 'typescript',
             ]);
