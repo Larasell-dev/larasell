@@ -86,6 +86,7 @@ class InstallStarterKitCommand extends Command
             $result = $this->runDependencyCommand([
                 'npm',
                 'install',
+                '@larasell-dev/inertia-i18n',
                 '@inertiajs/react',
                 '@inertiajs/vite',
                 'react',

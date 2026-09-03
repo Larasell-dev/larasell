@@ -1,10 +1,17 @@
 import { Head } from '@inertiajs/react'
+import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
-export default function Home() {
+function Home() {
+  const { t } = useTranslation()
+
   return (
     <main>
-      <Head title="Home" />
-      <h1>Hello store!</h1>
+      <Head title={t('home.title')} />
+      <h1>{t('home.heading')}</h1>
     </main>
   )
 }
+
+Home.translation = ['home']
+
+export default Home
