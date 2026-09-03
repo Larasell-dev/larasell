@@ -173,7 +173,7 @@ class InstallStarterKitCommand extends Command
         $bootstrap = $files->get($bootstrapPath);
 
         if (str_contains($bootstrap, 'HandleInertiaRequests::class')
-            && str_contains($bootstrap, 'SetStorefrontLocale::class')) {
+            && ! str_contains($bootstrap, 'SetStorefrontLocale::class')) {
             return true;
         }
 
@@ -194,24 +194,22 @@ class InstallStarterKitCommand extends Command
             );
         }
 
-        if (! str_contains($bootstrap, 'use App\Http\Middleware\SetStorefrontLocale;')) {
-            $bootstrap = str_replace(
-                $middlewareImport,
-                "use App\\Http\\Middleware\\SetStorefrontLocale;\n{$middlewareImport}",
-                $bootstrap,
-            );
-        }
+        $bootstrap = str_replace(
+            "use App\\Http\\Middleware\\SetStorefrontLocale;\n",
+            '',
+            $bootstrap,
+        );
 
-        if (str_contains($bootstrap, '$middleware->web(append: [HandleInertiaRequests::class]);')) {
+        if (str_contains($bootstrap, '$middleware->web(append: [SetStorefrontLocale::class, HandleInertiaRequests::class]);')) {
             $bootstrap = str_replace(
-                '$middleware->web(append: [HandleInertiaRequests::class]);',
                 '$middleware->web(append: [SetStorefrontLocale::class, HandleInertiaRequests::class]);',
+                '$middleware->web(append: [HandleInertiaRequests::class]);',
                 $bootstrap,
             );
-        } else {
+        } elseif (! str_contains($bootstrap, 'HandleInertiaRequests::class')) {
             $bootstrap = str_replace(
                 $middlewareCallback,
-                $middlewareCallback."        \$middleware->web(append: [SetStorefrontLocale::class, HandleInertiaRequests::class]);\n",
+                $middlewareCallback."        \$middleware->web(append: [HandleInertiaRequests::class]);\n",
                 $bootstrap,
             );
         }
