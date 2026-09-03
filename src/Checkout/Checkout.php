@@ -22,6 +22,9 @@ use Larasell\Larasell\Events\InventoryReserved;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Events\PromotionApplied;
 use Larasell\Larasell\Events\PromotionRedemptionReserved;
+use Larasell\Larasell\Exceptions\Cart\EmptyCartException;
+use Larasell\Larasell\Exceptions\Cart\InvalidCartItemException;
+use Larasell\Larasell\Exceptions\Cart\MissingRequiredShippingAddressException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
@@ -115,11 +118,11 @@ class Checkout
                 $shippingOption = $lockedCart->shippingOption();
 
                 if ($shippingOption?->requiresAddress && $data['shipping_address'] === null) {
-                    throw new InvalidArgumentException('A shipping_address is required for the selected shipping option.');
+                    throw new MissingRequiredShippingAddressException($shippingOption->handle);
                 }
 
                 if ($items->isEmpty()) {
-                    throw new InvalidArgumentException('Cannot checkout an empty cart.');
+                    throw new EmptyCartException;
                 }
 
                 $total = Price::of(0);
@@ -146,7 +149,7 @@ class Checkout
                     $variant = $variants->get($item->product_variant_id);
 
                     if ($variant === null || $variant->product_id !== $item->product_id) {
-                        throw new InvalidArgumentException('The cart item product variant is invalid.');
+                        throw new InvalidCartItemException;
                     }
 
                     $item->setRelation('variant', $variant);
