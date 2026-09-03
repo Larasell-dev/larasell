@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\StorefrontLocale;
+use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Models\Order;
@@ -18,7 +18,7 @@ class OrderController extends Controller
             ->where('public_id', $publicId)
             ->firstOrFail();
 
-        $locale = StorefrontLocale::current();
+        $locale = App::currentLocale();
 
         return Inertia::render('OrderConfirmation', [
             'order' => [
