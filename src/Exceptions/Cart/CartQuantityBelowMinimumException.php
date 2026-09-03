@@ -1,27 +1,27 @@
 <?php
 
-namespace Larasell\Larasell\Cart\Exceptions;
+namespace Larasell\Larasell\Exceptions\Cart;
 
 use Larasell\Larasell\Models\ProductVariant;
 
-final class CartQuantityExceedsMaximumException extends CartQuantityException
+final class CartQuantityBelowMinimumException extends CartQuantityException
 {
     public function __construct(
         public readonly ProductVariant $variant,
         int $requestedQuantity,
-        public readonly int $maximumQuantity,
+        public readonly int $minimumQuantity,
     ) {
         $subject = $variant->is_default ? 'product' : 'variant';
 
         parent::__construct(
-            "Cart item quantity exceeds the {$subject} maximum quantity.",
+            "Cart item quantity is below the {$subject} minimum quantity.",
             $requestedQuantity,
         );
     }
 
     public function reason(): string
     {
-        return 'quantity_exceeds_maximum';
+        return 'quantity_below_minimum';
     }
 
     /** @return array<string, mixed> */
@@ -32,7 +32,7 @@ final class CartQuantityExceedsMaximumException extends CartQuantityException
             'product_id' => $this->variant->product_id,
             'variant_id' => $this->variant->getKey(),
             'requested_quantity' => $this->requestedQuantity,
-            'maximum_quantity' => $this->maximumQuantity,
+            'minimum_quantity' => $this->minimumQuantity,
         ];
     }
 }

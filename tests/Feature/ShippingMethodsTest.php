@@ -2,12 +2,12 @@
 
 use Illuminate\Support\Collection;
 use Larasell\Larasell\Address;
-use Larasell\Larasell\Cart\Exceptions\MissingRequiredShippingAddressException;
-use Larasell\Larasell\Cart\Exceptions\StaleSelectedShippingOptionException;
-use Larasell\Larasell\Cart\Exceptions\UnavailableShippingOptionException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Exceptions\Cart\MissingRequiredShippingAddressException;
+use Larasell\Larasell\Exceptions\Cart\StaleSelectedShippingOptionException;
+use Larasell\Larasell\Exceptions\Cart\UnavailableShippingOptionException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;

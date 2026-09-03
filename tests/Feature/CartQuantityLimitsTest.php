@@ -1,8 +1,8 @@
 <?php
 
-use Larasell\Larasell\Cart\Exceptions\CartQuantityBelowMinimumException;
-use Larasell\Larasell\Cart\Exceptions\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Exceptions\Cart\CartQuantityBelowMinimumException;
+use Larasell\Larasell\Exceptions\Cart\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;

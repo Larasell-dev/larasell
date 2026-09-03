@@ -1,10 +1,10 @@
 <?php
 
-use Larasell\Larasell\Cart\Exceptions\InsufficientCartStockException;
-use Larasell\Larasell\Cart\Exceptions\UnavailableCartItemException;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Exceptions\Cart\InsufficientCartStockException;
+use Larasell\Larasell\Exceptions\Cart\UnavailableCartItemException;
 use Larasell\Larasell\Inventory\ReleaseExpiredInventoryForOrder;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;

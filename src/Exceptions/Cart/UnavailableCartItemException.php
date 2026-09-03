@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Cart\Exceptions;
+namespace Larasell\Larasell\Exceptions\Cart;
 
 use Larasell\Larasell\Models\ProductVariant;
 

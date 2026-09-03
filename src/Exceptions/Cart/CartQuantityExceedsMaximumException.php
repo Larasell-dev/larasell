@@ -1,24 +1,27 @@
 <?php
 
-namespace Larasell\Larasell\Cart\Exceptions;
+namespace Larasell\Larasell\Exceptions\Cart;
 
 use Larasell\Larasell\Models\ProductVariant;
 
-final class InsufficientCartStockException extends CartAvailabilityException
+final class CartQuantityExceedsMaximumException extends CartQuantityException
 {
     public function __construct(
         public readonly ProductVariant $variant,
-        public readonly int $requestedQuantity,
-        public readonly int $availableStock,
+        int $requestedQuantity,
+        public readonly int $maximumQuantity,
     ) {
         $subject = $variant->is_default ? 'product' : 'variant';
 
-        parent::__construct("Cart item quantity exceeds available {$subject} stock.");
+        parent::__construct(
+            "Cart item quantity exceeds the {$subject} maximum quantity.",
+            $requestedQuantity,
+        );
     }
 
     public function reason(): string
     {
-        return 'insufficient_stock';
+        return 'quantity_exceeds_maximum';
     }
 
     /** @return array<string, mixed> */
@@ -29,7 +32,7 @@ final class InsufficientCartStockException extends CartAvailabilityException
             'product_id' => $this->variant->product_id,
             'variant_id' => $this->variant->getKey(),
             'requested_quantity' => $this->requestedQuantity,
-            'available_stock' => $this->availableStock,
+            'maximum_quantity' => $this->maximumQuantity,
         ];
     }
 }

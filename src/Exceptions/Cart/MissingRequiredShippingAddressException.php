@@ -1,18 +1,18 @@
 <?php
 
-namespace Larasell\Larasell\Cart\Exceptions;
+namespace Larasell\Larasell\Exceptions\Cart;
 
-final class UnavailableShippingOptionException extends CartException
+final class MissingRequiredShippingAddressException extends CartCheckoutException
 {
     public function __construct(
         public readonly string $shippingOption,
     ) {
-        parent::__construct("Shipping option [{$shippingOption}] is not available for this cart.");
+        parent::__construct('A shipping_address is required for the selected shipping option.');
     }
 
     public function reason(): string
     {
-        return 'unavailable_shipping_option';
+        return 'missing_required_shipping_address';
     }
 
     /** @return array<string, mixed> */

@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Cart\Exceptions;
+namespace Larasell\Larasell\Exceptions\Cart;
 
 final class EmptyCartException extends CartCheckoutException
 {
