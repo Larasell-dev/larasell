@@ -1,1 +1,1 @@
-export { useI18n } from '../../i18n/inertia-react'
+export { useI18n } from '@larasell/inertia-i18n/react'

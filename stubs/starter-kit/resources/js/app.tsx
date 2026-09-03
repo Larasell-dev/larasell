@@ -1,5 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react'
-import { inertiaI18n } from '../../i18n/inertia-react'
+import { inertiaI18n } from '@larasell/inertia-i18n/react'
 import Layout from './Layouts/Layout'
 
 const i18n = inertiaI18n({

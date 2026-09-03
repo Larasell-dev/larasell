@@ -1,8 +1,8 @@
 import inertia from '@inertiajs/vite'
+import { laravelI18n } from '@larasell/inertia-i18n/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
-import { laravelI18n } from './i18n/vite'
 
 export default defineConfig({
   plugins: [
