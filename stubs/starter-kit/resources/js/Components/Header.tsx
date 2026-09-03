@@ -1,5 +1,4 @@
 import { Link, usePage } from '@inertiajs/react'
-import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
 type NavigationItem = {
   children: NavigationItem[]
@@ -13,14 +12,13 @@ type SharedProps = {
 
 export default function Header() {
   const { navigation } = usePage<SharedProps>().props
-  const { t } = useTranslation()
 
   return (
     <header>
       <Link href="/">Store</Link>
 
       {navigation.length > 0 && (
-        <nav aria-label={t('common.categories')}>
+        <nav aria-label="Categories">
           <NavigationItems items={navigation} />
         </nav>
       )}
