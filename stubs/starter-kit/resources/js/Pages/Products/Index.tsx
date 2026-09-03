@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react'
-import { useI18n } from '../../i18n'
+import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
 type Product = {
   id: number | string
@@ -21,7 +21,7 @@ type Props = {
 }
 
 function ProductIndex({ category, products, sort }: Props) {
-  const { t } = useI18n()
+  const { t } = useTranslation()
 
   return (
     <main>

@@ -1,8 +1,8 @@
 import { createInertiaApp } from '@inertiajs/react'
-import { inertiaI18n } from '@larasell/inertia-i18n/react'
+import { createI18n } from '@larasell-dev/inertia-i18n/react'
 import Layout from './Layouts/Layout'
 
-const i18n = inertiaI18n({
+const i18n = createI18n({
   global: ['common'],
 })
 

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react'
-import { useI18n } from '../i18n'
+import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
 type NavigationItem = {
   children: NavigationItem[]
@@ -13,7 +13,7 @@ type SharedProps = {
 
 export default function Header() {
   const { navigation } = usePage<SharedProps>().props
-  const { t } = useI18n()
+  const { t } = useTranslation()
 
   return (
     <header>

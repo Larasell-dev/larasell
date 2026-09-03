@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react'
-import { useI18n } from '../i18n'
+import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
 function Home() {
-  const { t } = useI18n()
+  const { t } = useTranslation()
 
   return (
     <main>
