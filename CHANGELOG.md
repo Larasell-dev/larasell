@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.12.0](https://github.com/Larasell-dev/larasell/compare/v1.11.0...v1.12.0) (2026-09-03)
+
+
+### Features
+
+* add cart exceptions ([#81](https://github.com/Larasell-dev/larasell/issues/81)) ([542d5e2](https://github.com/Larasell-dev/larasell/commit/542d5e230a686d8ba2586e837050c9ab046b223f))
+* add footer to starter kit ([#80](https://github.com/Larasell-dev/larasell/issues/80)) ([3d08574](https://github.com/Larasell-dev/larasell/commit/3d085747b73e9213a6d1339829fc3b41825f4351))
+* add menu to starter kit ([#79](https://github.com/Larasell-dev/larasell/issues/79)) ([9234ed3](https://github.com/Larasell-dev/larasell/commit/9234ed39a67041910a31ecedad05a8eb8dd5b623))
+* add product listing page to starter kit ([#78](https://github.com/Larasell-dev/larasell/issues/78)) ([720e6b4](https://github.com/Larasell-dev/larasell/commit/720e6b454a82c0ed68ed992bcf494f6eb65dca9d))
+* add public id to orders ([93ec712](https://github.com/Larasell-dev/larasell/commit/93ec712ec30183de1dc7e5ed117940d74a14b2a0))
+* add starter kit ([#76](https://github.com/Larasell-dev/larasell/issues/76)) ([60cb6db](https://github.com/Larasell-dev/larasell/commit/60cb6db273bf9297226b9f3f64437b89707aed2e))
+
+
+### Bug Fixes
+
+* format prices on order confirmation page on the server ([af604fc](https://github.com/Larasell-dev/larasell/commit/af604fc695a54d5d1dbf127fc1ab74da3c2aae91))
+
 ## [1.11.0](https://github.com/Larasell-dev/larasell/compare/v1.10.0...v1.11.0) (2026-09-01)
 
 
