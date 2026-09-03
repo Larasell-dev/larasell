@@ -1,5 +1,4 @@
 import { Head, Link, router } from '@inertiajs/react'
-import { useTranslation } from '@larasell-dev/inertia-i18n/react'
 
 type Product = {
   id: number | string
@@ -21,26 +20,24 @@ type Props = {
 }
 
 function ProductIndex({ category, products, sort }: Props) {
-  const { t } = useTranslation()
-
   return (
     <main>
       <Head title={category.name} />
       <h1>{category.name}</h1>
 
-      <label htmlFor="sort">{t('products.sort.label')}</label>{' '}
+      <label htmlFor="sort">Sort by</label>{' '}
       <select
         id="sort"
         value={sort}
         onChange={(event) => router.reload({ data: { sort: event.target.value } })}
       >
-        <option value="name">{t('products.sort.name')}</option>
-        <option value="price_asc">{t('products.sort.price_asc')}</option>
-        <option value="price_desc">{t('products.sort.price_desc')}</option>
+        <option value="name">Name</option>
+        <option value="price_asc">Price: low to high</option>
+        <option value="price_desc">Price: high to low</option>
       </select>
 
       {products.length === 0 ? (
-        <p>{t('products.empty')}</p>
+        <p>No products found.</p>
       ) : (
         <ul>
           {products.map((product) => (
@@ -59,7 +56,5 @@ function ProductIndex({ category, products, sort }: Props) {
     </main>
   )
 }
-
-ProductIndex.translation = ['products']
 
 export default ProductIndex

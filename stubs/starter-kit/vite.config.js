@@ -1,5 +1,4 @@
 import inertia from '@inertiajs/vite'
-import { i18n } from '@larasell-dev/inertia-i18n/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
@@ -11,7 +10,6 @@ export default defineConfig({
       refresh: true,
     }),
     inertia(),
-    i18n(),
     react(),
   ],
 })
