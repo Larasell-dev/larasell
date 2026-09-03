@@ -52,12 +52,15 @@ class ProductController extends Controller
         $product = $request->product()->load('images');
 
         return Inertia::render('Products/Show', [
+            'addToCartUrl' => route('cart.store'),
             'product' => [
                 'id' => $product->getKey(),
                 'name' => $product->name->get(),
                 'slug' => $product->slug->get(),
                 'description' => $product->description?->get(),
                 'price' => Price::format($product->price, $currency, $locale),
+                'minQuantity' => $product->min_quantity,
+                'maxQuantity' => $product->max_quantity,
                 'images' => $product->images
                     ->map(fn ($image): array => [
                         'id' => $image->getKey(),

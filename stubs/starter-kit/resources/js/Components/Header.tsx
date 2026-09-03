@@ -1,23 +1,17 @@
 import { Link, usePage } from '@inertiajs/react'
 import { useTranslation } from '@larasell-dev/inertia-i18n/react'
+import type { SharedPageProps } from '@inertiajs/core'
 
-type NavigationItem = {
-  children: NavigationItem[]
-  name: string
-  url: string
-}
-
-type SharedProps = {
-  navigation: NavigationItem[]
-}
+type NavigationItem = SharedPageProps['navigation'][number]
 
 export default function Header() {
-  const { navigation } = usePage<SharedProps>().props
+  const { cart, navigation } = usePage().props
   const { t } = useTranslation()
 
   return (
     <header>
       <Link href="/">Store</Link>
+      <Link href="/cart">Cart ({cart.quantity})</Link>
 
       {navigation.length > 0 && (
         <nav aria-label={t('common.categories')}>
