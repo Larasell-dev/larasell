@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Locale;
-use App\Support\StorefrontLocale;
+use App\Http\Middleware\SetStorefrontLocale;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,7 +17,7 @@ class StorefrontLocaleController
         ]);
 
         return back()->withCookie(cookie()->forever(
-            StorefrontLocale::COOKIE_NAME,
+            SetStorefrontLocale::COOKIE_NAME,
             $validated['locale'],
         ));
     }
