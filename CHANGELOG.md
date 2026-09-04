@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.13.0](https://github.com/Larasell-dev/larasell/compare/v1.12.0...v1.13.0) (2026-09-04)
+
+
+### Features
+
+* add cart to starter kit ([9f63ed5](https://github.com/Larasell-dev/larasell/commit/9f63ed5f0e52b4bf0f8518258f2ce1ec21d207ad))
+* add checkout to starter kit ([dd7c46a](https://github.com/Larasell-dev/larasell/commit/dd7c46a45858bc287611bc763b0b3a17a1e7da7a))
+* add i18n to starter kit ([#82](https://github.com/Larasell-dev/larasell/issues/82)) ([58ad661](https://github.com/Larasell-dev/larasell/commit/58ad66120c446136724444407f2a9deca170f72f))
+* add method to fetch visible variants easily ([1fc49e0](https://github.com/Larasell-dev/larasell/commit/1fc49e08d201797671438e6e5b4aa2dbdf6cf96a))
+* add products to cart by id ([#90](https://github.com/Larasell-dev/larasell/issues/90)) ([f283f57](https://github.com/Larasell-dev/larasell/commit/f283f57861a75ea52e7f50e63c8a4f321bd2f631))
+* make starter kit multi lang ([#84](https://github.com/Larasell-dev/larasell/issues/84)) ([6bec9d1](https://github.com/Larasell-dev/larasell/commit/6bec9d1507d5577150dcb223bf6f9db228565e51))
+
+
+### Bug Fixes
+
+* load option relations inside ProductVariant::options() ([df8e205](https://github.com/Larasell-dev/larasell/commit/df8e20573951210a9a402e1e94db44536a6d33a4))
+* remove all related stuff from the starter kit ([#85](https://github.com/Larasell-dev/larasell/issues/85)) ([3170dc7](https://github.com/Larasell-dev/larasell/commit/3170dc749f2d00b82b89f5b7e2707ac506894e78))
+* remove multi locale stuff from starter kit ([#89](https://github.com/Larasell-dev/larasell/issues/89)) ([daea92a](https://github.com/Larasell-dev/larasell/commit/daea92ae764f84407b5bef3529fad63e81859a10))
+* rename optionSnapshots to options ([00e0eff](https://github.com/Larasell-dev/larasell/commit/00e0effb29610b813850f6f2c52a6ed20c0c441d))
+* rename snapshotName to name ([807d49d](https://github.com/Larasell-dev/larasell/commit/807d49dbae92c71540827eeb010f5b415c030d49))
+
 ## [1.12.0](https://github.com/Larasell-dev/larasell/compare/v1.11.0...v1.12.0) (2026-09-03)
 
 
