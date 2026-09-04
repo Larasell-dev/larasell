@@ -263,7 +263,7 @@ class Checkout
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
                         'variant_name' => $item->variant->snapshotName(),
-                        'variant_options' => $item->variant->optionSnapshot(),
+                        'variant_options' => $item->variant->options(),
                         'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,
                         'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,
