@@ -5,6 +5,10 @@ type Props = {
     items: Array<{
       id: number | string
       name: string
+      options: Array<{
+        name: string
+        value: string
+      }>
       quantity: number
       unitPrice: string
       total: string
@@ -32,6 +36,13 @@ export default function CartShow({ cart }: Props) {
             {cart.items.map((item) => (
               <li key={item.id}>
                 <h2>{item.name}</h2>
+                {item.options.length > 0 && (
+                  <ul>
+                    {item.options.map((option) => (
+                      <li key={option.name}>{option.name}: {option.value}</li>
+                    ))}
+                  </ul>
+                )}
                 <p>{item.unitPrice} each</p>
                 <p>{item.total}</p>
 

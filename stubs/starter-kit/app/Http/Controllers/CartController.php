@@ -31,6 +31,13 @@ class CartController extends Controller
                 'items' => $items->map(fn (CartItem $item): array => [
                     'id' => $item->getKey(),
                     'name' => $item->product->name->get(),
+                    'options' => collect($item->variant->options())
+                        ->map(fn (array $option): array => [
+                            'name' => $option['attribute_name'],
+                            'value' => $option['value_name'],
+                        ])
+                        ->values()
+                        ->all(),
                     'quantity' => $item->quantity,
                     'unitPrice' => Price::format($item->unitPrice(), $cart->currency, $locale),
                     'total' => Price::format($item->total(), $cart->currency, $locale),

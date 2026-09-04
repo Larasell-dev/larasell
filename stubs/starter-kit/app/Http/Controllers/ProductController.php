@@ -8,6 +8,7 @@ use Inertia\Response;
 use Larasell\Larasell\Http\Requests\ProductDetailRequest;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Settings\CurrencySettings;
 
@@ -15,23 +16,26 @@ class ProductController extends Controller
 {
     public function show(ProductDetailRequest $request, CurrencySettings $currencies): Response
     {
-        $product = $request->product()->load('images');
+        $product = $request->product()->load(['images', 'visibleVariants']);
         $currency = $currencies->enabled()[0];
         $locale = App::currentLocale();
         $image = $product->images->first();
 
         return Inertia::render('Products/Show', [
             'product' => [
-                'id' => $product->getKey(),
                 'name' => $product->name->get(),
                 'description' => $product->description?->get(),
-                'price' => Price::format($product->price, $currency, $locale),
-                'minQuantity' => $product->min_quantity ?? 1,
-                'maxQuantity' => $product->max_quantity,
                 'image' => $image === null ? null : [
                     'alt' => $image->alt,
                     'url' => $image->url(),
                 ],
+                'variants' => $product->visibleVariants->map(fn (ProductVariant $variant): array => [
+                    'id' => $variant->getKey(),
+                    'name' => $variant->name(),
+                    'price' => Price::format($variant->unitPrice(), $currency, $locale),
+                    'minQuantity' => $variant->minimumQuantity() ?? 1,
+                    'maxQuantity' => $variant->maximumQuantity(),
+                ])->all(),
             ],
         ]);
     }
