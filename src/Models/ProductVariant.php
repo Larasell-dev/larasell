@@ -112,7 +112,7 @@ class ProductVariant extends Model
     /**
      * @return array<string, array{attribute_id: int, attribute_slug: string, attribute_name: string, value_id: int, value_slug: string, value_name: string}>
      */
-    public function optionSnapshot(): array
+    public function options(): array
     {
         if ($this->is_default) {
             return [];
@@ -141,7 +141,7 @@ class ProductVariant extends Model
 
     public function snapshotName(): string
     {
-        $options = $this->optionSnapshot();
+        $options = $this->options();
 
         return $options === []
             ? $this->product->name->get()
