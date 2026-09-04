@@ -1,4 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 
 type SharedProps = {
   cart: {
@@ -6,23 +7,30 @@ type SharedProps = {
   }
 }
 
+type Variant = {
+  id: number | string
+  name: string
+  price: string
+  minQuantity: number
+  maxQuantity: number | null
+}
+
 type Props = {
   product: {
-    id: number | string
     image: {
       alt: string | null
       url: string
     } | null
     name: string
     description: string | null
-    price: string
-    minQuantity: number
-    maxQuantity: number | null
+    variants: Variant[]
   }
 }
 
 export default function ProductShow({ product }: Props) {
   const { cart } = usePage<SharedProps>().props
+  const [variantId, setVariantId] = useState(product.variants[0]?.id)
+  const variant = product.variants.find((candidate) => String(candidate.id) === String(variantId))
 
   return (
     <main>
@@ -33,42 +41,66 @@ export default function ProductShow({ product }: Props) {
       )}
 
       <h1>{product.name}</h1>
-      <p>{product.price}</p>
+      {variant && <p>{variant.price}</p>}
       {product.description && <p>{product.description}</p>}
 
-      <Form
-        action="/cart"
-        method="post"
-        optimistic={(_, formData) => ({
-          cart: {
-            quantity: cart.quantity + Number(formData.quantity),
-          },
-        })}
-        options={{ only: ['cart'] }}
-        resetOnSuccess={['quantity']}
-      >
-        {({ errors, processing }) => (
-          <>
-            <input type="hidden" name="product_id" value={product.id} />
+      {variant === undefined ? (
+        <p>This product is currently unavailable.</p>
+      ) : (
+        <Form
+          action="/cart"
+          method="post"
+          optimistic={(_, formData) => ({
+            cart: {
+              quantity: cart.quantity + Number(formData.quantity),
+            },
+          })}
+          options={{ only: ['cart'] }}
+          resetOnSuccess={['quantity']}
+        >
+          {({ errors, processing }) => (
+            <>
+              {product.variants.length === 1 ? (
+                <input type="hidden" name="variant_id" value={variant.id} />
+              ) : (
+                <p>
+                  <label htmlFor="variant_id">Variant</label>{' '}
+                  <select
+                    id="variant_id"
+                    name="variant_id"
+                    value={String(variant.id)}
+                    onChange={(event) => setVariantId(event.target.value)}
+                    required
+                  >
+                    {product.variants.map((candidate) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.name}
+                      </option>
+                    ))}
+                  </select>
+                </p>
+              )}
 
-            <label htmlFor="quantity">Quantity</label>{' '}
-            <input
-              id="quantity"
-              name="quantity"
-              type="number"
-              min={product.minQuantity}
-              max={product.maxQuantity ?? undefined}
-              defaultValue={product.minQuantity}
-              required
-            />
+              <label htmlFor="quantity">Quantity</label>{' '}
+              <input
+                id="quantity"
+                key={variant.id}
+                name="quantity"
+                type="number"
+                min={variant.minQuantity}
+                max={variant.maxQuantity ?? undefined}
+                defaultValue={variant.minQuantity}
+                required
+              />
 
-            {errors.quantity && <p>{errors.quantity}</p>}
-            {errors.product_id && <p>{errors.product_id}</p>}
+              {errors.quantity && <p>{errors.quantity}</p>}
+              {errors.variant_id && <p>{errors.variant_id}</p>}
 
-            <button type="submit" disabled={processing}>Add to cart</button>
-          </>
-        )}
-      </Form>
+              <button type="submit" disabled={processing}>Add to cart</button>
+            </>
+          )}
+        </Form>
+      )}
     </main>
   )
 }
