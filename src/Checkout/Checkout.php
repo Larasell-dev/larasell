@@ -262,7 +262,7 @@ class Checkout
                         'product_slug' => $item->product->slug->get(),
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
-                        'variant_name' => $item->variant->snapshotName(),
+                        'variant_name' => $item->variant->name(),
                         'variant_options' => $item->variant->options(),
                         'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,

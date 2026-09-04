@@ -182,7 +182,7 @@ class ProductController extends Controller
                 ->get()
                 ->map(fn (ProductVariant $variant): array => [
                     'id' => $variant->getKey(),
-                    'name' => $variant->snapshotName(),
+                    'name' => $variant->name(),
                     'sku' => $variant->sku,
                     'barcode' => $variant->barcode,
                     'priceAmount' => $variant->price?->amount(),

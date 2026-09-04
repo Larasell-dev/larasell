@@ -139,7 +139,7 @@ class ProductVariant extends Model
             ->all();
     }
 
-    public function snapshotName(): string
+    public function name(): string
     {
         $options = $this->options();
 
