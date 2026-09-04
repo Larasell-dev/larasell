@@ -114,6 +114,25 @@ it('rejects selections resolving to an unavailable variant', function () {
     ]))->toThrow(InvalidArgumentException::class);
 });
 
+it('exposes visible variants with the parent product already set', function () {
+    [$product, $small, $black] = variantProduct();
+    $white = variantValue($black->attribute, 'white');
+    $product->attributeValues()->attach($white);
+    $visible = $product->createVariant([$small, $black], ['position' => 0]);
+    $product->createVariant([$small, $white], [
+        'status' => Visibility::Hidden,
+        'position' => 1,
+    ]);
+
+    $product->load('visibleVariants');
+
+    expect($product->visibleVariants)->toHaveCount(1)
+        ->and($product->visibleVariants->sole()->is($visible))->toBeTrue()
+        ->and($product->visibleVariants->sole()->relationLoaded('product'))->toBeTrue()
+        ->and($product->visibleVariants->sole()->product)->toBe($product)
+        ->and($product->visibleVariants->sole()->name())->toBe('Small / Black');
+});
+
 /**
  * @return array{Product, ProductAttributeValue, ProductAttributeValue}
  */

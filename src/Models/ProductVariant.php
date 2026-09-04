@@ -2,6 +2,8 @@
 
 namespace Larasell\Larasell\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +32,8 @@ use Larasell\Larasell\Price;
  * @property array<string, mixed>|null $metadata
  * @property Product $product
  * @property Collection<int, ProductAttributeValue> $attributeValues
+ *
+ * @method static Builder<static> visible()
  */
 class ProductVariant extends Model
 {
@@ -51,6 +55,16 @@ class ProductVariant extends Model
         'position' => 'integer',
         'metadata' => 'array',
     ];
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    #[Scope]
+    protected function visible(Builder $query): Builder
+    {
+        return $query->where('status', Visibility::Visible->value);
+    }
 
     /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
