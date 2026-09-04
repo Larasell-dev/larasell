@@ -258,6 +258,19 @@ class Product extends Model
         return $this->hasMany($this->productVariantModel());
     }
 
+    /**
+     * @return HasMany<ProductVariant, $this>
+     */
+    public function visibleVariants(): HasMany
+    {
+        return $this->variants()
+            ->chaperone()
+            ->visible()
+            ->with(['attributeValues.attribute'])
+            ->orderBy('position')
+            ->orderBy('id');
+    }
+
     public function defaultVariant(): ProductVariant
     {
         /** @var ProductVariant|null $variant */
