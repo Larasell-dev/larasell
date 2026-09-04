@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Inertia\CartProp;
 use App\Inertia\NavigationProp;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +16,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'cart' => fn (): array => app(CartProp::class)->prop(),
             'navigation' => Inertia::once(fn (): array => app(NavigationProp::class)->prop()),
         ];
     }
