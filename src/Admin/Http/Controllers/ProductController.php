@@ -175,7 +175,7 @@ class ProductController extends Controller
             'productAttributes' => $this->productAttributeValueOptions($productModel),
             'variantDimensionIds' => $product->variantDimensions()->pluck('larasell_product_attributes.id')->map(fn ($id): string => (string) $id)->all(),
             'variants' => $product->variants()
-                ->with(['product.variantDimensions', 'attributeValues.attribute'])
+                ->with(['attributeValues.attribute'])
                 ->where('is_default', false)
                 ->orderBy('position')
                 ->orderBy('id')

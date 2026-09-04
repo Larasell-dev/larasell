@@ -132,6 +132,8 @@ class ProductVariant extends Model
             return [];
         }
 
+        $this->loadMissing(['product.variantDimensions', 'attributeValues.attribute']);
+
         $positions = $this->product->variantDimensions
             ->pluck('pivot.position', 'id');
 
