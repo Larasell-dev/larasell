@@ -23,6 +23,12 @@ final class SessionCart
         private readonly CurrencySettings $currencies,
     ) {}
 
+    /**
+     * Find the session cart, creating one if needed.
+     *
+     * Use only when adding a line. Reads, updates, checkout, and the cart
+     * page should call existing() so browsing does not insert empty carts.
+     */
     public function get(): Cart
     {
         return $this->existing() ?? $this->create();
@@ -51,8 +57,13 @@ final class SessionCart
         return $this->cart = $cart;
     }
 
+    /**
+     * Delete the session cart and drop the session pointer.
+     */
     public function forget(): void
     {
+        $this->existing()?->delete();
+
         $this->request->session()->forget(self::SESSION_KEY);
         $this->cart = null;
         $this->resolved = true;
