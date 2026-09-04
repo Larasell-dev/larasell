@@ -35,21 +35,33 @@ existing cart item.
 ```php
 $cart->add($product);
 $cart->add($product, quantity: 2);
+$cart->add($product->getKey(), quantity: 2);
 ```
+
+An integer passed to `add()` is resolved as a product ID through the configured
+product model. Variant IDs remain explicit `ProductVariant` instances.
 
 Use `set()` when you want to replace the quantity for a product
 already in the cart.
 
 ```php
 $cart->set($product, quantity: 5);
+$cart->set($item->getKey(), quantity: 5);
 ```
+
+Passing a cart item ID updates that specific line while preserving its metadata.
+The lookup is scoped to the cart.
 
 Use `remove()` or `clear()` to remove items.
 
 ```php
 $cart->remove($product);
+$cart->remove($item->getKey());
 $cart->clear();
 ```
+
+Passing a cart item ID removes that specific line. The lookup is scoped to the
+cart, so an item belonging to another cart is left untouched.
 
 ## Reading a cart
 
