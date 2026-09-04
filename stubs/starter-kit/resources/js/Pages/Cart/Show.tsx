@@ -12,7 +12,7 @@ type Props = {
     quantity: number
     subtotal: string | null
     total: string | null
-  }
+  } | null
 }
 
 export default function CartShow({ cart }: Props) {
@@ -21,7 +21,7 @@ export default function CartShow({ cart }: Props) {
       <Head title="Cart" />
       <h1>Cart</h1>
 
-      {cart.items.length === 0 ? (
+      {cart === null || cart.items.length === 0 ? (
         <>
           <p>Your cart is empty.</p>
           <Link href="/">Continue shopping</Link>
@@ -86,6 +86,10 @@ export default function CartShow({ cart }: Props) {
               <dd>{cart.total}</dd>
             </div>
           </dl>
+
+          <p>
+            <Link href="/checkout">Checkout</Link>
+          </p>
         </>
       )}
     </main>

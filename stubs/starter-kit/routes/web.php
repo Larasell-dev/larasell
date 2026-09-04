@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddProductToCartController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RemoveCartItemController;
@@ -28,6 +29,12 @@ Route::patch('/cart/items/{cartItem}', UpdateCartItemController::class)
 Route::delete('/cart/items/{cartItem}', RemoveCartItemController::class)
     ->whereNumber('cartItem')
     ->name('cart.items.destroy');
+
+Route::get('/checkout', [CheckoutController::class, 'show'])
+    ->name('checkout.show');
+
+Route::post('/checkout', [CheckoutController::class, 'store'])
+    ->name('checkout.store');
 
 ProductDetailRoute::get([ProductController::class, 'show'], prefix: 'p')
     ->name('products.show');

@@ -13,7 +13,14 @@ class CartController extends Controller
 {
     public function __invoke(SessionCart $sessionCart): Response
     {
-        $cart = $sessionCart->get();
+        $cart = $sessionCart->existing();
+
+        if ($cart === null) {
+            return Inertia::render('Cart/Show', [
+                'cart' => null,
+            ]);
+        }
+
         $locale = App::currentLocale();
         $items = $cart->purchasableItems();
         $subtotal = $cart->subtotal();
