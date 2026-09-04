@@ -69,8 +69,15 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function add(Product|ProductVariant $purchasable, int $quantity = 1, array $metadata = []): CartItem
+    public function add(Product|ProductVariant|int $purchasable, int $quantity = 1, array $metadata = []): CartItem
     {
+        if (is_int($purchasable)) {
+            /** @var Product $product */
+            $product = app(ModelRegistry::class)->product->query()->findOrFail($purchasable);
+
+            return $this->add($product, $quantity, $metadata);
+        }
+
         $this->assertValidQuantity($quantity);
         $addedQuantity = $quantity;
         $variant = $this->resolveVariant($purchasable);
@@ -103,8 +110,15 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function set(Product|ProductVariant $purchasable, int $quantity, array $metadata = []): CartItem
+    public function set(Product|ProductVariant|int $purchasable, int $quantity, array $metadata = []): CartItem
     {
+        if (is_int($purchasable)) {
+            /** @var CartItem $item */
+            $item = $this->items()->with('variant')->findOrFail($purchasable);
+
+            return $this->set($item->variant, $quantity, $item->metadata->all());
+        }
+
         $this->assertValidQuantity($quantity);
         $variant = $this->resolveVariant($purchasable);
         $this->assertVariantCanBePurchased($variant, $quantity);
@@ -134,8 +148,14 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function remove(Product|ProductVariant $purchasable, array $metadata = []): void
+    public function remove(Product|ProductVariant|int $purchasable, array $metadata = []): void
     {
+        if (is_int($purchasable)) {
+            $this->items()->whereKey($purchasable)->delete();
+
+            return;
+        }
+
         $variant = $this->resolveVariant($purchasable);
         $metadata = $this->normalizeMetadata($metadata);
 

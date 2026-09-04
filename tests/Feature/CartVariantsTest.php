@@ -46,6 +46,16 @@ it('keeps the simple product cart api through its default variant', function () 
         ->and($item->quantity)->toBe(2);
 });
 
+it('adds a product by its id', function () {
+    $cart = Cart::create(['currency' => Currency::USD]);
+    $product = cartVariantProduct();
+
+    $item = $cart->add($product->getKey(), 2);
+
+    expect($item->product->is($product))->toBeTrue()
+        ->and($item->quantity)->toBe(2);
+});
+
 it('stores two variants of one product as separate cart lines', function () {
     [$product, $small, $medium] = cartVariantCatalog();
     $cart = Cart::create(['currency' => Currency::USD]);
@@ -82,6 +92,32 @@ it('sets and removes cart lines by variant identity', function () {
     expect($item->quantity)->toBe(4)
         ->and($cart->items)->toHaveCount(1)
         ->and($cart->items->first()->variant->is($small))->toBeTrue();
+});
+
+it('removes a cart line by its id', function () {
+    [, $variant] = cartVariantCatalog();
+    $cart = Cart::create(['currency' => Currency::USD]);
+    $otherCart = Cart::create(['currency' => Currency::USD]);
+    $item = $cart->add($variant);
+    $otherItem = $otherCart->add($variant);
+
+    $cart->remove($item->getKey());
+    $cart->remove($otherItem->getKey());
+
+    expect($cart->items()->count())->toBe(0)
+        ->and($otherCart->items()->count())->toBe(1);
+});
+
+it('sets a cart line quantity by its id', function () {
+    [, $variant] = cartVariantCatalog();
+    $cart = Cart::create(['currency' => Currency::USD]);
+    $item = $cart->add($variant, metadata: ['engraving' => 'Hello']);
+
+    $updatedItem = $cart->set($item->getKey(), 3);
+
+    expect($updatedItem->is($item))->toBeTrue()
+        ->and($updatedItem->quantity)->toBe(3)
+        ->and($updatedItem->metadata->all())->toBe(['engraving' => 'Hello']);
 });
 
 it('resolves commerce values from the selected variant', function () {
