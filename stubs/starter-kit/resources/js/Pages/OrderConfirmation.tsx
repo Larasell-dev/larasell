@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react'
 import LinePrice, { type PricedLine } from '../Components/LinePrice'
 
 type Order = {
+  billingAddress: string[] | null
   customerEmail: string
   customerName: string
   discounts: Array<{
@@ -17,6 +18,7 @@ type Order = {
     unitPrice: string
   }>
   number: string
+  shippingAddress: string[] | null
   status: string
   subtotal: string
   total: string
@@ -37,6 +39,20 @@ function OrderConfirmation({ order }: { order: Order }) {
         <dt>Status</dt>
         <dd>{formatStatus(order.status)}</dd>
       </dl>
+
+      {order.shippingAddress && (
+        <>
+          <h2>{order.billingAddress ? 'Shipping address' : 'Address'}</h2>
+          <AddressLines lines={order.shippingAddress} />
+        </>
+      )}
+
+      {order.billingAddress && (
+        <>
+          <h2>Billing address</h2>
+          <AddressLines lines={order.billingAddress} />
+        </>
+      )}
 
       <h2>Items</h2>
       <ul>
@@ -77,6 +93,16 @@ function OrderConfirmation({ order }: { order: Order }) {
 }
 
 export default OrderConfirmation
+
+function AddressLines({ lines }: { lines: string[] }) {
+  return (
+    <address>
+      {lines.map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+    </address>
+  )
+}
 
 function formatStatus(status: string) {
   return status

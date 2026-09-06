@@ -41,31 +41,33 @@ class CheckoutController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email'],
-            'first_name' => ['required', 'string'],
-            'last_name' => ['required', 'string'],
-            'street' => ['required', 'string'],
-            'city' => ['required', 'string'],
-            'postcode' => ['required', 'string'],
-            'country' => ['required', 'string'],
+            'shipping_first_name' => ['required', 'string'],
+            'shipping_last_name' => ['required', 'string'],
+            'shipping_street' => ['required', 'string'],
+            'shipping_city' => ['required', 'string'],
+            'shipping_postcode' => ['required', 'string'],
+            'shipping_country' => ['required', 'string'],
+            'billing_same_as_shipping' => ['required', 'boolean'],
+            'billing_first_name' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
+            'billing_last_name' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
+            'billing_street' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
+            'billing_city' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
+            'billing_postcode' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
+            'billing_country' => ['exclude_if:billing_same_as_shipping,true', 'required', 'string'],
             'idempotency_key' => ['required', 'string', 'max:255'],
         ]);
 
-        $address = new Address(
-            country: $data['country'],
-            firstName: $data['first_name'],
-            lastName: $data['last_name'],
-            street: $data['street'],
-            city: $data['city'],
-            postcode: $data['postcode'],
-            email: $data['email'],
-        );
+        $shippingAddress = $this->address($data, 'shipping');
+        $billingAddress = $request->boolean('billing_same_as_shipping')
+            ? $shippingAddress
+            : $this->address($data, 'billing');
 
         try {
             $result = $this->checkout->create($cart, [
                 'customer_email' => $data['email'],
-                'customer_name' => trim($data['first_name'].' '.$data['last_name']),
-                'billing_address' => $address,
-                'shipping_address' => $address,
+                'customer_name' => trim($data['shipping_first_name'].' '.$data['shipping_last_name']),
+                'billing_address' => $billingAddress,
+                'shipping_address' => $shippingAddress,
             ], idempotencyKey: $data['idempotency_key']);
         } catch (EmptyCartException) {
             return redirect()->route('cart.show');
@@ -82,5 +84,19 @@ class CheckoutController extends Controller
         }
 
         return redirect()->route('orders.confirmation', $result->order->public_id);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function address(array $data, string $prefix): Address
+    {
+        return new Address(
+            country: $data["{$prefix}_country"],
+            firstName: $data["{$prefix}_first_name"],
+            lastName: $data["{$prefix}_last_name"],
+            street: $data["{$prefix}_street"],
+            city: $data["{$prefix}_city"],
+            postcode: $data["{$prefix}_postcode"],
+            email: $data['email'],
+        );
     }
 }
