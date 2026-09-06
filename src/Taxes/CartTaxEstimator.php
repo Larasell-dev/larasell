@@ -45,13 +45,11 @@ final readonly class CartTaxEstimator
 
         $shipping = $cart->shippingOption();
         $discounts ??= $cart->discounts();
-        $discountAmounts = $this->discountAmounts($discounts);
-        $lines = $items->map(function (CartItem $item) use ($discountAmounts): TaxableLine {
-            $identifier = 'line:'.$item->getKey();
+        $lines = $items->map(function (CartItem $item) use ($discounts): TaxableLine {
             $amount = $item->total();
 
             return new TaxableLine(
-                identifier: $identifier,
+                identifier: 'line:'.$item->getKey(),
                 amount: $amount,
                 category: $item->variant->effectiveTaxCategory(),
                 quantity: $item->quantity,
@@ -59,7 +57,10 @@ final readonly class CartTaxEstimator
                     'product_id' => $item->product_id,
                     'product_variant_id' => $item->product_variant_id,
                 ],
-                discountAmount: $this->capDiscount($discountAmounts[$identifier] ?? Price::of(0), $amount),
+                discountAmount: $this->capDiscount($this->allocatedAmount(
+                    $discounts,
+                    fn (DiscountResult $discount): Price => $discount->amountFor($item),
+                ), $amount),
             );
         })->all();
 
@@ -75,7 +76,10 @@ final readonly class CartTaxEstimator
                 amount: $shipping->price,
                 category: $category,
                 metadata: ['shipping_option' => $shipping->handle],
-                discountAmount: $this->capDiscount($discountAmounts['shipping'] ?? Price::of(0), $shipping->price),
+                discountAmount: $this->capDiscount($this->allocatedAmount(
+                    $discounts,
+                    fn (DiscountResult $discount): Price => $discount->amountForShipping(),
+                ), $shipping->price),
             );
         }
 
@@ -107,19 +111,17 @@ final readonly class CartTaxEstimator
 
     /**
      * @param  iterable<int, DiscountResult>  $discounts
-     * @return array<string, Price>
+     * @param  callable(DiscountResult): Price  $amount
      */
-    private function discountAmounts(iterable $discounts): array
+    private function allocatedAmount(iterable $discounts, callable $amount): Price
     {
-        $amounts = [];
+        $total = Price::of(0);
 
         foreach ($discounts as $discount) {
-            foreach ($discount->allocations as $allocation) {
-                $amounts[$allocation->target] = ($amounts[$allocation->target] ?? Price::of(0))->add($allocation->amount);
-            }
+            $total = $total->add($amount($discount));
         }
 
-        return $amounts;
+        return $total;
     }
 
     private function capDiscount(Price $discount, Price $amount): Price

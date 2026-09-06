@@ -1,7 +1,9 @@
 <?php
 
+use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountAllocation;
 use Larasell\Larasell\Discounts\DiscountResult;
+use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
 
 it('describes a discount and totals its allocations', function () {
@@ -48,3 +50,55 @@ it('requires a target and a positive allocation amount', function (string $targe
     'zero amount' => ['line:1', Price::of(0), 'A discount allocation amount must be positive.'],
     'negative amount' => ['line:1', Price::of(-1), 'A discount allocation amount must be positive.'],
 ]);
+
+it('reads the allocation for a cart item or shipping without exposing the target string', function () {
+    $item = cartItemWithId(1);
+    $other = cartItemWithId(2);
+    $result = new DiscountResult(
+        identifier: 'summer-sale',
+        name: 'Summer sale',
+        allocations: [
+            new DiscountAllocation('line:1', Price::of(600)),
+            new DiscountAllocation('shipping', Price::of(100)),
+        ],
+        code: 'SAVE10',
+    );
+
+    expect($result->amountFor($item)->amount())->toBe('600')
+        ->and($result->amountFor($other)->amount())->toBe('0')
+        ->and($result->amountForShipping()->amount())->toBe('100')
+        ->and($result->appliesTo($item))->toBeTrue()
+        ->and($result->appliesTo($other))->toBeFalse()
+        ->and($result->appliedFor($other))->toBeNull()
+        ->and($result->appliedForShipping())->toEqual(new AppliedDiscount(
+            identifier: 'summer-sale',
+            name: 'Summer sale',
+            amount: Price::of(100),
+            code: 'SAVE10',
+        ))
+        ->and($result->appliedFor($item))->toEqual(new AppliedDiscount(
+            identifier: 'summer-sale',
+            name: 'Summer sale',
+            amount: Price::of(600),
+            code: 'SAVE10',
+        ));
+});
+
+it('returns zero when a result has no shipping allocation', function () {
+    $result = new DiscountResult(
+        identifier: 'summer-sale',
+        name: 'Summer sale',
+        allocations: [new DiscountAllocation('line:1', Price::of(600))],
+    );
+
+    expect($result->amountForShipping()->amount())->toBe('0')
+        ->and($result->appliedForShipping())->toBeNull();
+});
+
+function cartItemWithId(int $id): CartItem
+{
+    $item = new CartItem;
+    $item->id = $id;
+
+    return $item;
+}
