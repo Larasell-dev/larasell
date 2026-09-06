@@ -14,13 +14,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableTranslatableCast;
+use Larasell\Larasell\Casts\NullableWeightCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
+use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
+use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
@@ -31,6 +35,8 @@ use Larasell\Larasell\Translatable;
  * @property Translatable|null $description
  * @property Price $price
  * @property Price|null $compare_at
+ * @property Weight|null $weight
+ * @property Dimensions|null $dimensions
  * @property string $tax_category
  * @property int|null $stock
  * @property int|null $min_quantity
@@ -62,6 +68,8 @@ class Product extends Model
         'description' => NullableTranslatableCast::class,
         'price' => PriceCast::class,
         'compare_at' => NullablePriceCast::class,
+        'weight' => NullableWeightCast::class,
+        'dimensions' => NullableDimensionsCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'status' => Visibility::class,
@@ -79,6 +87,8 @@ class Product extends Model
                 'barcode',
                 'price',
                 'compare_at',
+                'weight',
+                'dimensions',
                 'stock',
                 'allow_backorders',
                 'min_quantity',
@@ -477,6 +487,8 @@ class Product extends Model
             'barcode' => $this->barcode,
             'price' => $this->price,
             'compare_at' => $this->compare_at,
+            'weight' => $this->weight,
+            'dimensions' => $this->dimensions,
             'stock' => $this->stock,
             'allow_backorders' => $this->allow_backorders,
             'min_quantity' => $this->min_quantity,

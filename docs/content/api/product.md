@@ -54,6 +54,32 @@ Products can also define nullable `min_quantity` and `max_quantity`
 fields. Both default to `null`. When set, each value must be at least
 `1`, and `min_quantity` cannot exceed `max_quantity`.
 
+Products may include a nullable `weight` and nullable `dimensions` value.
+Weight stores an amount and unit (`g`, `kg`, `oz`, `lb`). Dimensions store
+length, width, height, and a shared length unit (`mm`, `cm`, `m`, `in`,
+`ft`). Amounts are non-negative decimal strings. Comparisons convert to a
+canonical unit, so `1 kg` equals `1000 g` and `1 in` equals `25.4 mm`.
+
+```php
+use Larasell\Larasell\Dimensions;
+use Larasell\Larasell\Enums\LengthUnit;
+use Larasell\Larasell\Enums\WeightUnit;
+use Larasell\Larasell\Length;
+use Larasell\Larasell\Weight;
+
+$product->update([
+    'weight' => Weight::of(450, WeightUnit::Gram),
+    'dimensions' => Dimensions::of(30, 20, 2, LengthUnit::Centimeter),
+]);
+
+$product->weight->greaterThan(Weight::of('0.4', WeightUnit::Kilogram));
+$product->dimensions->longestSide()->lessThan(Length::of(1, LengthUnit::Meter));
+$product->dimensions->fitsInside(Dimensions::of(40, 30, 10, LengthUnit::Centimeter));
+```
+
+Leave either field `null` when the measurement is unknown. Variants inherit
+the product values until they set their own.
+
 ## Managing stock
 
 Use `stock` to store the current inventory count for the product. Leave
@@ -252,11 +278,12 @@ $cart->add($variant, quantity: 2);
 ```
 
 `ProductVariant` is the authoritative purchasable record. Its nullable price,
-compare-at price, stock, backorder policy, and quantity limits inherit from the
-product. SKU and barcode also inherit when omitted. Use `compareAtPrice()` and
-`onSale()` for the effective compare-at amount. Products without generated
-combinations use an automatically-created default variant, so
-`$cart->add($product)` remains valid.
+compare-at price, weight, dimensions, stock, backorder policy, and quantity
+limits inherit from the product. SKU and barcode also inherit when omitted.
+Use `compareAtPrice()` and `onSale()` for the effective compare-at amount, and
+`effectiveWeight()` and `effectiveDimensions()` for shipping measurements.
+Products without generated combinations use an automatically-created default
+variant, so `$cart->add($product)` remains valid.
 
 Variant combinations are identified by stable attribute and value IDs rather
 than customer-facing labels. Duplicate combinations, SKUs, and barcodes are

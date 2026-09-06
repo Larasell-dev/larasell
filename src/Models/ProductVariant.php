@@ -10,9 +10,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
+use Larasell\Larasell\Casts\NullableWeightCast;
+use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
@@ -21,6 +25,8 @@ use Larasell\Larasell\Price;
  * @property string|null $barcode
  * @property Price|null $price
  * @property Price|null $compare_at
+ * @property Weight|null $weight
+ * @property Dimensions|null $dimensions
  * @property string|null $tax_category
  * @property int|null $stock
  * @property bool|null $allow_backorders
@@ -48,6 +54,8 @@ class ProductVariant extends Model
     protected $casts = [
         'price' => NullablePriceCast::class,
         'compare_at' => NullablePriceCast::class,
+        'weight' => NullableWeightCast::class,
+        'dimensions' => NullableDimensionsCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'min_quantity' => 'integer',
@@ -115,6 +123,16 @@ class ProductVariant extends Model
     public function effectiveTaxCategory(): string
     {
         return $this->tax_category ?? $this->product->tax_category;
+    }
+
+    public function effectiveWeight(): ?Weight
+    {
+        return $this->weight ?? $this->product->weight;
+    }
+
+    public function effectiveDimensions(): ?Dimensions
+    {
+        return $this->dimensions ?? $this->product->dimensions;
     }
 
     public function availableStock(): ?int

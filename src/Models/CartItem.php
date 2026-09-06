@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection as SupportCollection;
+use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
@@ -66,6 +68,16 @@ class CartItem extends Model
     public function unitPrice(): Price
     {
         return $this->variant->unitPrice();
+    }
+
+    public function weight(): ?Weight
+    {
+        return $this->variant->effectiveWeight()?->multiply($this->quantity);
+    }
+
+    public function dimensions(): ?Dimensions
+    {
+        return $this->variant->effectiveDimensions();
     }
 
     public function sku(): ?string
