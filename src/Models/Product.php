@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableTranslatableCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
@@ -29,6 +30,7 @@ use Larasell\Larasell\Translatable;
  * @property Translatable $name
  * @property Translatable|null $description
  * @property Price $price
+ * @property Price|null $compare_at
  * @property string $tax_category
  * @property int|null $stock
  * @property int|null $min_quantity
@@ -59,6 +61,7 @@ class Product extends Model
         'name' => TranslatableCast::class,
         'description' => NullableTranslatableCast::class,
         'price' => PriceCast::class,
+        'compare_at' => NullablePriceCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'status' => Visibility::class,
@@ -75,6 +78,7 @@ class Product extends Model
                 'sku',
                 'barcode',
                 'price',
+                'compare_at',
                 'stock',
                 'allow_backorders',
                 'min_quantity',
@@ -269,6 +273,11 @@ class Product extends Model
             ->with(['attributeValues.attribute'])
             ->orderBy('position')
             ->orderBy('id');
+    }
+
+    public function onSale(): bool
+    {
+        return $this->compare_at !== null && $this->compare_at->greaterThan($this->price);
     }
 
     public function defaultVariant(): ProductVariant
@@ -467,6 +476,7 @@ class Product extends Model
             'sku' => $this->sku,
             'barcode' => $this->barcode,
             'price' => $this->price,
+            'compare_at' => $this->compare_at,
             'stock' => $this->stock,
             'allow_backorders' => $this->allow_backorders,
             'min_quantity' => $this->min_quantity,

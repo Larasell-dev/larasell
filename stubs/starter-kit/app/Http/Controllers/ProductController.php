@@ -29,13 +29,20 @@ class ProductController extends Controller
                     'alt' => $image->alt,
                     'url' => $image->url(),
                 ],
-                'variants' => $product->visibleVariants->map(fn (ProductVariant $variant): array => [
-                    'id' => $variant->getKey(),
-                    'name' => $variant->name(),
-                    'price' => Price::format($variant->unitPrice(), $currency, $locale),
-                    'minQuantity' => $variant->minimumQuantity() ?? 1,
-                    'maxQuantity' => $variant->maximumQuantity(),
-                ])->all(),
+                'variants' => $product->visibleVariants->map(function (ProductVariant $variant) use ($currency, $locale): array {
+                    $compareAt = $variant->compareAtPrice();
+
+                    return [
+                        'id' => $variant->getKey(),
+                        'name' => $variant->name(),
+                        'price' => Price::format($variant->unitPrice(), $currency, $locale),
+                        'compareAt' => $compareAt !== null && $variant->onSale()
+                            ? Price::format($compareAt, $currency, $locale)
+                            : null,
+                        'minQuantity' => $variant->minimumQuantity() ?? 1,
+                        'maxQuantity' => $variant->maximumQuantity(),
+                    ];
+                })->all(),
             ],
         ]);
     }
@@ -55,12 +62,16 @@ class ProductController extends Controller
                 ->get()
                 ->map(function (Product $product) use ($currency, $locale): array {
                     $image = $product->images->first();
+                    $compareAt = $product->compare_at;
 
                     return [
                         'id' => $product->getKey(),
                         'name' => $product->name->get(),
                         'slug' => $product->slug->get(),
                         'price' => Price::format($product->price, $currency, $locale),
+                        'compareAt' => $compareAt !== null && $product->onSale()
+                            ? Price::format($compareAt, $currency, $locale)
+                            : null,
                         'image' => $image === null ? null : [
                             'alt' => $image->alt,
                             'url' => $image->url(),

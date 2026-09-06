@@ -20,6 +20,7 @@ use Larasell\Larasell\Price;
  * @property string|null $sku
  * @property string|null $barcode
  * @property Price|null $price
+ * @property Price|null $compare_at
  * @property string|null $tax_category
  * @property int|null $stock
  * @property bool|null $allow_backorders
@@ -46,6 +47,7 @@ class ProductVariant extends Model
 
     protected $casts = [
         'price' => NullablePriceCast::class,
+        'compare_at' => NullablePriceCast::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'min_quantity' => 'integer',
@@ -86,6 +88,18 @@ class ProductVariant extends Model
     public function unitPrice(): Price
     {
         return $this->price ?? $this->product->price;
+    }
+
+    public function compareAtPrice(): ?Price
+    {
+        return $this->compare_at ?? $this->product->compare_at;
+    }
+
+    public function onSale(): bool
+    {
+        $compareAt = $this->compareAtPrice();
+
+        return $compareAt !== null && $compareAt->greaterThan($this->unitPrice());
     }
 
     public function effectiveSku(): ?string
