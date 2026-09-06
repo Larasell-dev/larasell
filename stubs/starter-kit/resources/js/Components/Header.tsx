@@ -9,7 +9,7 @@ type NavigationItem = {
 type SharedProps = {
   cart: {
     quantity: number
-  }
+  } | null
   navigation: NavigationItem[]
 }
 
@@ -19,7 +19,7 @@ export default function Header() {
   return (
     <header>
       <Link href="/">Store</Link>
-      <Link href="/cart">Cart ({cart.quantity})</Link>
+      <Link href="/cart">Cart ({cart?.quantity ?? 0})</Link>
 
       {navigation.length > 0 && (
         <nav aria-label="Categories">
