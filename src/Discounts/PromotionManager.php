@@ -12,6 +12,9 @@ use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Contracts\Promotions\ShouldBeExclusive;
 use Larasell\Larasell\Events\PromotionCodeApplied;
+use Larasell\Larasell\Exceptions\Promotions\InapplicablePromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\UnavailablePromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\UnknownPromotionCodeException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
@@ -136,18 +139,22 @@ final class PromotionManager
         $promotion = $this->codedPromotions()[$code] ?? null;
 
         if ($promotion === null) {
-            throw new InvalidArgumentException("Promotion code [{$code}] is not registered.");
+            throw new UnknownPromotionCodeException($code);
         }
 
-        if (! $this->isAvailable($promotion)) {
-            throw new InvalidArgumentException("Promotion code [{$code}] is not applicable to this cart.");
+        if ($promotion instanceof HasAvailability) {
+            $window = AvailabilityWindow::from($promotion->window());
+
+            if (! $window->contains(now())) {
+                throw new UnavailablePromotionCodeException($code, $window->startsAt, $window->endsAt);
+            }
         }
 
         $context = $this->context($cart);
         $result = $promotion->apply($context);
 
         if ($result === null || ! $result->total()->isPositive()) {
-            throw new InvalidArgumentException("Promotion code [{$code}] is not applicable to this cart.");
+            throw new InapplicablePromotionCodeException($code);
         }
 
         $this->validateTargets($result, $context);

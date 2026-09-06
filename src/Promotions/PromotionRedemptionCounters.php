@@ -4,10 +4,12 @@ namespace Larasell\Larasell\Promotions;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Carbon;
-use InvalidArgumentException;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Events\PromotionRedemptionRedeemed;
 use Larasell\Larasell\Events\PromotionRedemptionReleased;
+use Larasell\Larasell\Exceptions\Promotions\CustomerPromotionRedemptionLimitReachedException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionIntegrityException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionLimitReachedException;
 use Larasell\Larasell\Models\PromotionRedemption;
 
 final readonly class PromotionRedemptionCounters
@@ -20,7 +22,7 @@ final readonly class PromotionRedemptionCounters
             $counter = $this->lockGlobal($promotion, $at);
 
             if ($limits->global <= $counter['reserved_count'] + $counter['redeemed_count']) {
-                throw new InvalidArgumentException("Promotion [{$promotion}] has reached its redemption limit.");
+                throw new PromotionRedemptionLimitReachedException($promotion);
             }
 
             $this->database->table('larasell_promotion_redemption_counters')
@@ -32,7 +34,7 @@ final readonly class PromotionRedemptionCounters
             $counter = $this->lockCustomer($promotion, $customer, $at);
 
             if ($limits->customer <= $counter['reserved_count'] + $counter['redeemed_count']) {
-                throw new InvalidArgumentException("Promotion [{$promotion}] has reached its customer redemption limit.");
+                throw new CustomerPromotionRedemptionLimitReachedException($promotion, $customer);
             }
 
             $this->database->table('larasell_promotion_customer_redemption_counters')
@@ -136,7 +138,7 @@ final readonly class PromotionRedemptionCounters
             || ! is_numeric($counter->reserved_count)
             || ! is_numeric($counter->redeemed_count)
             || ($requireReservation && (int) $counter->reserved_count < 1)) {
-            throw new InvalidArgumentException("Promotion [{$promotion}] has inconsistent redemption capacity.");
+            throw new PromotionRedemptionIntegrityException($promotion);
         }
 
         return [

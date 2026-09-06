@@ -125,13 +125,16 @@ Codes are trimmed and converted to uppercase. Attaching the same normalized
 code more than once has no effect. Code values must be non-empty and unique
 across all registered coded promotions.
 
-`applyPromotionCode()` throws `InvalidArgumentException` when the normalized
-code is not registered or its promotion does not currently return a positive
-discount. Storefront controllers should turn that exception into an error for
-the code input.
+`applyPromotionCode()` throws a `PromotionCodeException` when the normalized
+code is not registered, is outside its availability window, or its promotion
+does not currently return a positive discount. Storefront controllers should
+turn that exception into an error for the code input. Catch
+`PromotionCodeException` rather than `InvalidArgumentException` so broken
+promotion implementations still surface as application errors.
 
 ```php
 use Illuminate\Http\Request;
+use Larasell\Larasell\Exceptions\Promotions\PromotionCodeException;
 use Larasell\Larasell\Models\Cart;
 
 public function store(Request $request, Cart $cart)
@@ -140,13 +143,20 @@ public function store(Request $request, Cart $cart)
 
     try {
         $cart->applyPromotionCode($data['code']);
-    } catch (\InvalidArgumentException $exception) {
+    } catch (PromotionCodeException $exception) {
         return back()->withErrors(['code' => $exception->getMessage()]);
     }
 
     return back();
 }
 ```
+
+The concrete types are `UnknownPromotionCodeException`,
+`InapplicablePromotionCodeException`, and `UnavailablePromotionCodeException`.
+Each exposes a stable `reason()` string and a `context()` array so storefronts
+can map copy without parsing exception messages. Programmer errors such as
+duplicate identifiers or invalid allocation targets still throw
+`InvalidArgumentException`.
 
 An attached code is persisted on the cart, but its promotion is reevaluated
 whenever discounts are calculated. If the customer changes the cart so that a
@@ -393,7 +403,12 @@ It must return a stable, non-empty identifier for the customer.
 Checkout reserves one use of each applied limited promotion. A successful
 payment permanently redeems it. Cancelling an unpaid order releases its
 reserved uses. Redeemed uses remain counted when an order is later refunded or
-cancelled.
+cancelled. If global or per-customer capacity is exhausted, checkout throws
+`PromotionRedemptionLimitReachedException` or
+`CustomerPromotionRedemptionLimitReachedException`. Catch
+`PromotionException` at checkout the same way as `CartException`. Corrupted
+redemption counters throw `PromotionRedemptionIntegrityException`, which is not
+a customer-facing promotion failure.
 
 Expired promotion reservations are processed by this command:
 

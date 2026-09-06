@@ -15,6 +15,12 @@ use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Exceptions\Promotions\CustomerPromotionRedemptionLimitReachedException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionIntegrityException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionLimitReachedException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Product;
@@ -144,11 +150,27 @@ it('rejects checkout when a promotion has no capacity left', function () {
     promotionRedemptionOrder();
     $cart = promotionRedemptionCart();
 
-    expect(fn () => app(Checkout::class)->create($cart, promotionRedemptionCustomer()))
-        ->toThrow(InvalidArgumentException::class, 'Promotion [limited-promotion] has reached its redemption limit.');
+    try {
+        app(Checkout::class)->create($cart, promotionRedemptionCustomer());
+    } catch (PromotionRedemptionLimitReachedException $exception) {
+        expect($exception)->toBeInstanceOf(PromotionRedemptionException::class)
+            ->and($exception)->toBeInstanceOf(PromotionException::class)
+            ->and($exception)->not->toBeInstanceOf(PromotionCodeException::class)
+            ->and($exception->getMessage())->toBe('Promotion [limited-promotion] has reached its redemption limit.')
+            ->and($exception->identifier)->toBe('limited-promotion')
+            ->and($exception->reason())->toBe('redemption_limit_reached')
+            ->and($exception->context())->toBe([
+                'reason' => 'redemption_limit_reached',
+                'identifier' => 'limited-promotion',
+            ]);
 
-    expect($cart->fresh()->items)->toHaveCount(1)
-        ->and(PromotionRedemption::query()->count())->toBe(1);
+        expect($cart->fresh()->items)->toHaveCount(1)
+            ->and(PromotionRedemption::query()->count())->toBe(1);
+
+        return;
+    }
+
+    $this->fail('Expected promotion redemption limit exception.');
 });
 
 it('rejects invalid promotion redemption limits', function () {
@@ -177,36 +199,50 @@ it('enforces a redemption limit per customer', function () {
     promotionRedemptionOrder();
     $repeatCustomerCart = promotionRedemptionCart();
 
-    expect(fn () => app(Checkout::class)->create($repeatCustomerCart, [
-        'customer_email' => 'REDEMPTIONS@example.com',
-        'customer_name' => 'Repeat Customer',
-    ]))->toThrow(
-        InvalidArgumentException::class,
-        'Promotion [limited-promotion] has reached its customer redemption limit.',
-    );
+    try {
+        app(Checkout::class)->create($repeatCustomerCart, [
+            'customer_email' => 'REDEMPTIONS@example.com',
+            'customer_name' => 'Repeat Customer',
+        ]);
+    } catch (CustomerPromotionRedemptionLimitReachedException $exception) {
+        expect($exception)->toBeInstanceOf(PromotionRedemptionException::class)
+            ->and($exception)->getMessage()->toBe('Promotion [limited-promotion] has reached its customer redemption limit.')
+            ->and($exception->identifier)->toBe('limited-promotion')
+            ->and($exception->customerIdentifier)->toBe('email:redemptions@example.com')
+            ->and($exception->reason())->toBe('customer_redemption_limit_reached')
+            ->and($exception->context())->toBe([
+                'reason' => 'customer_redemption_limit_reached',
+                'identifier' => 'limited-promotion',
+                'customer_identifier' => 'email:redemptions@example.com',
+            ]);
 
-    $otherCustomerOrder = app(Checkout::class)->create(promotionRedemptionCart(), [
-        'customer_email' => 'other@example.com',
-        'customer_name' => 'Other Customer',
-    ])->order;
+        $otherCustomerOrder = app(Checkout::class)->create(promotionRedemptionCart(), [
+            'customer_email' => 'other@example.com',
+            'customer_name' => 'Other Customer',
+        ])->order;
 
-    expect($repeatCustomerCart->fresh()->items)->toHaveCount(1)
-        ->and($otherCustomerOrder->promotionRedemptions()->sole()->customer_identifier)->toBe('email:other@example.com');
+        expect($repeatCustomerCart->fresh()->items)->toHaveCount(1)
+            ->and($otherCustomerOrder->promotionRedemptions()->sole()->customer_identifier)->toBe('email:other@example.com');
 
-    $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
-        'promotion_identifier' => 'limited-promotion',
-        'reserved_count' => 2,
-    ]);
-    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
-        'promotion_identifier' => 'limited-promotion',
-        'customer_identifier' => 'email:redemptions@example.com',
-        'reserved_count' => 1,
-    ]);
-    $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
-        'promotion_identifier' => 'limited-promotion',
-        'customer_identifier' => 'email:other@example.com',
-        'reserved_count' => 1,
-    ]);
+        $this->assertDatabaseHas('larasell_promotion_redemption_counters', [
+            'promotion_identifier' => 'limited-promotion',
+            'reserved_count' => 2,
+        ]);
+        $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+            'promotion_identifier' => 'limited-promotion',
+            'customer_identifier' => 'email:redemptions@example.com',
+            'reserved_count' => 1,
+        ]);
+        $this->assertDatabaseHas('larasell_promotion_customer_redemption_counters', [
+            'promotion_identifier' => 'limited-promotion',
+            'customer_identifier' => 'email:other@example.com',
+            'reserved_count' => 1,
+        ]);
+
+        return;
+    }
+
+    $this->fail('Expected customer promotion redemption limit exception.');
 });
 
 it('supports customer-only redemption limits and a custom customer resolver', function () {
@@ -283,12 +319,22 @@ it('rolls back payment when reserved promotion capacity is inconsistent', functi
         ->where('promotion_identifier', 'limited-promotion')
         ->update(['reserved_count' => 0]);
 
-    expect(fn () => $order->payments->sole()->markAsPaid())
-        ->toThrow(InvalidArgumentException::class, 'inconsistent redemption capacity');
+    try {
+        $order->payments->sole()->markAsPaid();
+    } catch (PromotionRedemptionIntegrityException $exception) {
+        expect($exception)->toBeInstanceOf(RuntimeException::class)
+            ->and($exception)->not->toBeInstanceOf(PromotionException::class)
+            ->and($exception->getMessage())->toBe('Promotion [limited-promotion] has inconsistent redemption capacity.')
+            ->and($exception->identifier)->toBe('limited-promotion');
 
-    expect($order->payments->sole()->fresh()->status)->toBe(PaymentStatus::Pending)
-        ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
-        ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
+        expect($order->payments->sole()->fresh()->status)->toBe(PaymentStatus::Pending)
+            ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
+            ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
+
+        return;
+    }
+
+    $this->fail('Expected promotion redemption integrity exception.');
 });
 
 it('releases reserved promotion capacity when an order is cancelled', function () {
