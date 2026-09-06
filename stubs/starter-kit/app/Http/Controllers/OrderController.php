@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Address;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\OrderItem;
 use Larasell\Larasell\Price;
@@ -19,12 +20,17 @@ class OrderController extends Controller
             ->firstOrFail();
 
         $locale = App::currentLocale();
+        $billingAddress = $this->addressLines($order->billing_address);
+        $shippingAddress = $this->addressLines($order->shipping_address);
+        $sameAddress = $billingAddress !== null && $billingAddress === $shippingAddress;
 
         return Inertia::render('OrderConfirmation', [
             'order' => [
                 'number' => $order->number,
                 'customerEmail' => $order->customer_email,
                 'customerName' => $order->customer_name,
+                'billingAddress' => $sameAddress ? null : $billingAddress,
+                'shippingAddress' => $shippingAddress,
                 'status' => $order->status->value,
                 'subtotal' => Price::format($order->subtotal, $order->currency, $locale),
                 'discounts' => collect($order->discounts)->map(fn (array $discount): array => [
@@ -54,5 +60,23 @@ class OrderController extends Controller
                 })->all(),
             ],
         ]);
+    }
+
+    /** @return array<int, string>|null */
+    private function addressLines(?Address $address): ?array
+    {
+        if ($address === null) {
+            return null;
+        }
+
+        $lines = array_values(array_filter([
+            trim($address->firstName.' '.$address->lastName),
+            $address->company,
+            ...$address->street,
+            implode(', ', array_filter([$address->city, $address->state, $address->postcode])),
+            $address->country,
+        ], fn (?string $line): bool => filled($line)));
+
+        return $lines === [] ? null : $lines;
     }
 }

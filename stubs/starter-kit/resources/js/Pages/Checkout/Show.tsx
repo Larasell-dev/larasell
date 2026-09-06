@@ -1,7 +1,19 @@
-import { Form, Head, Link } from '@inertiajs/react'
+import { Form, Head, Link, usePage } from '@inertiajs/react'
+import { useState } from 'react'
 import CartTotals, { type CartDiscount } from '../../Components/CartTotals'
 import LinePrice, { type PricedLine } from '../../Components/LinePrice'
 import PromotionCodeForm, { type CartPromotionCode } from '../../Components/PromotionCodeForm'
+
+const BILLING_FIELDS = [
+  'billing_first_name',
+  'billing_last_name',
+  'billing_street',
+  'billing_city',
+  'billing_postcode',
+  'billing_country',
+] as const
+
+type AddressPrefix = 'billing' | 'shipping'
 
 type Props = {
   cart: {
@@ -21,6 +33,11 @@ type Props = {
 }
 
 export default function CheckoutShow({ cart, idempotencyKey }: Props) {
+  const pageErrors = usePage().props.errors
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(
+    () => !BILLING_FIELDS.some((field) => pageErrors[field]),
+  )
+
   return (
     <main>
       <Head title="Checkout" />
@@ -59,6 +76,7 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
         {({ errors, processing }) => (
           <>
             <input type="hidden" name="idempotency_key" value={idempotencyKey} />
+            <input type="hidden" name="billing_same_as_shipping" value={billingSameAsShipping ? '1' : '0'} />
 
             <p>
               <label htmlFor="email">Email</label>{' '}
@@ -66,41 +84,29 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
               {errors.email && <span> {errors.email}</span>}
             </p>
 
-            <p>
-              <label htmlFor="first_name">First name</label>{' '}
-              <input id="first_name" name="first_name" type="text" required />
-              {errors.first_name && <span> {errors.first_name}</span>}
-            </p>
+            <fieldset>
+              <legend>Shipping address</legend>
+              <AddressFields errors={errors} prefix="shipping" />
+            </fieldset>
 
             <p>
-              <label htmlFor="last_name">Last name</label>{' '}
-              <input id="last_name" name="last_name" type="text" required />
-              {errors.last_name && <span> {errors.last_name}</span>}
+              <label htmlFor="billing_same_as_shipping">
+                <input
+                  id="billing_same_as_shipping"
+                  type="checkbox"
+                  checked={billingSameAsShipping}
+                  onChange={(event) => setBillingSameAsShipping(event.target.checked)}
+                />
+                {' '}Billing address is the same as shipping address
+              </label>
             </p>
 
-            <p>
-              <label htmlFor="street">Street</label>{' '}
-              <input id="street" name="street" type="text" required />
-              {errors.street && <span> {errors.street}</span>}
-            </p>
-
-            <p>
-              <label htmlFor="city">City</label>{' '}
-              <input id="city" name="city" type="text" required />
-              {errors.city && <span> {errors.city}</span>}
-            </p>
-
-            <p>
-              <label htmlFor="postcode">Postcode</label>{' '}
-              <input id="postcode" name="postcode" type="text" required />
-              {errors.postcode && <span> {errors.postcode}</span>}
-            </p>
-
-            <p>
-              <label htmlFor="country">Country</label>{' '}
-              <input id="country" name="country" type="text" required />
-              {errors.country && <span> {errors.country}</span>}
-            </p>
+            {!billingSameAsShipping && (
+              <fieldset>
+                <legend>Billing address</legend>
+                <AddressFields errors={errors} prefix="billing" />
+              </fieldset>
+            )}
 
             {errors.checkout && <p>{errors.checkout}</p>}
 
@@ -110,4 +116,33 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
       </Form>
     </main>
   )
+}
+
+const ADDRESS_FIELDS = [
+  { name: 'first_name', label: 'First name' },
+  { name: 'last_name', label: 'Last name' },
+  { name: 'street', label: 'Street' },
+  { name: 'city', label: 'City' },
+  { name: 'postcode', label: 'Postcode' },
+  { name: 'country', label: 'Country' },
+] as const
+
+function AddressFields({
+  errors,
+  prefix,
+}: {
+  errors: Record<string, string>
+  prefix: AddressPrefix
+}) {
+  return ADDRESS_FIELDS.map((field) => {
+    const name = `${prefix}_${field.name}`
+
+    return (
+      <p key={name}>
+        <label htmlFor={name}>{field.label}</label>{' '}
+        <input id={name} name={name} type="text" required />
+        {errors[name] && <span> {errors[name]}</span>}
+      </p>
+    )
+  })
 }
