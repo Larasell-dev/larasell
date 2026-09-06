@@ -9,6 +9,12 @@ use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Exceptions\Promotions\InapplicablePromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionException;
+use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionException;
+use Larasell\Larasell\Exceptions\Promotions\UnavailablePromotionCodeException;
+use Larasell\Larasell\Exceptions\Promotions\UnknownPromotionCodeException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
@@ -100,20 +106,71 @@ it('does not attach duplicate codes and allows removing them', function () {
         ->and($cart->discounts())->toBeEmpty();
 });
 
-it('rejects unknown and currently inapplicable codes', function () {
+it('rejects unknown promotion codes', function () {
     app(PromotionManager::class)->register(TenPercentPromotionCode::class);
 
-    expect(fn () => promotionCodeCart(2000)->applyPromotionCode('unknown'))
-        ->toThrow(InvalidArgumentException::class, 'Promotion code [UNKNOWN] is not registered.')
-        ->and(fn () => promotionCodeCart(500)->applyPromotionCode('save10'))
-        ->toThrow(InvalidArgumentException::class, 'Promotion code [SAVE10] is not applicable to this cart.');
+    try {
+        promotionCodeCart(2000)->applyPromotionCode('unknown');
+    } catch (UnknownPromotionCodeException $exception) {
+        expect($exception)->toBeInstanceOf(PromotionCodeException::class)
+            ->and($exception)->toBeInstanceOf(PromotionException::class)
+            ->and($exception)->not->toBeInstanceOf(PromotionRedemptionException::class)
+            ->and($exception->getMessage())->toBe('Promotion code [UNKNOWN] is not registered.')
+            ->and($exception->promotionCode)->toBe('UNKNOWN')
+            ->and($exception->reason())->toBe('unknown_promotion_code')
+            ->and($exception->context())->toBe([
+                'reason' => 'unknown_promotion_code',
+                'code' => 'UNKNOWN',
+            ]);
+
+        return;
+    }
+
+    $this->fail('Expected unknown promotion code exception.');
+});
+
+it('rejects currently inapplicable promotion codes', function () {
+    app(PromotionManager::class)->register(TenPercentPromotionCode::class);
+
+    try {
+        promotionCodeCart(500)->applyPromotionCode('save10');
+    } catch (InapplicablePromotionCodeException $exception) {
+        expect($exception)->toBeInstanceOf(PromotionCodeException::class)
+            ->and($exception)->getMessage()->toBe('Promotion code [SAVE10] is not applicable to this cart.')
+            ->and($exception->promotionCode)->toBe('SAVE10')
+            ->and($exception->reason())->toBe('inapplicable_promotion_code')
+            ->and($exception->context())->toBe([
+                'reason' => 'inapplicable_promotion_code',
+                'code' => 'SAVE10',
+            ]);
+
+        return;
+    }
+
+    $this->fail('Expected inapplicable promotion code exception.');
 });
 
 it('rejects codes outside their promotion availability window', function () {
     app(PromotionManager::class)->register(FuturePromotionCode::class);
 
-    expect(fn () => promotionCodeCart(2000)->applyPromotionCode('FUTURE'))
-        ->toThrow(InvalidArgumentException::class, 'Promotion code [FUTURE] is not applicable to this cart.');
+    try {
+        promotionCodeCart(2000)->applyPromotionCode('FUTURE');
+    } catch (UnavailablePromotionCodeException $exception) {
+        expect($exception)->toBeInstanceOf(PromotionCodeException::class)
+            ->and($exception)->getMessage()->toBe('Promotion code [FUTURE] is not currently available.')
+            ->and($exception->promotionCode)->toBe('FUTURE')
+            ->and($exception->startsAt?->isFuture())->toBeTrue()
+            ->and($exception->endsAt)->toBeNull()
+            ->and($exception->reason())->toBe('unavailable_promotion_code')
+            ->and($exception->context()['reason'])->toBe('unavailable_promotion_code')
+            ->and($exception->context()['code'])->toBe('FUTURE')
+            ->and($exception->context()['starts_at'])->toBe($exception->startsAt?->toIso8601String())
+            ->and($exception->context()['ends_at'])->toBeNull();
+
+        return;
+    }
+
+    $this->fail('Expected unavailable promotion code exception.');
 });
 
 it('reevaluates attached codes when the cart changes', function () {
