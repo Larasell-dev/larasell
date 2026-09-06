@@ -27,6 +27,12 @@ class OrderController extends Controller
                 'customerName' => $order->customer_name,
                 'status' => $order->status->value,
                 'subtotal' => Price::format($order->subtotal, $order->currency, $locale),
+                'discounts' => collect($order->discounts)->map(fn (array $discount): array => [
+                    'identifier' => $discount['identifier'],
+                    'name' => $discount['name'],
+                    'code' => $discount['code'] ?? null,
+                    'total' => Price::format(Price::fromArray($discount['total']), $order->currency, $locale),
+                ])->all(),
                 'total' => Price::format($order->total, $order->currency, $locale),
                 'items' => $order->items->map(fn (OrderItem $item): array => [
                     'id' => $item->getKey(),

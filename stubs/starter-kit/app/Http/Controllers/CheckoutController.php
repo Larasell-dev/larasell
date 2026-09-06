@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Inertia\CartDetails;
 use App\Support\SessionCart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -14,15 +14,14 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Exceptions\Cart\CartException;
 use Larasell\Larasell\Exceptions\Cart\EmptyCartException;
-use Larasell\Larasell\Models\CartItem;
-use Larasell\Larasell\Price;
+use Larasell\Larasell\Exceptions\Promotions\PromotionException;
 use Larasell\Larasell\Taxes\Exceptions\TaxCalculationException;
 
 class CheckoutController extends Controller
 {
     public function __construct(private Checkout $checkout) {}
 
-    public function show(SessionCart $sessionCart): RedirectResponse|Response
+    public function show(SessionCart $sessionCart, CartDetails $cartDetails): RedirectResponse|Response
     {
         $cart = $sessionCart->existing();
 
@@ -30,24 +29,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart.show');
         }
 
-        $locale = App::currentLocale();
-        $items = $cart->purchasableItems();
-        $subtotal = $cart->subtotal();
-        $total = $cart->total();
-
         return Inertia::render('Checkout/Show', [
-            'cart' => [
-                'items' => $items->map(fn (CartItem $item): array => [
-                    'id' => $item->getKey(),
-                    'name' => $item->product->name->get(),
-                    'quantity' => $item->quantity,
-                    'unitPrice' => Price::format($item->unitPrice(), $cart->currency, $locale),
-                    'total' => Price::format($item->total(), $cart->currency, $locale),
-                ])->all(),
-                'quantity' => $cart->quantity(),
-                'subtotal' => $subtotal === null ? null : Price::format($subtotal, $cart->currency, $locale),
-                'total' => $total === null ? null : Price::format($total, $cart->currency, $locale),
-            ],
+            'cart' => $cartDetails->toArray($cart),
             'idempotencyKey' => (string) Str::uuid(),
         ]);
     }
@@ -86,7 +69,7 @@ class CheckoutController extends Controller
             ], idempotencyKey: $data['idempotency_key']);
         } catch (EmptyCartException) {
             return redirect()->route('cart.show');
-        } catch (CartException|TaxCalculationException $exception) {
+        } catch (CartException|TaxCalculationException|PromotionException $exception) {
             throw ValidationException::withMessages([
                 'checkout' => $exception->getMessage(),
             ]);

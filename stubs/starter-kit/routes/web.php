@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AddProductToCartController;
+use App\Http\Controllers\ApplyPromotionCodeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RemoveCartItemController;
+use App\Http\Controllers\RemovePromotionCodeController;
 use App\Http\Controllers\UpdateCartItemController;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Routing\ProductDetailRoute;
@@ -29,6 +31,12 @@ Route::patch('/cart/items/{cartItem}', UpdateCartItemController::class)
 Route::delete('/cart/items/{cartItem}', RemoveCartItemController::class)
     ->whereNumber('cartItem')
     ->name('cart.items.destroy');
+
+Route::post('/cart/promotion-codes', ApplyPromotionCodeController::class)
+    ->name('cart.promotion-codes.store');
+
+Route::delete('/cart/promotion-codes', RemovePromotionCodeController::class)
+    ->name('cart.promotion-codes.destroy');
 
 Route::get('/checkout', [CheckoutController::class, 'show'])
     ->name('checkout.show');
