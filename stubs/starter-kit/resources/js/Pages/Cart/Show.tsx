@@ -1,11 +1,12 @@
 import { Form, Head, Link } from '@inertiajs/react'
 import CartTotals, { type CartDiscount } from '../../Components/CartTotals'
+import LinePrice, { type PricedLine } from '../../Components/LinePrice'
 import PromotionCodeForm, { type CartPromotionCode } from '../../Components/PromotionCodeForm'
 
 type Props = {
   cart: {
     discounts: CartDiscount[]
-    items: Array<{
+    items: Array<PricedLine & {
       id: number | string
       name: string
       options: Array<{
@@ -14,7 +15,6 @@ type Props = {
       }>
       quantity: number
       unitPrice: string
-      total: string
     }>
     promotionCodes: CartPromotionCode[]
     quantity: number
@@ -48,7 +48,13 @@ export default function CartShow({ cart }: Props) {
                   </ul>
                 )}
                 <p>{item.unitPrice} each</p>
-                <p>{item.total}</p>
+                <p>
+                  <LinePrice
+                    discountTotal={item.discountTotal}
+                    total={item.total}
+                    totalAfterDiscount={item.totalAfterDiscount}
+                  />
+                </p>
 
                 <Form
                   action={`/cart/items/${item.id}`}
