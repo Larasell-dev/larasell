@@ -12,7 +12,7 @@ final class CartDetails
 {
     /**
      * @return array{
-     *     items: array<int, array{id: mixed, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string}>,
+     *     items: array<int, array{id: mixed, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string, discountTotal: string|null, totalAfterDiscount: string}>,
      *     quantity: int,
      *     subtotal: string|null,
      *     discounts: array<int, array{identifier: string, name: string, code: string|null, total: string}>,
@@ -28,20 +28,28 @@ final class CartDetails
         $total = $cart->total();
 
         return [
-            'items' => $cart->purchasableItems()->map(fn (CartItem $item): array => [
-                'id' => $item->getKey(),
-                'name' => $item->product->name->get(),
-                'options' => collect($item->variant->options())
-                    ->map(fn (array $option): array => [
-                        'name' => $option['attribute_name'],
-                        'value' => $option['value_name'],
-                    ])
-                    ->values()
-                    ->all(),
-                'quantity' => $item->quantity,
-                'unitPrice' => Price::format($item->unitPrice(), $cart->currency, $locale),
-                'total' => Price::format($item->total(), $cart->currency, $locale),
-            ])->all(),
+            'items' => $cart->purchasableItems()->map(function (CartItem $item) use ($cart, $locale): array {
+                $discountTotal = $item->discountTotal();
+
+                return [
+                    'id' => $item->getKey(),
+                    'name' => $item->product->name->get(),
+                    'options' => collect($item->variant->options())
+                        ->map(fn (array $option): array => [
+                            'name' => $option['attribute_name'],
+                            'value' => $option['value_name'],
+                        ])
+                        ->values()
+                        ->all(),
+                    'quantity' => $item->quantity,
+                    'unitPrice' => Price::format($item->unitPrice(), $cart->currency, $locale),
+                    'total' => Price::format($item->total(), $cart->currency, $locale),
+                    'discountTotal' => $discountTotal->isPositive()
+                        ? Price::format($discountTotal, $cart->currency, $locale)
+                        : null,
+                    'totalAfterDiscount' => Price::format($item->totalAfterDiscount(), $cart->currency, $locale),
+                ];
+            })->all(),
             'quantity' => $cart->quantity(),
             'subtotal' => $subtotal === null ? null : Price::format($subtotal, $cart->currency, $locale),
             'discounts' => $discounts->map(fn (DiscountResult $discount): array => [

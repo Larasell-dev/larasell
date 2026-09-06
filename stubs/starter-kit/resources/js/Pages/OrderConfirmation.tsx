@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react'
+import LinePrice, { type PricedLine } from '../Components/LinePrice'
 
 type Order = {
   customerEmail: string
@@ -9,11 +10,10 @@ type Order = {
     name: string
     total: string
   }>
-  items: Array<{
+  items: Array<PricedLine & {
     id: number | string
     name: string
     quantity: number
-    total: string
     unitPrice: string
   }>
   number: string
@@ -44,7 +44,11 @@ function OrderConfirmation({ order }: { order: Order }) {
           <li key={item.id}>
             <span>{item.name}</span>{' '}
             <span>{item.quantity} x {item.unitPrice}</span>{' '}
-            <span>{item.total}</span>
+            <LinePrice
+              discountTotal={item.discountTotal}
+              total={item.total}
+              totalAfterDiscount={item.totalAfterDiscount}
+            />
           </li>
         ))}
       </ul>

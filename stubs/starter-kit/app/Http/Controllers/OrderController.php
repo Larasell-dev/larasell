@@ -34,13 +34,24 @@ class OrderController extends Controller
                     'total' => Price::format(Price::fromArray($discount['total']), $order->currency, $locale),
                 ])->all(),
                 'total' => Price::format($order->total, $order->currency, $locale),
-                'items' => $order->items->map(fn (OrderItem $item): array => [
-                    'id' => $item->getKey(),
-                    'name' => $item->product_name->get(),
-                    'quantity' => $item->quantity,
-                    'unitPrice' => Price::format($item->unit_price, $order->currency, $locale),
-                    'total' => Price::format($item->total, $order->currency, $locale),
-                ])->all(),
+                'items' => $order->items->map(function (OrderItem $item) use ($order, $locale): array {
+                    $discountTotal = $item->discount_total;
+                    $totalAfterDiscount = $discountTotal->greaterThan($item->total)
+                        ? Price::of(0)
+                        : $item->total->subtract($discountTotal);
+
+                    return [
+                        'id' => $item->getKey(),
+                        'name' => $item->product_name->get(),
+                        'quantity' => $item->quantity,
+                        'unitPrice' => Price::format($item->unit_price, $order->currency, $locale),
+                        'total' => Price::format($item->total, $order->currency, $locale),
+                        'discountTotal' => $discountTotal->isPositive()
+                            ? Price::format($discountTotal, $order->currency, $locale)
+                            : null,
+                        'totalAfterDiscount' => Price::format($totalAfterDiscount, $order->currency, $locale),
+                    ];
+                })->all(),
             ],
         ]);
     }
