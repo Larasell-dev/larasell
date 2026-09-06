@@ -29,6 +29,7 @@ use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingOption;
 use Larasell\Larasell\Taxes\CartTaxEstimate;
 use Larasell\Larasell\Taxes\CartTaxEstimator;
+use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
@@ -198,6 +199,31 @@ class Cart extends Model
 
         foreach ($items->skip(1) as $item) {
             $total = $total->add($item->total());
+        }
+
+        return $total;
+    }
+
+    public function weight(): ?Weight
+    {
+        $items = $this->purchasableItems();
+
+        if ($items->isEmpty()) {
+            return null;
+        }
+
+        $weights = $items->map(fn (CartItem $item): ?Weight => $item->weight());
+
+        if ($weights->contains(null)) {
+            return null;
+        }
+
+        /** @var Weight $total */
+        $total = $weights->first();
+
+        foreach ($weights->skip(1) as $weight) {
+            /** @var Weight $weight */
+            $total = $total->add($weight);
         }
 
         return $total;

@@ -153,9 +153,11 @@ returns cart items with their product, concrete variant, and variant attribute
 values loaded.
 
 ```php
+use Larasell\Larasell\Enums\WeightUnit;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingMethod;
+use Larasell\Larasell\Weight;
 
 class ParcelShipping extends ShippingMethod
 {
@@ -168,6 +170,12 @@ class ParcelShipping extends ShippingMethod
 
         if ($cart->quantity() < 10) {
             $this->register('express', 'Express shipping', Price::of(1200));
+        }
+
+        $weight = $cart->weight();
+
+        if ($weight !== null && $weight->greaterThan(Weight::of(2, WeightUnit::Kilogram))) {
+            $this->register('heavy', 'Heavy parcel', Price::of(1800));
         }
     }
 }
@@ -192,6 +200,7 @@ $cart->selectShippingOption('express');
 
 $cart->shippingOption(); // The selected ShippingOption
 $cart->subtotal();       // Products only
+$cart->weight();         // Sum of line weights, or null when any line is missing one
 $cart->discountTotal();  // Applied product and shipping discounts
 $cart->total();          // Products + shipping - discounts
 ```
