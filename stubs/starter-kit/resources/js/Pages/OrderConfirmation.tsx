@@ -3,6 +3,12 @@ import { Head } from '@inertiajs/react'
 type Order = {
   customerEmail: string
   customerName: string
+  discounts: Array<{
+    code: string | null
+    identifier: string
+    name: string
+    total: string
+  }>
   items: Array<{
     id: number | string
     name: string
@@ -44,10 +50,23 @@ function OrderConfirmation({ order }: { order: Order }) {
       </ul>
 
       <dl>
-        <dt>Subtotal</dt>
-        <dd>{order.subtotal}</dd>
-        <dt>Total</dt>
-        <dd>{order.total}</dd>
+        <div>
+          <dt>Subtotal</dt>
+          <dd>{order.subtotal}</dd>
+        </div>
+        {order.discounts.map((discount) => (
+          <div key={discount.identifier}>
+            <dt>
+              {discount.name}
+              {discount.code ? ` (${discount.code})` : ''}
+            </dt>
+            <dd>−{discount.total}</dd>
+          </div>
+        ))}
+        <div>
+          <dt>Total</dt>
+          <dd>{order.total}</dd>
+        </div>
       </dl>
     </main>
   )

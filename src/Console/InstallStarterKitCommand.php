@@ -58,6 +58,10 @@ class InstallStarterKitCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $this->registerStoreServiceProvider($files)) {
+            return self::FAILURE;
+        }
+
         $this->components->info('Larasell starter kit installed.');
 
         return self::SUCCESS;
@@ -199,6 +203,48 @@ class InstallStarterKitCommand extends Command
         );
 
         $files->put($bootstrapPath, $bootstrap);
+
+        return true;
+    }
+
+    private function registerStoreServiceProvider(Filesystem $files): bool
+    {
+        $providersPath = base_path('bootstrap/providers.php');
+
+        if (! $files->exists($providersPath)) {
+            return true;
+        }
+
+        $providers = $files->get($providersPath);
+
+        if (str_contains($providers, 'StoreServiceProvider::class')) {
+            return true;
+        }
+
+        if (! str_contains($providers, 'return [')) {
+            $this->components->error('Unable to register the store service provider in bootstrap/providers.php.');
+
+            return false;
+        }
+
+        if (str_contains($providers, 'use App\\Providers\\AppServiceProvider;')) {
+            $providers = str_replace(
+                'use App\\Providers\\AppServiceProvider;',
+                "use App\\Providers\\AppServiceProvider;\nuse App\\Providers\\StoreServiceProvider;",
+                $providers,
+            );
+            $entry = 'StoreServiceProvider::class,';
+        } else {
+            $entry = 'App\\Providers\\StoreServiceProvider::class,';
+        }
+
+        $providers = str_replace(
+            'return [',
+            "return [\n    {$entry}",
+            $providers,
+        );
+
+        $files->put($providersPath, $providers);
 
         return true;
     }
