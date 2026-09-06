@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
@@ -288,6 +289,48 @@ class Cart extends Model
         }
 
         return $discountTotal->greaterThan($total) ? $total : $discountTotal;
+    }
+
+    public function merchandiseDiscountTotal(): Price
+    {
+        return $this->discounts()->reduce(
+            fn (Price $total, DiscountResult $discount): Price => $total->add(
+                $discount->total()->subtract($discount->amountForShipping()),
+            ),
+            Price::of(0),
+        );
+    }
+
+    public function shippingDiscountTotal(): Price
+    {
+        return $this->discounts()->reduce(
+            fn (Price $total, DiscountResult $discount): Price => $total->add($discount->amountForShipping()),
+            Price::of(0),
+        );
+    }
+
+    public function shippingTotalAfterDiscount(): ?Price
+    {
+        $option = $this->shippingOption();
+
+        if ($option === null) {
+            return null;
+        }
+
+        $discount = $this->shippingDiscountTotal();
+
+        return $discount->greaterThan($option->price)
+            ? Price::of(0)
+            : $option->price->subtract($discount);
+    }
+
+    /** @return SupportCollection<int, AppliedDiscount> */
+    public function appliedShippingDiscounts(): SupportCollection
+    {
+        return $this->discounts()
+            ->map(fn (DiscountResult $discount): ?AppliedDiscount => $discount->appliedForShipping())
+            ->filter()
+            ->values();
     }
 
     public function applyPromotionCode(string $code): self

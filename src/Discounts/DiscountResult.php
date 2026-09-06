@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Discounts;
 
 use InvalidArgumentException;
+use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\RedemptionLimits;
 
@@ -55,5 +56,50 @@ final readonly class DiscountResult
             fn (Price $total, DiscountAllocation $allocation): Price => $total->add($allocation->amount),
             Price::of(0),
         );
+    }
+
+    public function amountFor(CartItem $item): Price
+    {
+        return $this->amountForTarget('line:'.$item->getKey());
+    }
+
+    public function amountForShipping(): Price
+    {
+        return $this->amountForTarget('shipping');
+    }
+
+    public function appliesTo(CartItem $item): bool
+    {
+        return $this->amountFor($item)->isPositive();
+    }
+
+    public function appliedFor(CartItem $item): ?AppliedDiscount
+    {
+        return $this->appliedForTarget($this->amountFor($item));
+    }
+
+    public function appliedForShipping(): ?AppliedDiscount
+    {
+        return $this->appliedForTarget($this->amountForShipping());
+    }
+
+    private function amountForTarget(string $target): Price
+    {
+        foreach ($this->allocations as $allocation) {
+            if ($allocation->target === $target) {
+                return $allocation->amount;
+            }
+        }
+
+        return Price::of(0);
+    }
+
+    private function appliedForTarget(Price $amount): ?AppliedDiscount
+    {
+        if (! $amount->isPositive()) {
+            return null;
+        }
+
+        return AppliedDiscount::fromResult($this, $amount);
     }
 }

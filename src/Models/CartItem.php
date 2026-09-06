@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection as SupportCollection;
+use Larasell\Larasell\Discounts\AppliedDiscount;
+use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Price;
 
 /**
@@ -17,6 +19,7 @@ use Larasell\Larasell\Price;
  * @property int $product_variant_id
  * @property int $quantity
  * @property SupportCollection<string, mixed> $metadata
+ * @property Cart $cart
  * @property Product $product
  * @property ProductVariant $variant
  */
@@ -88,6 +91,31 @@ class CartItem extends Model
     public function total(): Price
     {
         return $this->unitPrice()->multiply($this->quantity);
+    }
+
+    public function discountTotal(): Price
+    {
+        return $this->cart->discounts()->reduce(
+            fn (Price $total, DiscountResult $discount): Price => $total->add($discount->amountFor($this)),
+            Price::of(0),
+        );
+    }
+
+    public function totalAfterDiscount(): Price
+    {
+        $total = $this->total();
+        $discount = $this->discountTotal();
+
+        return $discount->greaterThan($total) ? Price::of(0) : $total->subtract($discount);
+    }
+
+    /** @return SupportCollection<int, AppliedDiscount> */
+    public function appliedDiscounts(): SupportCollection
+    {
+        return $this->cart->discounts()
+            ->map(fn (DiscountResult $discount): ?AppliedDiscount => $discount->appliedFor($this))
+            ->filter()
+            ->values();
     }
 
     /** @return class-string<Cart> */

@@ -243,10 +243,7 @@ class Checkout
                 foreach ($items as $item) {
                     $target = 'line:'.$item->getKey();
                     $lineDiscountTotal = $discounts->reduce(
-                        fn (Price $sum, DiscountResult $discount): Price => $sum->add(
-                            collect($discount->allocations)
-                                ->firstWhere('target', $target)->amount ?? Price::of(0)
-                        ),
+                        fn (Price $sum, DiscountResult $discount): Price => $sum->add($discount->amountFor($item)),
                         Price::of(0),
                     );
                     $taxLine = $taxLines[$target] ?? null;
