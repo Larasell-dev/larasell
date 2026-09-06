@@ -8,6 +8,7 @@ type Product = {
   } | null
   name: string
   price: string
+  compareAt: string | null
   slug: string
 }
 
@@ -47,7 +48,10 @@ function ProductIndex({ category, products, sort }: Props) {
                   <img src={product.image.url} alt={product.image.alt ?? product.name} />
                 )}
                 <h2>{product.name}</h2>
-                <p>{product.price}</p>
+                <p>
+                  {product.compareAt && <><s>{product.compareAt}</s>{' '}</>}
+                  {product.price}
+                </p>
               </Link>
             </li>
           ))}

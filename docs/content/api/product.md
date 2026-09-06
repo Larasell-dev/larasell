@@ -15,6 +15,30 @@ Products must also include a currency-independent `price` field. Price values
 are integer strings in minor units and are cast to `Larasell\Larasell\Price`
 on the model. Supply the cart or order currency when formatting a price.
 
+Products may also include a nullable `compare_at` field with the same shape.
+It is a display-only previous price in the same tax mode as `price`. Carts,
+taxes, and promotions ignore it. A product is on sale when `compare_at` is
+higher than `price`. Values that are missing, equal, or lower are stored but
+are not treated as a sale.
+
+```php
+use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Price;
+
+$product = Product::create([
+    'slug' => 'basic-plan',
+    'name' => 'Basic Plan',
+    'sku' => 'PLAN-BASIC',
+    'barcode' => null,
+    'price' => Price::of(1299),
+    'compare_at' => Price::of(1999),
+]);
+
+$amount = $product->price->amount();
+$formatted = Price::format($product->price, 'USD');
+$product->onSale(); // true
+```
+
 Products may have a nullable `sku` and `barcode`. Both identifiers are stored
 as strings, preserve leading zeroes, and must be unique when present. Use `sku`
 for the merchant's internal stock identifier and `barcode` for an external
@@ -29,22 +53,6 @@ purchased even when stock would go below zero. Set `allow_backorders` to
 Products can also define nullable `min_quantity` and `max_quantity`
 fields. Both default to `null`. When set, each value must be at least
 `1`, and `min_quantity` cannot exceed `max_quantity`.
-
-```php
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Price;
-
-$product = Product::create([
-    'slug' => 'basic-plan',
-    'name' => 'Basic Plan',
-    'sku' => 'PLAN-BASIC',
-    'barcode' => null,
-    'price' => Price::of(1299),
-]);
-
-$amount = $product->price->amount();
-$formatted = Price::format($product->price, 'USD');
-```
 
 ## Managing stock
 
@@ -244,10 +252,11 @@ $cart->add($variant, quantity: 2);
 ```
 
 `ProductVariant` is the authoritative purchasable record. Its nullable price,
-stock, backorder policy, and quantity limits inherit from the product. SKU and
-barcode also inherit when omitted. Products without generated combinations use
-an automatically-created default variant, so `$cart->add($product)` remains
-valid.
+compare-at price, stock, backorder policy, and quantity limits inherit from the
+product. SKU and barcode also inherit when omitted. Use `compareAtPrice()` and
+`onSale()` for the effective compare-at amount. Products without generated
+combinations use an automatically-created default variant, so
+`$cart->add($product)` remains valid.
 
 Variant combinations are identified by stable attribute and value IDs rather
 than customer-facing labels. Duplicate combinations, SKUs, and barcodes are

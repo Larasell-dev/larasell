@@ -11,6 +11,7 @@ type Variant = {
   id: number | string
   name: string
   price: string
+  compareAt: string | null
   minQuantity: number
   maxQuantity: number | null
 }
@@ -41,7 +42,12 @@ export default function ProductShow({ product }: Props) {
       )}
 
       <h1>{product.name}</h1>
-      {variant && <p>{variant.price}</p>}
+      {variant && (
+        <p>
+          {variant.compareAt && <><s>{variant.compareAt}</s>{' '}</>}
+          {variant.price}
+        </p>
+      )}
       {product.description && <p>{product.description}</p>}
 
       {variant === undefined ? (
