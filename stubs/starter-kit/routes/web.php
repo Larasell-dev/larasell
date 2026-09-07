@@ -8,6 +8,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RemoveCartItemController;
 use App\Http\Controllers\RemovePromotionCodeController;
+use App\Http\Controllers\SelectShippingOptionController;
 use App\Http\Controllers\UpdateCartItemController;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Routing\ProductDetailRoute;
@@ -37,6 +38,9 @@ Route::post('/cart/promotion-codes', ApplyPromotionCodeController::class)
 
 Route::delete('/cart/promotion-codes', RemovePromotionCodeController::class)
     ->name('cart.promotion-codes.destroy');
+
+Route::patch('/cart/shipping-option', SelectShippingOptionController::class)
+    ->name('cart.shipping-option.update');
 
 Route::get('/checkout', [CheckoutController::class, 'show'])
     ->name('checkout.show');

@@ -1,8 +1,9 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react'
 import { useState } from 'react'
-import CartTotals, { type CartDiscount } from '../../Components/CartTotals'
+import CartTotals, { type CartDiscount, type CartShipping, type CartTax } from '../../Components/CartTotals'
 import LinePrice, { type PricedLine } from '../../Components/LinePrice'
 import PromotionCodeForm, { type CartPromotionCode } from '../../Components/PromotionCodeForm'
+import ShippingOptions, { type CartShippingOption } from '../../Components/ShippingOptions'
 
 const BILLING_FIELDS = [
   'billing_first_name',
@@ -26,7 +27,12 @@ type Props = {
     }>
     promotionCodes: CartPromotionCode[]
     quantity: number
+    shipping: CartShipping & {
+      options: CartShippingOption[]
+      selected: string | null
+    }
     subtotal: string | null
+    tax: CartTax
     total: string | null
   }
   idempotencyKey: string
@@ -65,10 +71,14 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
 
       <PromotionCodeForm promotionCodes={cart.promotionCodes} />
 
+      <ShippingOptions options={cart.shipping.options} selected={cart.shipping.selected} />
+
       <CartTotals
         discounts={cart.discounts}
         quantity={cart.quantity}
+        shipping={cart.shipping}
         subtotal={cart.subtotal}
+        tax={cart.tax}
         total={cart.total}
       />
 

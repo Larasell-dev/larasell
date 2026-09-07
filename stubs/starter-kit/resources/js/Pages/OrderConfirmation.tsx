@@ -18,9 +18,14 @@ type Order = {
     unitPrice: string
   }>
   number: string
+  shipping: {
+    name: string | null
+    price: string
+  } | null
   shippingAddress: string[] | null
   status: string
   subtotal: string
+  tax: string | null
   total: string
 }
 
@@ -83,6 +88,18 @@ function OrderConfirmation({ order }: { order: Order }) {
             <dd>−{discount.total}</dd>
           </div>
         ))}
+        {order.shipping && (
+          <div>
+            <dt>{order.shipping.name ?? 'Shipping'}</dt>
+            <dd>{order.shipping.price}</dd>
+          </div>
+        )}
+        {order.tax !== null && (
+          <div>
+            <dt>Tax</dt>
+            <dd>{order.tax}</dd>
+          </div>
+        )}
         <div>
           <dt>Total</dt>
           <dd>{order.total}</dd>
