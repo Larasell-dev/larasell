@@ -5,15 +5,31 @@ export type CartDiscount = {
   total: string
 }
 
+export type CartShipping = {
+  name: string | null
+  price: string | null
+}
+
+export type CartTax = {
+  amount: string | null
+  priceMode: 'inclusive' | 'exclusive'
+  reason: string | null
+  status: 'calculated' | 'provisional' | 'unavailable'
+}
+
 export default function CartTotals({
   discounts,
   quantity,
+  shipping,
   subtotal,
+  tax,
   total,
 }: {
   discounts: CartDiscount[]
   quantity: number
+  shipping: CartShipping
   subtotal: string | null
+  tax: CartTax
   total: string | null
 }) {
   return (
@@ -35,9 +51,25 @@ export default function CartTotals({
           <dd>−{discount.total}</dd>
         </div>
       ))}
+      {shipping.price !== null && (
+        <div>
+          <dt>{shipping.name ?? 'Shipping'}</dt>
+          <dd>{shipping.price}</dd>
+        </div>
+      )}
+      <div>
+        <dt>{tax.priceMode === 'inclusive' ? 'Included tax' : 'Tax'}</dt>
+        <dd>
+          {tax.status === 'unavailable' || tax.amount === null
+            ? 'Calculated at checkout'
+            : tax.status === 'provisional'
+              ? `${tax.amount} (estimated)`
+              : tax.amount}
+        </dd>
+      </div>
       <div>
         <dt>Total</dt>
-        <dd>{total}</dd>
+        <dd>{total ?? 'Calculated at checkout'}</dd>
       </div>
     </dl>
   )

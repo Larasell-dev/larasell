@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Promotions\SaveTenPercent;
+use App\Shipping\ExpressDelivery;
+use App\Shipping\StandardDelivery;
 use App\Store\Listeners\SendOrderCancelledMail;
 use App\Store\Listeners\SendOrderFulfilledMail;
 use App\Store\Listeners\SendOrderReceivedMail;
@@ -14,12 +16,15 @@ use Larasell\Larasell\Events\OrderCancelled;
 use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Events\OrderPlaced;
+use Larasell\Larasell\Shipping\ShippingManager;
 
 class StoreServiceProvider extends ServiceProvider
 {
-    public function boot(PromotionManager $promotions): void
+    public function boot(PromotionManager $promotions, ShippingManager $shipping): void
     {
         $promotions->register(SaveTenPercent::class);
+        $shipping->register(StandardDelivery::class);
+        $shipping->register(ExpressDelivery::class);
 
         Event::listen(OrderPlaced::class, SendOrderReceivedMail::class);
         Event::listen(OrderPaid::class, SendPaymentReceivedMail::class);

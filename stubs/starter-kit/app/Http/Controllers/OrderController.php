@@ -39,6 +39,13 @@ class OrderController extends Controller
                     'code' => $discount['code'] ?? null,
                     'total' => Price::format(Price::fromArray($discount['total']), $order->currency, $locale),
                 ])->all(),
+                'shipping' => $order->shipping_option === null ? null : [
+                    'name' => $order->shipping_option_name,
+                    'price' => Price::format($order->shipping_price ?? Price::of(0), $order->currency, $locale),
+                ],
+                'tax' => $order->tax_total === null
+                    ? null
+                    : Price::format($order->tax_total, $order->currency, $locale),
                 'total' => Price::format($order->total, $order->currency, $locale),
                 'items' => $order->items->map(function (OrderItem $item) use ($order, $locale): array {
                     $discountTotal = $item->discount_total;

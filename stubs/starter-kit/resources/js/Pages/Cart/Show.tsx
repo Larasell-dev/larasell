@@ -1,7 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react'
-import CartTotals, { type CartDiscount } from '../../Components/CartTotals'
+import CartTotals, { type CartDiscount, type CartShipping, type CartTax } from '../../Components/CartTotals'
 import LinePrice, { type PricedLine } from '../../Components/LinePrice'
 import PromotionCodeForm, { type CartPromotionCode } from '../../Components/PromotionCodeForm'
+import ShippingOptions, { type CartShippingOption } from '../../Components/ShippingOptions'
 
 type Props = {
   cart: {
@@ -18,7 +19,12 @@ type Props = {
     }>
     promotionCodes: CartPromotionCode[]
     quantity: number
+    shipping: CartShipping & {
+      options: CartShippingOption[]
+      selected: string | null
+    }
     subtotal: string | null
+    tax: CartTax
     total: string | null
   } | null
 }
@@ -95,10 +101,14 @@ export default function CartShow({ cart }: Props) {
 
           <PromotionCodeForm promotionCodes={cart.promotionCodes} />
 
+          <ShippingOptions options={cart.shipping.options} selected={cart.shipping.selected} />
+
           <CartTotals
             discounts={cart.discounts}
             quantity={cart.quantity}
+            shipping={cart.shipping}
             subtotal={cart.subtotal}
+            tax={cart.tax}
             total={cart.total}
           />
 
