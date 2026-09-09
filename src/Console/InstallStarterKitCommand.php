@@ -26,6 +26,7 @@ class InstallStarterKitCommand extends Command
         }
 
         $replaceable = [
+            base_path('app/Models/User.php'),
             base_path('routes/web.php'),
             base_path('vite.config.js'),
         ];

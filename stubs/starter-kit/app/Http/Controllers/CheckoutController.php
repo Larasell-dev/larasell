@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Larasell\Larasell\Address;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Contracts\StorefrontUser;
 use Larasell\Larasell\Exceptions\Cart\CartException;
 use Larasell\Larasell\Exceptions\Cart\EmptyCartException;
 use Larasell\Larasell\Exceptions\Promotions\PromotionException;
@@ -62,10 +63,15 @@ class CheckoutController extends Controller
             ? $shippingAddress
             : $this->address($data, 'billing');
 
+        $user = $request->user();
+
         try {
             $result = $this->checkout->create($cart, [
                 'customer_email' => $data['email'],
                 'customer_name' => trim($data['shipping_first_name'].' '.$data['shipping_last_name']),
+                'customer_id' => $user instanceof StorefrontUser
+                    ? $user->customer?->getKey()
+                    : null,
                 'billing_address' => $billingAddress,
                 'shipping_address' => $shippingAddress,
             ], idempotencyKey: $data['idempotency_key']);

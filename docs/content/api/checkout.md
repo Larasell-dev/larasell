@@ -39,7 +39,7 @@ class CheckoutController
                 postcode: $request->string('billing_address.postcode')->toString(),
             ),
             'shipping_address' => $request->array('shipping_address'),
-            'customer_id' => $request->user()?->getKey(),
+            'customer_id' => $request->user()?->customer?->getKey(),
         ], paymentMethod: 'bank_transfer');
 
         if ($result->requiresRedirect()) {
@@ -83,7 +83,9 @@ Larasell keeps the local payment pending because its remote outcome is unknown
 and rethrows the exception. Retry checkout with the same key to recover the
 provider operation.
 
-`customer_id` is optional. Leave it `null` for guest checkout. The email,
+`customer_id` is optional. Leave it `null` for guest checkout. When the buyer
+is signed in, pass the related `Customer` id (`$user->customer`), not
+the Laravel user id. The email,
 name, addresses, product name, slug, SKU, barcode, and prices are always copied
 to the order, so later changes to customer or product records do not rewrite
 order history.
