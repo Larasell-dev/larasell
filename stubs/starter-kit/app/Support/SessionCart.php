@@ -41,17 +41,24 @@ final class SessionCart
         }
 
         $this->resolved = true;
-        $cartId = $this->request->session()->get(self::SESSION_KEY);
+        $userId = $this->userId();
+        $cart = $this->fromSession();
 
-        if (! is_int($cartId)) {
-            return null;
+        if ($cart !== null && $this->ownedByAnotherUser($cart, $userId)) {
+            $this->request->session()->forget(self::SESSION_KEY);
+            $cart = null;
         }
 
-        /** @var Cart|null $cart */
-        $cart = $this->models->cart->query()->find($cartId);
+        if ($cart === null && $userId !== null) {
+            $cart = $this->forUser($userId);
 
-        if ($cart === null) {
-            $this->request->session()->forget(self::SESSION_KEY);
+            if ($cart !== null) {
+                $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
+            }
+        }
+
+        if ($cart !== null && $userId !== null && $cart->user_id === null) {
+            $cart->forceFill(['user_id' => $userId])->save();
         }
 
         return $this->cart = $cart;
@@ -74,6 +81,7 @@ final class SessionCart
         /** @var Cart $cart */
         $cart = $this->models->cart->query()->create([
             'currency' => $this->currencies->enabled()[0],
+            'user_id' => $this->userId(),
         ]);
 
         $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
@@ -81,5 +89,56 @@ final class SessionCart
         $this->resolved = true;
 
         return $cart;
+    }
+
+    private function fromSession(): ?Cart
+    {
+        $cartId = $this->request->session()->get(self::SESSION_KEY);
+
+        if (! is_int($cartId)) {
+            return null;
+        }
+
+        /** @var Cart|null $cart */
+        $cart = $this->models->cart->query()->find($cartId);
+
+        if ($cart === null) {
+            $this->request->session()->forget(self::SESSION_KEY);
+        }
+
+        return $cart;
+    }
+
+    private function forUser(int $userId): ?Cart
+    {
+        /** @var Cart|null $cart */
+        $cart = $this->models->cart->query()
+            ->where('user_id', $userId)
+            ->latest('id')
+            ->first();
+
+        return $cart;
+    }
+
+    private function ownedByAnotherUser(Cart $cart, ?int $userId): bool
+    {
+        return $userId !== null
+            && $cart->user_id !== null
+            && $cart->user_id !== $userId;
+    }
+
+    private function userId(): ?int
+    {
+        $id = $this->request->user()?->getAuthIdentifier();
+
+        if (is_int($id)) {
+            return $id;
+        }
+
+        if (is_string($id) && ctype_digit($id)) {
+            return (int) $id;
+        }
+
+        return null;
     }
 }

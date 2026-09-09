@@ -4,8 +4,11 @@ use App\Http\Controllers\AddProductToCartController;
 use App\Http\Controllers\ApplyPromotionCodeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RemoveCartItemController;
 use App\Http\Controllers\RemovePromotionCodeController;
 use App\Http\Controllers\SelectShippingOptionController;
@@ -15,6 +18,17 @@ use Larasell\Larasell\Routing\ProductDetailRoute;
 use Larasell\Larasell\Routing\ProductListingRoute;
 
 Route::inertia('/', 'Home')->name('home');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store']);
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store']);
+});
+
+Route::post('/logout', LogoutController::class)
+    ->middleware('auth')
+    ->name('logout');
 
 Route::get('/orders/{publicId}/confirmation', [OrderController::class, 'show'])
     ->name('orders.confirmation');

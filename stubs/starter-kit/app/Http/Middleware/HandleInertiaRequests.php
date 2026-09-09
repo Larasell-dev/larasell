@@ -14,8 +14,17 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
+            'auth' => [
+                'user' => $user === null ? null : [
+                    'email' => $user->email,
+                    'id' => $user->getKey(),
+                    'name' => $user->name,
+                ],
+            ],
             'cart' => fn (): array => app(CartProp::class)->prop(),
             'navigation' => Inertia::once(fn (): array => app(NavigationProp::class)->prop()),
         ];

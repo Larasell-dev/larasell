@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react'
+import { Form, Link, usePage } from '@inertiajs/react'
 
 type NavigationItem = {
   children: NavigationItem[]
@@ -7,6 +7,13 @@ type NavigationItem = {
 }
 
 type SharedProps = {
+  auth: {
+    user: {
+      email: string
+      id: number
+      name: string
+    } | null
+  }
   cart: {
     quantity: number
   } | null
@@ -14,12 +21,27 @@ type SharedProps = {
 }
 
 export default function Header() {
-  const { cart, navigation } = usePage<SharedProps>().props
+  const { auth, cart, navigation } = usePage<SharedProps>().props
 
   return (
     <header>
       <Link href="/">Store</Link>
       <Link href="/cart">Cart ({cart?.quantity ?? 0})</Link>
+      {auth.user ? (
+        <>
+          <span>{auth.user.name}</span>
+          <Form action="/logout" method="post">
+            {({ processing }) => (
+              <button disabled={processing} type="submit">Log out</button>
+            )}
+          </Form>
+        </>
+      ) : (
+        <>
+          <Link href="/login">Log in</Link>
+          <Link href="/register">Create account</Link>
+        </>
+      )}
 
       {navigation.length > 0 && (
         <nav aria-label="Categories">
