@@ -8,6 +8,7 @@ use Inertia\Response;
 use Larasell\Larasell\Http\Requests\ProductDetailRequest;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Models\ProductImage;
 use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Settings\CurrencySettings;
@@ -19,16 +20,16 @@ class ProductController extends Controller
         $product = $request->product()->load(['images', 'visibleVariants']);
         $currency = $currencies->enabled()[0];
         $locale = App::currentLocale();
-        $image = $product->images->first();
 
         return Inertia::render('Products/Show', [
             'product' => [
                 'name' => $product->name->get(),
                 'description' => $product->description?->get(),
-                'image' => $image === null ? null : [
+                'images' => $product->images->map(fn (ProductImage $image): array => [
+                    'id' => $image->getKey(),
                     'alt' => $image->alt,
                     'url' => $image->url(),
-                ],
+                ])->values()->all(),
                 'variants' => $product->visibleVariants->map(function (ProductVariant $variant) use ($currency, $locale): array {
                     $compareAt = $variant->compareAtPrice();
 
