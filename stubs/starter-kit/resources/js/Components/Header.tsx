@@ -29,6 +29,7 @@ export default function Header() {
       <Link href="/cart">Cart ({cart?.quantity ?? 0})</Link>
       {auth.user ? (
         <>
+          <Link href="/orders">Orders</Link>
           <span>{auth.user.name}</span>
           <Form action="/logout" method="post">
             {({ processing }) => (

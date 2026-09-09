@@ -7,6 +7,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderHistoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RemoveCartItemController;
@@ -26,9 +27,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'store']);
 });
 
-Route::post('/logout', LogoutController::class)
-    ->middleware('auth')
-    ->name('logout');
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', LogoutController::class)
+        ->name('logout');
+
+    Route::get('/orders', [OrderHistoryController::class, 'index'])
+        ->name('orders.index');
+
+    Route::get('/orders/{publicId}', [OrderHistoryController::class, 'show'])
+        ->name('orders.show');
+});
 
 Route::get('/orders/{publicId}/confirmation', [OrderController::class, 'show'])
     ->name('orders.confirmation');
