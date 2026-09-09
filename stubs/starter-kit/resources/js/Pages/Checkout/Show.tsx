@@ -35,10 +35,15 @@ type Props = {
     tax: CartTax
     total: string | null
   }
+  customer: {
+    email: string
+    firstName: string
+    lastName: string
+  } | null
   idempotencyKey: string
 }
 
-export default function CheckoutShow({ cart, idempotencyKey }: Props) {
+export default function CheckoutShow({ cart, customer, idempotencyKey }: Props) {
   const pageErrors = usePage().props.errors
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(
     () => !BILLING_FIELDS.some((field) => pageErrors[field]),
@@ -90,13 +95,20 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
 
             <p>
               <label htmlFor="email">Email</label>{' '}
-              <input id="email" name="email" type="email" required />
+              <input id="email" name="email" type="email" defaultValue={customer?.email ?? ''} required />
               {errors.email && <span> {errors.email}</span>}
             </p>
 
             <fieldset>
               <legend>Shipping address</legend>
-              <AddressFields errors={errors} prefix="shipping" />
+              <AddressFields
+                defaults={{
+                  first_name: customer?.firstName ?? '',
+                  last_name: customer?.lastName ?? '',
+                }}
+                errors={errors}
+                prefix="shipping"
+              />
             </fieldset>
 
             <p>
@@ -114,7 +126,14 @@ export default function CheckoutShow({ cart, idempotencyKey }: Props) {
             {!billingSameAsShipping && (
               <fieldset>
                 <legend>Billing address</legend>
-                <AddressFields errors={errors} prefix="billing" />
+                <AddressFields
+                  defaults={{
+                    first_name: customer?.firstName ?? '',
+                    last_name: customer?.lastName ?? '',
+                  }}
+                  errors={errors}
+                  prefix="billing"
+                />
               </fieldset>
             )}
 
@@ -138,9 +157,11 @@ const ADDRESS_FIELDS = [
 ] as const
 
 function AddressFields({
+  defaults = {},
   errors,
   prefix,
 }: {
+  defaults?: Partial<Record<(typeof ADDRESS_FIELDS)[number]['name'], string>>
   errors: Record<string, string>
   prefix: AddressPrefix
 }) {
@@ -150,7 +171,7 @@ function AddressFields({
     return (
       <p key={name}>
         <label htmlFor={name}>{field.label}</label>{' '}
-        <input id={name} name={name} type="text" required />
+        <input id={name} name={name} type="text" defaultValue={defaults[field.name] ?? ''} required />
         {errors[name] && <span> {errors[name]}</span>}
       </p>
     )

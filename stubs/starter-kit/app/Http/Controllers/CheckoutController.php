@@ -22,7 +22,7 @@ class CheckoutController extends Controller
 {
     public function __construct(private Checkout $checkout) {}
 
-    public function show(SessionCart $sessionCart, CartDetails $cartDetails): RedirectResponse|Response
+    public function show(Request $request, SessionCart $sessionCart, CartDetails $cartDetails): RedirectResponse|Response
     {
         $cart = $sessionCart->existing();
 
@@ -32,6 +32,7 @@ class CheckoutController extends Controller
 
         return Inertia::render('Checkout/Show', [
             'cart' => $cartDetails->toArray($cart),
+            'customer' => $this->customerDefaults($request),
             'idempotencyKey' => (string) Str::uuid(),
         ]);
     }
@@ -90,6 +91,36 @@ class CheckoutController extends Controller
         }
 
         return redirect()->route('orders.confirmation', $result->order->public_id);
+    }
+
+    /**
+     * @return array{email: string, firstName: string, lastName: string}|null
+     */
+    private function customerDefaults(Request $request): ?array
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return null;
+        }
+
+        $customer = $user instanceof StorefrontUser ? $user->customer : null;
+
+        if ($customer !== null) {
+            return [
+                'email' => $user->email,
+                'firstName' => $customer->first_name,
+                'lastName' => $customer->last_name,
+            ];
+        }
+
+        $parts = explode(' ', trim((string) $user->name), 2);
+
+        return [
+            'email' => $user->email,
+            'firstName' => $parts[0] === '' ? ($user->name ?? '') : $parts[0],
+            'lastName' => $parts[1] ?? '',
+        ];
     }
 
     /** @param array<string, mixed> $data */
