@@ -118,7 +118,6 @@ export default function ProductShow({ product }: Props) {
                 },
               })}
               options={{ only: ['cart'] }}
-              resetOnSuccess={['quantity']}
             >
               {({ errors, processing }) => (
                 <>
