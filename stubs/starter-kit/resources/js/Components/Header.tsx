@@ -85,7 +85,7 @@ function StoreLinks({
 }) {
   return (
     <>
-      <Link className="hover:underline focus-visible:focus-ring" href="/cart">
+      <Link className="hover:underline focus-visible:focus-ring" href="/cart" prefetch>
         Cart ({cartQuantity})
       </Link>
 
@@ -125,7 +125,7 @@ function NavigationItems({ items }: { items: NavigationItem[] }) {
     <ul className="flex flex-nowrap items-center justify-center gap-6 whitespace-nowrap">
       {items.map((item) => (
         <li key={item.url}>
-          <Link className="hover:underline focus-visible:focus-ring" href={item.url}>{item.name}</Link>
+          <Link className="hover:underline focus-visible:focus-ring" href={item.url} prefetch>{item.name}</Link>
 
           {item.children.length > 0 && <NavigationItems items={item.children} />}
         </li>

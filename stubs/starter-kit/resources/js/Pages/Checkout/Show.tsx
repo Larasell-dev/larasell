@@ -60,7 +60,7 @@ export default function CheckoutShow({ cart, customer, idempotencyKey }: Props) 
     <main className="container mx-auto px-4 py-8">
       <Head title="Checkout" />
       <p>
-        <Link className="underline hover:no-underline focus:no-underline focus-visible:focus-ring" href="/cart">Back to cart</Link>
+        <Link className="underline hover:no-underline focus:no-underline focus-visible:focus-ring" href="/cart" prefetch>Back to cart</Link>
       </p>
       <h1 className="mt-4 text-3xl font-semibold">Checkout</h1>
 

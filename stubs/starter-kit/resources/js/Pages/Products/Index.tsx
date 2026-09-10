@@ -49,7 +49,7 @@ function ProductIndex({ category, products, sort }: Props) {
         <ul className="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
             <li key={product.id}>
-              <Link className="block focus-visible:focus-ring" href={`/p/${product.slug}`}>
+              <Link className="block focus-visible:focus-ring" href={`/p/${product.slug}`} prefetch>
                 <div className="mb-3 aspect-square w-full">
                   {product.image && (
                     <img
