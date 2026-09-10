@@ -1,5 +1,6 @@
 <?php
 
+use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Models\Cart;
@@ -26,6 +27,10 @@ use Larasell\Larasell\Taxes\DestinationTaxJurisdictionResolver;
 use Larasell\Larasell\Taxes\NoTaxCalculator;
 
 return [
+    'carts' => [
+        'merge_strategy' => CombineQuantities::class,
+    ],
+
     'models' => [
         'cart' => Cart::class,
         'cart_item' => CartItem::class,
