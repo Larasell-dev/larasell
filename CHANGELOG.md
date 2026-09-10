@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.13.0](https://github.com/Larasell-dev/larasell/compare/v1.12.0...v1.13.0) (2026-09-10)
+
+
+### Features
+
+* add cart to starter kit ([9f63ed5](https://github.com/Larasell-dev/larasell/commit/9f63ed5f0e52b4bf0f8518258f2ce1ec21d207ad))
+* add checkout to starter kit ([dd7c46a](https://github.com/Larasell-dev/larasell/commit/dd7c46a45858bc287611bc763b0b3a17a1e7da7a))
+* add compare at price ([885fa5b](https://github.com/Larasell-dev/larasell/commit/885fa5bad9dacd05a5527324195c2cd51d0d65de))
+* add customers ([02b49b0](https://github.com/Larasell-dev/larasell/commit/02b49b086e56a7366ce93dcd3b35afde817fa41e))
+* add explicit exceptions for promotions ([e37cb57](https://github.com/Larasell-dev/larasell/commit/e37cb5742a3c05140336acbe5e11edf87874160b))
+* add i18n to starter kit ([#82](https://github.com/Larasell-dev/larasell/issues/82)) ([58ad661](https://github.com/Larasell-dev/larasell/commit/58ad66120c446136724444407f2a9deca170f72f))
+* add method to fetch visible variants easily ([1fc49e0](https://github.com/Larasell-dev/larasell/commit/1fc49e08d201797671438e6e5b4aa2dbdf6cf96a))
+* add optional billing address form ([a30e093](https://github.com/Larasell-dev/larasell/commit/a30e093c2469312bbceafd493aacf2e5b3f99267))
+* add order history ([8ae2e95](https://github.com/Larasell-dev/larasell/commit/8ae2e95abf88d9ac5c5e5b13223f84754668c5c0))
+* add order related mails ([6cc37b2](https://github.com/Larasell-dev/larasell/commit/6cc37b2de7d953b6bd6b08715cab59a7da31a9c8))
+* add products to cart by id ([#90](https://github.com/Larasell-dev/larasell/issues/90)) ([f283f57](https://github.com/Larasell-dev/larasell/commit/f283f57861a75ea52e7f50e63c8a4f321bd2f631))
+* add promotion codes to the storefront ([f140ab0](https://github.com/Larasell-dev/larasell/commit/f140ab07c85e3fd439fea5b309aaf5eb49d6bb3a))
+* add styles to starter kit ([#105](https://github.com/Larasell-dev/larasell/issues/105)) ([e23acfc](https://github.com/Larasell-dev/larasell/commit/e23acfc4e46844faae8ac47ce8cf605759eda076))
+* add weight and dimension ([958fe25](https://github.com/Larasell-dev/larasell/commit/958fe2553b0dc4f6782865187a6fdc4f2431b0b0))
+* display variants on starter kit ([69a9620](https://github.com/Larasell-dev/larasell/commit/69a96203c0779a5acd34af54287f51eece55fd2c))
+* get discounted total for a CartItem ([5273f1f](https://github.com/Larasell-dev/larasell/commit/5273f1fde4237611b457602b285ccf28a7ac96d9))
+* make starter kit multi lang ([#84](https://github.com/Larasell-dev/larasell/issues/84)) ([6bec9d1](https://github.com/Larasell-dev/larasell/commit/6bec9d1507d5577150dcb223bf6f9db228565e51))
+* prefill address when ordering with an account ([e1ea5fb](https://github.com/Larasell-dev/larasell/commit/e1ea5fb9e689260ac554ac2fa2cd3606df6c106b))
+* show discount for each cart item in the starter kit ([bb86a6d](https://github.com/Larasell-dev/larasell/commit/bb86a6d625a8c12ef45eb5a42397e946557b29ab))
+* show tax and shipping on starter kit ([af83c69](https://github.com/Larasell-dev/larasell/commit/af83c693f4b5590038300680ac16d178101c98ed))
+
+
+### Bug Fixes
+
+* display empty state on cart page ([8d36bee](https://github.com/Larasell-dev/larasell/commit/8d36beeeda5ea688294ab0f6190272c4c5960caa))
+* load option relations inside ProductVariant::options() ([df8e205](https://github.com/Larasell-dev/larasell/commit/df8e20573951210a9a402e1e94db44536a6d33a4))
+* remove all related stuff from the starter kit ([#85](https://github.com/Larasell-dev/larasell/issues/85)) ([3170dc7](https://github.com/Larasell-dev/larasell/commit/3170dc749f2d00b82b89f5b7e2707ac506894e78))
+* remove multi locale stuff from starter kit ([#89](https://github.com/Larasell-dev/larasell/issues/89)) ([daea92a](https://github.com/Larasell-dev/larasell/commit/daea92ae764f84407b5bef3529fad63e81859a10))
+* rename optionSnapshots to options ([00e0eff](https://github.com/Larasell-dev/larasell/commit/00e0effb29610b813850f6f2c52a6ed20c0c441d))
+* rename snapshotName to name ([807d49d](https://github.com/Larasell-dev/larasell/commit/807d49dbae92c71540827eeb010f5b415c030d49))
+
 ## [1.12.0](https://github.com/Larasell-dev/larasell/compare/v1.11.0...v1.12.0) (2026-09-03)
 
 
