@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.1](https://github.com/Larasell-dev/larasell/compare/v1.14.0...v1.14.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* keep quantity when adding product to cart ([#111](https://github.com/Larasell-dev/larasell/issues/111)) ([bb8893d](https://github.com/Larasell-dev/larasell/commit/bb8893d22e0f0e8fd126bd9f45cdd579ec0ced24))
+* let inertia decide on rendering mechanism ([#109](https://github.com/Larasell-dev/larasell/issues/109)) ([c01af60](https://github.com/Larasell-dev/larasell/commit/c01af60b499fd095e93a37ccbe9b3bc587bca324))
+
+
+### Performance Improvements
+
+* prefetch cart, product and category pages ([#112](https://github.com/Larasell-dev/larasell/issues/112)) ([d87370b](https://github.com/Larasell-dev/larasell/commit/d87370be4fbb47b62e0710f0668197efadfd7fff))
+
 ## [1.14.0](https://github.com/Larasell-dev/larasell/compare/v1.13.0...v1.14.0) (2026-09-10)
 
 
