@@ -93,8 +93,10 @@ class InstallStarterKitCommand extends Command
                 'install',
                 '@inertiajs/react',
                 '@inertiajs/vite',
+                '@tailwindcss/vite',
                 'react',
                 'react-dom',
+                'tailwindcss',
             ]);
 
             if (! $result->successful()) {

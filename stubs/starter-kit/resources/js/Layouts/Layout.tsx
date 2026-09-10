@@ -5,8 +5,10 @@ import Header from '../Components/Header'
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <>
-      <Header />
-      {children}
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        {children}
+      </div>
       <Footer />
     </>
   )

@@ -21,7 +21,10 @@ it('installs the starter kit files', function () {
         ->assertSuccessful();
 
     expect($destination)->toBeFile()
-        ->and(file_get_contents($destination))->toContain('Hello from the Larasell starter kit.');
+        ->and(file_get_contents($destination))->toContain('Hello from the Larasell starter kit.')
+        ->and($this->starterKitBasePath.'/resources/css/app.css')->toBeFile()
+        ->and(file_get_contents($this->starterKitBasePath.'/resources/css/app.css'))->toContain('tailwindcss/preflight.css')
+        ->and(file_get_contents($this->starterKitBasePath.'/vite.config.js'))->toContain('@tailwindcss/vite');
 });
 
 it('does not overwrite starter kit files without force', function () {

@@ -33,17 +33,17 @@ export default function CartTotals({
   total: string | null
 }) {
   return (
-    <dl>
-      <div>
+    <dl className="flex flex-col gap-2">
+      <div className="flex justify-between gap-8">
         <dt>Items</dt>
         <dd>{quantity}</dd>
       </div>
-      <div>
+      <div className="flex justify-between gap-8">
         <dt>Subtotal</dt>
         <dd>{subtotal}</dd>
       </div>
       {discounts.map((discount) => (
-        <div key={discount.identifier}>
+        <div className="flex justify-between gap-8" key={discount.identifier}>
           <dt>
             {discount.name}
             {discount.code ? ` (${discount.code})` : ''}
@@ -52,12 +52,12 @@ export default function CartTotals({
         </div>
       ))}
       {shipping.price !== null && (
-        <div>
+        <div className="flex justify-between gap-8">
           <dt>{shipping.name ?? 'Shipping'}</dt>
           <dd>{shipping.price}</dd>
         </div>
       )}
-      <div>
+      <div className="flex justify-between gap-8">
         <dt>{tax.priceMode === 'inclusive' ? 'Included tax' : 'Tax'}</dt>
         <dd>
           {tax.status === 'unavailable' || tax.amount === null
@@ -67,7 +67,7 @@ export default function CartTotals({
               : tax.amount}
         </dd>
       </div>
-      <div>
+      <div className="flex justify-between gap-8 border-t pt-2 font-semibold">
         <dt>Total</dt>
         <dd>{total ?? 'Calculated at checkout'}</dd>
       </div>

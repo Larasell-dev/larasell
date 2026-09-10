@@ -39,54 +39,70 @@ export function formatOrderStatus(status: string) {
 
 export default function OrderSummary({ order }: { order: OrderSummaryOrder }) {
   return (
-    <>
-      <dl>
-        <dt>Order number</dt>
-        <dd>{order.number}</dd>
-        <dt>Placed</dt>
-        <dd>{order.placedAt}</dd>
-        <dt>Email</dt>
-        <dd>{order.customerEmail}</dd>
-        <dt>Status</dt>
-        <dd>{formatOrderStatus(order.status)}</dd>
+    <div className="flex flex-col gap-10">
+      <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <dt>Order number</dt>
+          <dd>{order.number}</dd>
+        </div>
+        <div>
+          <dt>Placed</dt>
+          <dd>{order.placedAt}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>{order.customerEmail}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{formatOrderStatus(order.status)}</dd>
+        </div>
       </dl>
 
-      {order.shippingAddress && (
-        <>
-          <h2>{order.billingAddress ? 'Shipping address' : 'Address'}</h2>
-          <AddressLines lines={order.shippingAddress} />
-        </>
+      {(order.shippingAddress || order.billingAddress) && (
+        <div className="grid gap-8 sm:grid-cols-2">
+          {order.shippingAddress && (
+            <div>
+              <h2 className="font-semibold">{order.billingAddress ? 'Shipping address' : 'Address'}</h2>
+              <AddressLines lines={order.shippingAddress} />
+            </div>
+          )}
+
+          {order.billingAddress && (
+            <div>
+              <h2 className="font-semibold">Billing address</h2>
+              <AddressLines lines={order.billingAddress} />
+            </div>
+          )}
+        </div>
       )}
 
-      {order.billingAddress && (
-        <>
-          <h2>Billing address</h2>
-          <AddressLines lines={order.billingAddress} />
-        </>
-      )}
+      <div>
+        <h2 className="font-semibold">Items</h2>
+        <ul className="mt-4 divide-y border-y">
+          {order.items.map((item) => (
+            <li className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8" key={item.id}>
+              <div>
+                <p>{item.name}</p>
+                <p>{item.quantity} × {item.unitPrice}</p>
+              </div>
+              <LinePrice
+                discountTotal={item.discountTotal}
+                total={item.total}
+                totalAfterDiscount={item.totalAfterDiscount}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <h2>Items</h2>
-      <ul>
-        {order.items.map((item) => (
-          <li key={item.id}>
-            <span>{item.name}</span>{' '}
-            <span>{item.quantity} x {item.unitPrice}</span>{' '}
-            <LinePrice
-              discountTotal={item.discountTotal}
-              total={item.total}
-              totalAfterDiscount={item.totalAfterDiscount}
-            />
-          </li>
-        ))}
-      </ul>
-
-      <dl>
-        <div>
+      <dl className="ml-auto flex w-full max-w-sm flex-col gap-2">
+        <div className="flex justify-between gap-8">
           <dt>Subtotal</dt>
           <dd>{order.subtotal}</dd>
         </div>
         {order.discounts.map((discount) => (
-          <div key={discount.identifier}>
+          <div className="flex justify-between gap-8" key={discount.identifier}>
             <dt>
               {discount.name}
               {discount.code ? ` (${discount.code})` : ''}
@@ -95,29 +111,29 @@ export default function OrderSummary({ order }: { order: OrderSummaryOrder }) {
           </div>
         ))}
         {order.shipping && (
-          <div>
+          <div className="flex justify-between gap-8">
             <dt>{order.shipping.name ?? 'Shipping'}</dt>
             <dd>{order.shipping.price}</dd>
           </div>
         )}
         {order.tax !== null && (
-          <div>
+          <div className="flex justify-between gap-8">
             <dt>Tax</dt>
             <dd>{order.tax}</dd>
           </div>
         )}
-        <div>
+        <div className="flex justify-between gap-8 border-t pt-2 font-semibold">
           <dt>Total</dt>
           <dd>{order.total}</dd>
         </div>
       </dl>
-    </>
+    </div>
   )
 }
 
 function AddressLines({ lines }: { lines: string[] }) {
   return (
-    <address>
+    <address className="mt-2 not-italic">
       {lines.map((line) => (
         <div key={line}>{line}</div>
       ))}

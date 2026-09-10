@@ -14,7 +14,7 @@ final class CartDetails
 {
     /**
      * @return array{
-     *     items: array<int, array{id: mixed, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string, discountTotal: string|null, totalAfterDiscount: string}>,
+     *     items: array<int, array{id: mixed, image: array{alt: string|null, url: string}|null, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string, discountTotal: string|null, totalAfterDiscount: string}>,
      *     quantity: int,
      *     subtotal: string|null,
      *     discounts: array<int, array{identifier: string, name: string, code: string|null, total: string}>,
@@ -38,11 +38,16 @@ final class CartDetails
         $payable = $estimate->total();
 
         return [
-            'items' => $cart->purchasableItems()->map(function (CartItem $item) use ($cart, $locale): array {
+            'items' => $cart->purchasableItems()->load('product.images')->map(function (CartItem $item) use ($cart, $locale): array {
                 $discountTotal = $item->discountTotal();
+                $image = $item->product->images->first();
 
                 return [
                     'id' => $item->getKey(),
+                    'image' => $image === null ? null : [
+                        'alt' => $image->alt,
+                        'url' => $image->url(),
+                    ],
                     'name' => $item->product->name->get(),
                     'options' => collect($item->variant->options())
                         ->map(fn (array $option): array => [
