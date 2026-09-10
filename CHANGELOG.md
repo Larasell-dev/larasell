@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/Larasell-dev/larasell/compare/v1.13.0...v1.14.0) (2026-09-10)
+
+
+### Features
+
+* add cart merge ([#106](https://github.com/Larasell-dev/larasell/issues/106)) ([ad416b3](https://github.com/Larasell-dev/larasell/commit/ad416b3b3cdb47458fdec746b1579d62b912a208))
+
+
+### Bug Fixes
+
+* make starter kit ssr compatible ([#108](https://github.com/Larasell-dev/larasell/issues/108)) ([7fbdba6](https://github.com/Larasell-dev/larasell/commit/7fbdba63675863b63cf807a81c1dc4c3a8ef40f4))
+
 ## [1.13.0](https://github.com/Larasell-dev/larasell/compare/v1.12.0...v1.13.0) (2026-09-10)
 
 
