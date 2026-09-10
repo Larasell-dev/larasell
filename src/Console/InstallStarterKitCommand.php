@@ -137,7 +137,8 @@ class InstallStarterKitCommand extends Command
         }
 
         $package['scripts'] = is_array($package['scripts'] ?? null) ? $package['scripts'] : [];
-        $package['scripts']['build'] = 'vite build && vite build --ssr';
+        $package['scripts']['build'] = 'vite build';
+        $package['scripts']['build:ssr'] = 'vite build && vite build --ssr';
 
         $files->put(
             $packagePath,
