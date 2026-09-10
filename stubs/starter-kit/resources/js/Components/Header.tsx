@@ -85,7 +85,7 @@ function StoreLinks({
 }) {
   return (
     <>
-      <Link className="hover:underline focus-visible:focus-ring" href="/cart" prefetch>
+      <Link className="hover:underline focus-visible:focus-ring" href="/cart" prefetch cacheFor="0s">
         Cart ({cartQuantity})
       </Link>
 
