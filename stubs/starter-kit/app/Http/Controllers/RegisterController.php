@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\SessionCart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class RegisterController extends Controller
 {
@@ -23,7 +25,7 @@ class RegisterController extends Controller
         return Inertia::render('Auth/Register');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, SessionCart $sessionCart, ModelRegistry $models): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -36,6 +38,14 @@ class RegisterController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $userCart = $models->cart->query()
+            ->where('user_id', $request->user()->getAuthIdentifier())
+            ->latest('id')
+            ->first();
+
+        if ($userCart !== null) {
+            $sessionCart->mergeInto($userCart);
+        }
 
         return redirect()->route('home');
     }

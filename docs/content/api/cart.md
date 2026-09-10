@@ -63,6 +63,116 @@ $cart->clear();
 Passing a cart item ID removes that specific line. The lookup is scoped to the
 cart, so an item belonging to another cart is left untouched.
 
+## Merging carts
+
+Use `merge()` when a shopper has a guest cart and then signs in. The cart you
+call `merge()` on is the destination and survives. The source cart is copied
+into the destination and deleted after the merge succeeds.
+
+```php
+use Larasell\Larasell\Carts\Strategies\CombineQuantities;
+use Larasell\Larasell\Carts\Strategies\ReplaceDestination;
+
+$result = $accountCart->merge($guestCart);
+$result = $accountCart->merge($guestCart, new CombineQuantities());
+$result = $accountCart->merge($guestCart, new ReplaceDestination());
+
+$cart = $result->cart;
+$adjustedLines = $result->adjustedLines;
+$skippedLines = $result->skippedLines;
+```
+
+The default strategy combines matching lines by summing quantities. Lines match
+when they have the same product variant and the same normalized metadata.
+Different metadata stays as separate lines.
+
+The merger also combines cart-level attributes. Promotion codes are unioned and
+revalidated, metadata is shallow-merged with destination keys winning, and the
+selected shipping option is kept only if it is still available after the lines
+have been merged.
+
+Built-in strategies cover common storefront decisions:
+
+- `CombineQuantities` sums matching quantities and appends source-only lines.
+- `PreferDestination` keeps destination quantities for matching lines and
+  appends source-only lines.
+- `PreferSource` replaces matching quantities with the source quantities and
+  keeps destination-only lines.
+- `ReplaceDestination` clears the destination and copies the source cart.
+- `KeepDestination` discards source lines after any cart-level attribute merge.
+- `FailOnConflict` wraps another strategy and throws the existing cart quantity
+  exceptions instead of clamping or skipping lines.
+
+If a combined quantity exceeds stock or a maximum quantity, the default behavior
+is to clamp to the allowed quantity and record the change on
+`$result->adjustedLines`. If a line is no longer purchasable, it is skipped and
+recorded on `$result->skippedLines`.
+
+You can also pass a custom strategy object or callback:
+
+```php
+use Larasell\Larasell\Carts\CartMergeContext;
+use Larasell\Larasell\Carts\CartMergePlan;
+
+$accountCart->merge($guestCart, function (CartMergeContext $context): CartMergePlan {
+    // Return a custom line and attribute plan.
+});
+```
+
+### Login integration
+
+Larasell does not hook into authentication automatically. Your storefront owns
+when to merge and which cart should survive. A blank storefront typically keeps
+the current cart ID in the session while browsing:
+
+```php
+$cart = Cart::query()->find(session('cart_id'))
+    ?? Cart::query()->create(['currency' => Currency::EUR]);
+
+session(['cart_id' => $cart->id]);
+$cart->add($product);
+```
+
+After a successful login or registration, resolve the guest session cart and the
+saved account cart, then claim or merge:
+
+```php
+use Illuminate\Http\Request;
+use Larasell\Larasell\Models\Cart;
+
+public function store(Request $request)
+{
+    $request->authenticate();
+    $request->session()->regenerate();
+
+    $user = $request->user();
+    $guest = Cart::query()->find($request->session()->get('cart_id'));
+    $saved = Cart::query()
+        ->where('user_id', $user->id)
+        ->latest('id')
+        ->first();
+
+    if ($guest !== null && $saved !== null && $guest->isNot($saved)) {
+        $cart = $saved->merge($guest)->cart;
+    } elseif ($guest !== null) {
+        $guest->forceFill(['user_id' => $user->id])->save();
+        $cart = $guest;
+    } else {
+        $cart = $saved;
+    }
+
+    if ($cart !== null) {
+        $request->session()->put('cart_id', $cart->id);
+    }
+
+    return redirect()->intended('/');
+}
+```
+
+Merging carts with different currencies throws an exception. Drop session carts
+that are already owned by another user before merging them into the current
+shopper's account.
+
 ## Reading a cart
 
 Load `items.product` to render a cart with product details.

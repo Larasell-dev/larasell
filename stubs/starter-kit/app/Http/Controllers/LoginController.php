@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SessionCart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Larasell\Larasell\Models\ModelRegistry;
 
 class LoginController extends Controller
 {
@@ -21,7 +23,7 @@ class LoginController extends Controller
         return Inertia::render('Auth/Login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, SessionCart $sessionCart, ModelRegistry $models): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -35,6 +37,14 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate();
+        $userCart = $models->cart->query()
+            ->where('user_id', $request->user()->getAuthIdentifier())
+            ->latest('id')
+            ->first();
+
+        if ($userCart !== null) {
+            $sessionCart->mergeInto($userCart);
+        }
 
         return redirect()->intended(route('home'));
     }

@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Carts\CartMerger;
+use Larasell\Larasell\Carts\CartMergeResult;
+use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
@@ -171,6 +174,11 @@ class Cart extends Model
     public function clear(): void
     {
         $this->items()->delete();
+    }
+
+    public function merge(Cart $source, CartMergeStrategy|callable|null $strategy = null): CartMergeResult
+    {
+        return app(CartMerger::class)->merge($this, $source, $strategy);
     }
 
     public function quantity(): int

@@ -3,6 +3,9 @@
 namespace Larasell\Larasell;
 
 use Illuminate\Support\ServiceProvider;
+use Larasell\Larasell\Carts\CartMerger;
+use Larasell\Larasell\Carts\CartMergeStrategy;
+use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Console\InstallStarterKitCommand;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
@@ -32,10 +35,14 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->singleton(PromotionManager::class);
         $this->app->singleton(ModelRegistry::class);
         $this->app->singleton(CartTaxEstimator::class);
+        $this->app->singleton(CartMerger::class);
         $this->app->singleton(TaxRounding::class, fn ($app) => new TaxRounding(
             TaxRoundingMode::from($app['config']->get('larasell.taxes.rounding', TaxRoundingMode::HalfUp->value))
         ));
 
+        $this->app->bind(CartMergeStrategy::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.carts.merge_strategy', CombineQuantities::class)
+        ));
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
         ));

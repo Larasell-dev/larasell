@@ -43,18 +43,21 @@ final class SessionCart
         $this->resolved = true;
         $userId = $this->userId();
         $cart = $this->fromSession();
+        $userCart = $userId === null ? null : $this->forUser($userId);
 
         if ($cart !== null && $this->ownedByAnotherUser($cart, $userId)) {
             $this->request->session()->forget(self::SESSION_KEY);
             $cart = null;
         }
 
-        if ($cart === null && $userId !== null) {
-            $cart = $this->forUser($userId);
+        if ($cart !== null && $userCart !== null && $cart->isNot($userCart)) {
+            $cart = $userCart;
+            $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
+        }
 
-            if ($cart !== null) {
-                $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
-            }
+        if ($cart === null && $userCart !== null) {
+            $cart = $userCart;
+            $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
         }
 
         if ($cart !== null && $userId !== null && $cart->user_id === null) {
@@ -62,6 +65,30 @@ final class SessionCart
         }
 
         return $this->cart = $cart;
+    }
+
+    public function remember(Cart $cart): Cart
+    {
+        $this->request->session()->put(self::SESSION_KEY, $cart->getKey());
+        $this->cart = $cart;
+        $this->resolved = true;
+
+        return $cart;
+    }
+
+    public function mergeInto(Cart $destination): Cart
+    {
+        $source = $this->fromSession();
+
+        if ($source === null || $source->is($destination)) {
+            return $this->remember($destination);
+        }
+
+        if ($source->user_id !== null && $source->user_id !== $destination->user_id) {
+            return $this->remember($destination);
+        }
+
+        return $this->remember($destination->merge($source)->cart);
     }
 
     /**
