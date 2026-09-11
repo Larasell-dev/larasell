@@ -69,7 +69,7 @@ class ProductController extends Controller
                     ->whereKey($productIds)
                     ->get()
                     ->mapWithKeys(function (Product $product): array {
-                        $image = $product->getRelation('images')->first();
+                        $image = $product->thumbnail;
 
                         return [$product->getKey() => $image === null ? null : [
                             'url' => $image->url(),

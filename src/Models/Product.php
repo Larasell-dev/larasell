@@ -43,6 +43,8 @@ use Larasell\Larasell\Weight;
  * @property int|null $max_quantity
  * @property bool $allow_backorders
  * @property Visibility $status
+ * @property-read EloquentCollection<int, ProductImage> $images
+ * @property-read ProductImage|null $thumbnail
  *
  * @method static Builder<static> visible()
  * @method static Builder<static> inCategory(Category $category)
@@ -236,6 +238,16 @@ class Product extends Model
             'product_id',
             'product_image_id'
         )->withPivot('position')->orderByPivot('position')->withTimestamps();
+    }
+
+    /**
+     * @return Attribute<ProductImage|null, never>
+     */
+    protected function thumbnail(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?ProductImage => $this->images->first(),
+        );
     }
 
     /**

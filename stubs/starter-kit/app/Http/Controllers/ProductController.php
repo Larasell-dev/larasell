@@ -62,7 +62,7 @@ class ProductController extends Controller
                 ->with('images')
                 ->get()
                 ->map(function (Product $product) use ($currency, $locale): array {
-                    $image = $product->images->first();
+                    $thumbnail = $product->thumbnail;
                     $compareAt = $product->compare_at;
 
                     return [
@@ -73,9 +73,9 @@ class ProductController extends Controller
                         'compareAt' => $compareAt !== null && $product->onSale()
                             ? Price::format($compareAt, $currency, $locale)
                             : null,
-                        'image' => $image === null ? null : [
-                            'alt' => $image->alt,
-                            'url' => $image->url(),
+                        'image' => $thumbnail === null ? null : [
+                            'alt' => $thumbnail->alt,
+                            'url' => $thumbnail->url(),
                         ],
                     ];
                 })

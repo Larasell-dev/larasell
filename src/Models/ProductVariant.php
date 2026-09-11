@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +40,7 @@ use Larasell\Larasell\Weight;
  * @property array<string, mixed>|null $metadata
  * @property Product $product
  * @property Collection<int, ProductAttributeValue> $attributeValues
+ * @property-read ProductImage|null $thumbnail
  *
  * @method static Builder<static> visible()
  */
@@ -90,6 +92,20 @@ class ProductVariant extends Model
             'larasell_product_variant_product_attribute_value',
             'product_variant_id',
             'product_attribute_value_id',
+        );
+    }
+
+    /**
+     * @return Attribute<ProductImage|null, never>
+     */
+    protected function thumbnail(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?ProductImage {
+                $this->loadMissing('product.images');
+
+                return $this->product->thumbnail;
+            },
         );
     }
 
