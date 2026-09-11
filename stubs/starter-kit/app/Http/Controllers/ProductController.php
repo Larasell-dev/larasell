@@ -29,6 +29,7 @@ class ProductController extends Controller
                     'id' => $image->getKey(),
                     'alt' => $image->alt,
                     'url' => $image->url(),
+                    'placeholder' => $image->placeholder?->toArray(),
                 ])->values()->all(),
                 'variants' => $product->visibleVariants->map(function (ProductVariant $variant) use ($currency, $locale): array {
                     $compareAt = $variant->compareAtPrice();
@@ -76,6 +77,7 @@ class ProductController extends Controller
                         'image' => $thumbnail === null ? null : [
                             'alt' => $thumbnail->alt,
                             'url' => $thumbnail->url(),
+                            'placeholder' => $thumbnail->placeholder?->toArray(),
                         ],
                     ];
                 })

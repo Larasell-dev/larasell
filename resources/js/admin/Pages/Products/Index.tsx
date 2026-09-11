@@ -8,6 +8,7 @@ import Dialog from '../../Components/Dialog'
 import DropdownMenu from '../../Components/DropdownMenu'
 import EmptyState from '../../Components/EmptyState'
 import Icon from '../../Components/Icon'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 import Table, { type PaginationData } from '../../Components/Table'
 
 type Product = {
@@ -20,7 +21,7 @@ type Product = {
   url: string
 }
 
-type ProductImage = { alt: string | null; url: string }
+type ProductImage = { alt: string | null; placeholder: ImagePlaceholder | null; url: string }
 
 type Props = AdminLayoutProps & {
   pagination: PaginationData
@@ -146,7 +147,7 @@ function ProductThumbnail({ image }: { image: ProductImage | null | undefined })
     return <ProductImagePlaceholder />
   }
 
-  return <img alt={image.alt ?? ''} decoding="async" src={image.url} {...stylex.props(styles.productImage)} />
+  return <Image alt={image.alt ?? ''} decoding="async" placeholder={image.placeholder} src={image.url} {...stylex.props(styles.productImage)} />
 }
 
 function ProductImagePlaceholder() {
