@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.15.0](https://github.com/Larasell-dev/larasell/compare/v1.14.1...v1.15.0) (2026-09-11)
+
+
+### Features
+
+* add image placeholders ([#119](https://github.com/Larasell-dev/larasell/issues/119)) ([69def3b](https://github.com/Larasell-dev/larasell/commit/69def3b1c98a92fe019ffe3d5f492a3c422eb074))
+* add thumbnail helper to products ([#116](https://github.com/Larasell-dev/larasell/issues/116)) ([ca6cf44](https://github.com/Larasell-dev/larasell/commit/ca6cf4405066b1623c05546572a2b74392cc4029))
+
+
+### Bug Fixes
+
+* do not cache cart prefetch ([#113](https://github.com/Larasell-dev/larasell/issues/113)) ([4708c76](https://github.com/Larasell-dev/larasell/commit/4708c76c14358e4000efaf92a46fb2940aeb1eb8))
+* invalidate prefixed pages if cart count changes ([#115](https://github.com/Larasell-dev/larasell/issues/115)) ([8742f2b](https://github.com/Larasell-dev/larasell/commit/8742f2beb69c1a3fa30527d91d639267511fb934))
+
 ## [1.14.1](https://github.com/Larasell-dev/larasell/compare/v1.14.0...v1.14.1) (2026-09-10)
 
 
