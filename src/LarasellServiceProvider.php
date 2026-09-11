@@ -8,12 +8,15 @@ use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Console\InstallStarterKitCommand;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\Contracts\PlaceholderGenerator;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
 use Larasell\Larasell\Contracts\TaxRateResolver;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
+use Larasell\Larasell\Images\Commands\RefreshPlaceholdersCommand;
+use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
@@ -46,6 +49,9 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
         ));
+        $this->app->bind(PlaceholderGenerator::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.images.placeholder', NullPlaceholderGenerator::class)
+        ));
         $this->app->bind(PromotionCustomerResolver::class, fn ($app) => $app->make(
             $app['config']->get('larasell.promotions.customer_resolver', DefaultPromotionCustomerResolver::class)
         ));
@@ -67,6 +73,7 @@ class LarasellServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallStarterKitCommand::class,
+                RefreshPlaceholdersCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,
             ]);

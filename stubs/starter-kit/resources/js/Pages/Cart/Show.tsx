@@ -1,5 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react'
 import CartTotals, { type CartDiscount, type CartShipping, type CartTax } from '../../Components/CartTotals'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 import LinePrice, { type PricedLine } from '../../Components/LinePrice'
 import PromotionCodeForm, { type CartPromotionCode } from '../../Components/PromotionCodeForm'
 import ShippingOptions, { type CartShippingOption } from '../../Components/ShippingOptions'
@@ -14,6 +15,7 @@ type Props = {
       id: number | string
       image: {
         alt: string | null
+        placeholder: ImagePlaceholder | null
         url: string
       } | null
       name: string
@@ -57,9 +59,10 @@ export default function CartShow({ cart }: Props) {
                 <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3">
                   <div className="relative row-span-2 aspect-square h-full w-auto overflow-hidden">
                     {item.image && (
-                      <img
+                      <Image
                         alt={item.image.alt ?? item.name}
                         className="absolute inset-0 size-full object-cover"
+                        placeholder={item.image.placeholder}
                         src={item.image.url}
                       />
                     )}

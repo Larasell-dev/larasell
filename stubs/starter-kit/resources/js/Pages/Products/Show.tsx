@@ -1,5 +1,6 @@
 import { Form, Head, usePage } from '@inertiajs/react'
 import { useState } from 'react'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 
 type SharedProps = {
   cart: {
@@ -19,6 +20,7 @@ type Variant = {
 type ProductImage = {
   alt: string | null
   id: number | string
+  placeholder: ImagePlaceholder | null
   url: string
 }
 
@@ -68,9 +70,10 @@ export default function ProductShow({ product }: Props) {
                 key={featured.id}
               >
                 <div className="aspect-square min-w-0 w-full">
-                  <img
+                  <Image
                     alt={featured.alt ?? product.name}
                     className="size-full object-cover"
+                    placeholder={featured.placeholder}
                     src={featured.url}
                   />
                 </div>
@@ -79,9 +82,10 @@ export default function ProductShow({ product }: Props) {
                   <div className="grid min-w-0 grid-cols-1 gap-4 lg:h-0 lg:min-h-full lg:grid-rows-3">
                     {gallery.map((image) => (
                       <div className="aspect-square min-h-0 w-full overflow-hidden lg:aspect-auto" key={image.id}>
-                        <img
+                        <Image
                           alt={image.alt ?? product.name}
                           className="size-full object-cover"
+                          placeholder={image.placeholder}
                           src={image.url}
                         />
                       </div>

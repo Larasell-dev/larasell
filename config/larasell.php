@@ -3,6 +3,7 @@
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
+use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
 use Larasell\Larasell\Models\Category;
@@ -54,6 +55,7 @@ return [
         'disk' => env('LARASELL_IMAGES_DISK', config('filesystems.default')),
         'path' => env('LARASELL_IMAGES_PATH', 'larasell/products'),
         'visibility' => env('LARASELL_IMAGES_VISIBILITY', 'public'),
+        'placeholder' => NullPlaceholderGenerator::class,
     ],
 
     'order_numbers' => [

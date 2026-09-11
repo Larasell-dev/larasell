@@ -489,7 +489,8 @@ it('uploads an image to the media library with a generated file name', function 
         ->not->toEndWith('summer-campaign.jpg')
         ->and($image->alt)->toBe('summer-campaign')
         ->and($image->meta['original_name'])->toBe('summer-campaign.jpg')
-        ->and($image->meta['mime_type'])->toBe('image/jpeg');
+        ->and($image->meta['mime_type'])->toBe('image/jpeg')
+        ->and($image->placeholder)->toBeNull();
 });
 
 it('deletes selected media images and their stored files', function () {
@@ -1079,7 +1080,8 @@ it('uploads an image without attaching it to a product', function () {
             'image' => UploadedFile::fake()->image('side-view.jpg', 800, 800),
         ])
         ->assertCreated()
-        ->assertJsonPath('image.alt', 'side-view');
+        ->assertJsonPath('image.alt', 'side-view')
+        ->assertJsonPath('image.placeholder', null);
 
     $uploadedImage = ProductImage::query()->whereKeyNot($existingImage->id)->sole();
 

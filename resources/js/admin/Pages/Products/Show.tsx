@@ -14,6 +14,7 @@ import Error from '../../Components/Error'
 import Field from '../../Components/Field'
 import Form from '../../Components/Form'
 import FormContainer from '../../Components/FormContainer'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 import Input from '../../Components/Input'
 import NumberInput from '../../Components/NumberInput'
 import Select from '../../Components/Select'
@@ -43,7 +44,7 @@ type Product = {
   attributeValueIds: string[]
 }
 
-type ProductImage = { alt: string | null; id: number | string; uploading?: boolean; url: string }
+type ProductImage = { alt: string | null; id: number | string; placeholder?: ImagePlaceholder | null; uploading?: boolean; url: string }
 type ProductVariant = { id: number | string; name: string; sku: string | null; barcode: string | null; priceAmount: string | null; stock: number | null; allowBackorders: boolean | null; minQuantity: number | null; maxQuantity: number | null; status: 'visible' | 'hidden' }
 type Props = AdminLayoutProps & { categories: ProductCategory[]; images?: ProductImage[]; product: Product; productAttributes: ProductAttribute[]; variantDimensionIds: string[]; variants: ProductVariant[] }
 
@@ -392,7 +393,7 @@ function SortableProductImage({ image, index }: { image: ProductImage; index: nu
       type="button"
       {...stylex.props(styles.imageItem, index === 0 && styles.imageItemPrimary, isDragSource && styles.imageItemDragging)}
     >
-      <img alt={image.alt ?? ''} decoding="async" loading="lazy" src={image.url} {...stylex.props(styles.productImage)} />
+      <Image alt={image.alt ?? ''} decoding="async" loading="lazy" placeholder={image.placeholder} src={image.url} {...stylex.props(styles.productImage)} />
     </button>
   )
 }
@@ -400,7 +401,7 @@ function SortableProductImage({ image, index }: { image: ProductImage; index: nu
 function UploadingProductImage({ image, index }: { image: ProductImage; index: number }) {
   return (
     <span {...stylex.props(styles.imageItem, index === 0 && styles.imageItemPrimary)}>
-      <img alt="" src={image.url} {...stylex.props(styles.productImage, styles.uploadingProductImage)} />
+      <Image alt="" placeholder={image.placeholder} src={image.url} {...stylex.props(styles.productImage, styles.uploadingProductImage)} />
       <span aria-label="Uploading image" role="status" {...stylex.props(styles.imageUploadOverlay)}>
         <span {...stylex.props(styles.imageUploadSpinner)} />
       </span>
