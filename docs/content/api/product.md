@@ -188,13 +188,18 @@ $product->images()->attach($image, [
 ```
 
 The `images()` relationship includes the pivot position and sorts images
-by that position.
+by that position. `$product->thumbnail` and `$variant->thumbnail` are
+the first image in that order (variants currently reuse the product
+gallery).
 
 ```php
 $product = Product::query()
     ->with('images')
     ->where('slug', 'basic-plan')
     ->firstOrFail();
+
+$thumbnail = $product->thumbnail;
+$variantThumbnail = $product->defaultVariant()->thumbnail;
 
 foreach ($product->images as $image) {
     $url = $image->url();

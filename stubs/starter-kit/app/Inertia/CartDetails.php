@@ -38,9 +38,9 @@ final class CartDetails
         $payable = $estimate->total();
 
         return [
-            'items' => $cart->purchasableItems()->load('product.images')->map(function (CartItem $item) use ($cart, $locale): array {
+            'items' => $cart->purchasableItems()->load('variant.product.images')->map(function (CartItem $item) use ($cart, $locale): array {
                 $discountTotal = $item->discountTotal();
-                $image = $item->product->images->first();
+                $image = $item->variant->thumbnail;
 
                 return [
                     'id' => $item->getKey(),
