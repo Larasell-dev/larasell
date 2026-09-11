@@ -33,6 +33,7 @@ class MediaController extends Controller
                 'name' => data_get($image->getAttribute('meta'), 'original_name')
                     ?? basename($image->getAttribute('path')),
                 'url' => $image->url(),
+                'placeholder' => $image->placeholder?->toArray(),
             ]);
 
         return Inertia::render('Media/Index', [

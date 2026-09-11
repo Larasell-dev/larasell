@@ -14,7 +14,7 @@ final class CartDetails
 {
     /**
      * @return array{
-     *     items: array<int, array{id: mixed, image: array{alt: string|null, url: string}|null, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string, discountTotal: string|null, totalAfterDiscount: string}>,
+     *     items: array<int, array{id: mixed, image: array{alt: string|null, url: string, placeholder: array{type: string, value: string, color: string|null}|null}|null, name: string, options: array<int, array{name: string, value: string}>, quantity: int, unitPrice: string, total: string, discountTotal: string|null, totalAfterDiscount: string}>,
      *     quantity: int,
      *     subtotal: string|null,
      *     discounts: array<int, array{identifier: string, name: string, code: string|null, total: string}>,
@@ -47,6 +47,7 @@ final class CartDetails
                     'image' => $image === null ? null : [
                         'alt' => $image->alt,
                         'url' => $image->url(),
+                        'placeholder' => $image->placeholder?->toArray(),
                     ],
                     'name' => $item->product->name->get(),
                     'options' => collect($item->variant->options())

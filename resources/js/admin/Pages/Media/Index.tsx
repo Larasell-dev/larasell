@@ -7,12 +7,14 @@ import Checkbox from '../../Components/Checkbox'
 import Dialog from '../../Components/Dialog'
 import EmptyState from '../../Components/EmptyState'
 import Icon from '../../Components/Icon'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 import Table, { type PaginationData } from '../../Components/Table'
 
 type MediaImage = {
   alt: string | null
   id: number | string
   name: string
+  placeholder: ImagePlaceholder | null
   url: string
 }
 
@@ -96,7 +98,7 @@ export default function MediaIndex({ images, mediaDeleteUrl, mediaUploadUrl, pag
                     type="button"
                     {...stylex.props(styles.imageButton)}
                   >
-                    <img alt={image.alt ?? ''} decoding="async" loading="lazy" src={image.url} {...stylex.props(styles.image)} />
+                    <Image alt={image.alt ?? ''} decoding="async" loading="lazy" placeholder={image.placeholder} src={image.url} {...stylex.props(styles.image)} />
                   </button>
                   <span {...stylex.props(styles.checkbox, selectedIds.includes(image.id) && styles.checkboxSelected)}>
                     <Checkbox

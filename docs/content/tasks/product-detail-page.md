@@ -75,6 +75,8 @@ controller.
 
 ```jsx
 // resources/js/Pages/Products/Show.jsx
+import Image from '../Components/Image'
+
 export default function Show({ product }) {
     return (
         <main>
@@ -83,10 +85,11 @@ export default function Show({ product }) {
             <p>{product.description}</p>
 
             {product.images.map((image) => (
-                <img
+                <Image
                     key={image.id}
                     src={image.url}
                     alt={image.alt ?? ''}
+                    placeholder={image.placeholder}
                 />
             ))}
 

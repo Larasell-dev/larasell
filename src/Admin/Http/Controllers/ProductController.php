@@ -74,6 +74,7 @@ class ProductController extends Controller
                         return [$product->getKey() => $image === null ? null : [
                             'url' => $image->url(),
                             'alt' => $image->getAttribute('alt'),
+                            'placeholder' => $image->placeholder?->toArray(),
                         ]];
                     })
                     ->all();
@@ -198,6 +199,7 @@ class ProductController extends Controller
                     'id' => $image->getKey(),
                     'url' => $image->url(),
                     'alt' => $image->getAttribute('alt'),
+                    'placeholder' => $image->placeholder?->toArray(),
                 ])
                 ->all()),
         ])->rootView('larasell-admin::admin');
@@ -326,6 +328,7 @@ class ProductController extends Controller
                 'id' => $image->getKey(),
                 'url' => $image->url(),
                 'alt' => $image->getAttribute('alt'),
+                'placeholder' => $image->placeholder?->toArray(),
             ],
         ], 201);
     }

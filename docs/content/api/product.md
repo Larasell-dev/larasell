@@ -169,7 +169,82 @@ LARASELL_IMAGES_VISIBILITY=public
 ```
 
 The disk may be any Laravel filesystem disk, including local, S3, or a
-custom disk registered by the application.
+custom disk registered by the application. Raster files and SVG are
+accepted. `$image->isSvg()` is true for vector originals; placeholders
+are always `null` for those files.
+
+When a raster file exists on the configured disk, Larasell can generate
+a placeholder at save time. Generation is off by default
+(`NullPlaceholderGenerator`). SVG originals and missing files always
+skip generation.
+
+```php
+$image->placeholder; // null unless a generator is configured
+```
+
+Enable a mechanism in `config/larasell.php` by setting a single
+generator class.
+
+```php
+use Larasell\Larasell\Images\ColorPlaceholderGenerator;
+use Larasell\Larasell\Images\LqipPlaceholderGenerator;
+use Larasell\Larasell\Images\NullPlaceholderGenerator;
+
+'images' => [
+    'placeholder' => NullPlaceholderGenerator::class,
+    // 'placeholder' => LqipPlaceholderGenerator::class,
+    // 'placeholder' => ColorPlaceholderGenerator::class,
+],
+```
+
+`LqipPlaceholderGenerator` stores a tiny JPEG data URI (`type: lqip`)
+plus a hex `color`.
+
+```php
+$image->placeholder?->toArray();
+// ['type' => 'lqip', 'value' => 'data:image/jpeg;base64,…', 'color' => '#c4a574']
+```
+
+Implement `PlaceholderGenerator` for ThumbHash, BlurHash, or a CDN URL.
+Call `$image->refreshPlaceholder()` to regenerate after replacing the
+stored file without changing `path`.
+
+After you change `larasell.images.placeholder`, existing rows keep their
+old payload until you rebuild them:
+
+```bash
+php artisan larasell:refresh-placeholders
+```
+
+The command walks every product image, including SVGs (which stay
+`null`) and missing files (which become `null`). Use `--batch-size`
+when the library is large:
+
+```bash
+php artisan larasell:refresh-placeholders --batch-size=250
+```
+
+## Displaying placeholders
+
+The React `Image` component paints a placeholder only when you pass
+one. With the default generator that value is `null`, so images render
+like a normal `src`. After you enable a generator, pass
+`$image->placeholder?->toArray()` to opt in:
+
+```tsx
+import Image from '../Components/Image'
+
+<Image
+  alt={image.alt ?? ''}
+  className="size-full object-cover"
+  placeholder={image.placeholder}
+  src={image.url}
+/>
+```
+
+`type: color` uses only the background. Encoded hashes such as
+ThumbHash are ignored until you decode them into a `data:` URI (or
+change `type` to `lqip`). SVG originals have a `null` placeholder.
 
 Create an image record with the stored file path, then attach it to the
 product with a position.

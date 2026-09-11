@@ -1,9 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react'
+import Image, { type ImagePlaceholder } from '../../Components/Image'
 
 type Product = {
   id: number | string
   image: {
     alt: string | null
+    placeholder: ImagePlaceholder | null
     url: string
   } | null
   name: string
@@ -52,9 +54,10 @@ function ProductIndex({ category, products, sort }: Props) {
               <Link className="block focus-visible:focus-ring" href={`/p/${product.slug}`} prefetch>
                 <div className="mb-3 aspect-square w-full">
                   {product.image && (
-                    <img
+                    <Image
                       alt={product.image.alt ?? product.name}
                       className="size-full object-cover"
+                      placeholder={product.image.placeholder}
                       src={product.image.url}
                     />
                   )}
