@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.0](https://github.com/Larasell-dev/larasell/compare/v1.15.0...v1.16.0) (2026-09-15)
+
+
+### Features
+
+* add more arithmetic methods to prices ([#123](https://github.com/Larasell-dev/larasell/issues/123)) ([371e1a8](https://github.com/Larasell-dev/larasell/commit/371e1a81a998a4b001e8c5aaa75327aee0dd7326))
+* add more currencies ([#120](https://github.com/Larasell-dev/larasell/issues/120)) ([9ce353d](https://github.com/Larasell-dev/larasell/commit/9ce353d15dee5703569c3a51b81e5831e09fe47e))
+
 ## [1.15.0](https://github.com/Larasell-dev/larasell/compare/v1.14.1...v1.15.0) (2026-09-11)
 
 
