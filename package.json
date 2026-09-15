@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "commitlint": "commitlint --from=HEAD~1 --to=HEAD",
     "dev": "vite"
   },
   "dependencies": {
@@ -19,6 +20,8 @@
     "vite": "^7.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@iconify-json/tabler": "^1.2.38",
     "@stylexjs/unplugin": "^0.19.0",
     "@svgr/core": "^8.1.0",
