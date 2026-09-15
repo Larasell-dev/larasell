@@ -31,5 +31,18 @@ it('rejects amounts that are not integer minor units', function () {
 it('defines the supported currencies minor unit digits', function () {
     expect(Currency::JPY->minorUnitDigits())->toBe(0)
         ->and(Currency::EUR->minorUnitDigits())->toBe(2)
-        ->and(Currency::USD->minorUnitDigits())->toBe(2);
+        ->and(Currency::USD->minorUnitDigits())->toBe(2)
+        ->and(Currency::BHD->minorUnitDigits())->toBe(3)
+        ->and(Currency::KWD->minorUnitDigits())->toBe(3)
+        ->and(Currency::ISK->minorUnitDigits())->toBe(0)
+        ->and(Currency::UGX->minorUnitDigits())->toBe(0)
+        ->and(Currency::VND->minorUnitDigits())->toBe(0);
+});
+
+it('supports all Stripe presentment currencies', function () {
+    $codes = array_map(fn (Currency $currency) => $currency->value, Currency::cases());
+
+    expect($codes)->toHaveCount(139)
+        ->toContain('USD', 'EUR', 'GBP', 'JPY', 'BHD', 'XCG', 'SLE', 'STD', 'XOF', 'ZMW')
+        ->not->toContain('STN', 'XAU', 'USN', 'CLF', 'ZWG', 'VES');
 });

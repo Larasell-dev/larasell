@@ -14,14 +14,16 @@ function currencySettingsAdmin(): AdminUser
 }
 
 it('shows USD as the only enabled currency by default', function () {
-    $this->actingAs(currencySettingsAdmin(), 'larasell-admin')
+    $response = $this->actingAs(currencySettingsAdmin(), 'larasell-admin')
         ->withHeader('X-Inertia', 'true')
         ->get(route('larasell.admin.settings.currencies.index'))
         ->assertOk()
-        ->assertJsonPath('component', 'Settings/Currencies/Index')
-        ->assertJsonPath('props.currencies.0.code', 'USD')
-        ->assertJsonPath('props.currencies.0.enabled', true)
-        ->assertJsonPath('props.currencies.1.enabled', false);
+        ->assertJsonPath('component', 'Settings/Currencies/Index');
+
+    $currencies = collect($response->json('props.currencies'))->keyBy->code;
+
+    expect($currencies['USD']['enabled'])->toBeTrue()
+        ->and($currencies->filter(fn (array $currency) => $currency['enabled'])->keys()->all())->toBe(['USD']);
 });
 
 it('updates enabled currencies', function () {
