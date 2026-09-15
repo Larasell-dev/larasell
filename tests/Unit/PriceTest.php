@@ -28,6 +28,41 @@ it('rejects amounts that are not integer minor units', function () {
     Price::of('12.99');
 })->throws(InvalidArgumentException::class, 'Price amount must be an integer value in minor units.');
 
+it('compares prices using the full set of comparison methods', function () {
+    $low = Price::of(100);
+    $high = Price::of(200);
+
+    expect($low->greaterThan($high))->toBeFalse()
+        ->and($high->greaterThan($low))->toBeTrue()
+        ->and($low->lessThan($high))->toBeTrue()
+        ->and($high->lessThan($low))->toBeFalse()
+        ->and($low->greaterThanOrEqual($high))->toBeFalse()
+        ->and($low->greaterThanOrEqual(Price::of(100)))->toBeTrue()
+        ->and($low->lessThanOrEqual($high))->toBeTrue()
+        ->and($high->lessThanOrEqual($low))->toBeFalse()
+        ->and($low->equals(Price::of(100)))->toBeTrue()
+        ->and($low->equals($high))->toBeFalse();
+});
+
+it('compares prices to another price with compareTo', function () {
+    expect(Price::of(100)->compareTo(Price::of(200)))->toBe(-1)
+        ->and(Price::of(200)->compareTo(Price::of(100)))->toBe(1)
+        ->and(Price::of(100)->compareTo(Price::of(100)))->toBe(0)
+        ->and(Price::of(-100)->compareTo(Price::of(100)))->toBe(-1);
+});
+
+it('checks the sign of a price', function () {
+    expect(Price::of(100)->isPositive())->toBeTrue()
+        ->and(Price::of(0)->isPositive())->toBeFalse()
+        ->and(Price::of(-100)->isPositive())->toBeFalse()
+        ->and(Price::of(0)->isZero())->toBeTrue()
+        ->and(Price::of(100)->isZero())->toBeFalse()
+        ->and(Price::of(-100)->isZero())->toBeFalse()
+        ->and(Price::of(-100)->isNegative())->toBeTrue()
+        ->and(Price::of(0)->isNegative())->toBeFalse()
+        ->and(Price::of(100)->isNegative())->toBeFalse();
+});
+
 it('defines the supported currencies minor unit digits', function () {
     expect(Currency::JPY->minorUnitDigits())->toBe(0)
         ->and(Currency::EUR->minorUnitDigits())->toBe(2)

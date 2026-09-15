@@ -53,12 +53,47 @@ final readonly class Price implements JsonSerializable
 
     public function isPositive(): bool
     {
-        return bccomp($this->amount, '0', 0) === 1;
+        return $this->compareTo(self::of(0)) === 1;
+    }
+
+    public function isZero(): bool
+    {
+        return $this->compareTo(self::of(0)) === 0;
+    }
+
+    public function isNegative(): bool
+    {
+        return $this->compareTo(self::of(0)) === -1;
     }
 
     public function greaterThan(self $price): bool
     {
-        return bccomp($this->amount, $price->amount, 0) === 1;
+        return $this->compareTo($price) === 1;
+    }
+
+    public function greaterThanOrEqual(self $price): bool
+    {
+        return $this->compareTo($price) >= 0;
+    }
+
+    public function lessThan(self $price): bool
+    {
+        return $this->compareTo($price) === -1;
+    }
+
+    public function lessThanOrEqual(self $price): bool
+    {
+        return $this->compareTo($price) <= 0;
+    }
+
+    public function equals(self $price): bool
+    {
+        return $this->compareTo($price) === 0;
+    }
+
+    public function compareTo(self $price): int
+    {
+        return bccomp($this->amount, $price->amount, 0);
     }
 
     public function multiply(int $multiplier): self
