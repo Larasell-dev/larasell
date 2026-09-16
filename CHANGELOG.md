@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/Larasell-dev/larasell/compare/v1.16.0...v1.17.0) (2026-09-16)
+
+
+### Features
+
+* add Locale enum ([#124](https://github.com/Larasell-dev/larasell/issues/124)) ([4d5798f](https://github.com/Larasell-dev/larasell/commit/4d5798fab9dd5c9717a18345fd0b9f6a6c4e39ca))
+
 ## [1.16.0](https://github.com/Larasell-dev/larasell/compare/v1.15.0...v1.16.0) (2026-09-15)
 
 
