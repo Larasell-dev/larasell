@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/Larasell-dev/larasell/compare/v1.17.0...v1.18.0) (2026-09-16)
+
+
+### Features
+
+* add barcode value object ([#126](https://github.com/Larasell-dev/larasell/issues/126)) ([ea7fafb](https://github.com/Larasell-dev/larasell/commit/ea7fafbd08679f82874851afb17f192bf966754c))
+
 ## [1.17.0](https://github.com/Larasell-dev/larasell/compare/v1.16.0...v1.17.0) (2026-09-16)
 
 
