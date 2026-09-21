@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -299,29 +298,21 @@ class ProductController extends Controller
         $file = $request->validate([
             'image' => ['required', 'image', 'max:10240'],
         ])['image'];
-        $disk = config('larasell.images.disk');
-        $path = $file->store('products/'.$product->getKey(), $disk);
 
-        try {
-            $image = DB::transaction(function () use ($file, $path, $product): ProductImage {
-                $image = $product->images()->getRelated()->newInstance([
-                    'path' => $path,
-                    'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                    'meta' => [
-                        'mime_type' => $file->getMimeType(),
-                        'original_name' => $file->getClientOriginalName(),
-                        'pending_product_id' => (string) $product->getKey(),
-                    ],
-                ]);
-                $image->save();
+        $image = DB::transaction(function () use ($file, $product): ProductImage {
+            $image = $product->images()->getRelated()->newInstance([
+                'file' => $file,
+                'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'meta' => [
+                    'mime_type' => $file->getMimeType(),
+                    'original_name' => $file->getClientOriginalName(),
+                    'pending_product_id' => (string) $product->getKey(),
+                ],
+            ]);
+            $image->save();
 
-                return $image;
-            });
-        } catch (\Throwable $exception) {
-            Storage::disk($disk)->delete($path);
-
-            throw $exception;
-        }
+            return $image;
+        });
 
         return response()->json([
             'image' => [

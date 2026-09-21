@@ -31,7 +31,7 @@ class MediaController extends Controller
                 'id' => $image->getKey(),
                 'alt' => $image->getAttribute('alt'),
                 'name' => data_get($image->getAttribute('meta'), 'original_name')
-                    ?? basename($image->getAttribute('path')),
+                    ?? basename($image->getAttribute('file')),
                 'url' => $image->url(),
                 'placeholder' => $image->placeholder?->toArray(),
             ]);
@@ -76,7 +76,7 @@ class MediaController extends Controller
             throw ValidationException::withMessages(['ids' => 'One or more selected images no longer exist.']);
         }
 
-        $paths = $images->pluck('path')->all();
+        $paths = $images->pluck('file')->all();
         DB::transaction(fn () => $images->each->delete());
         Storage::disk(config('larasell.images.disk'))->delete($paths);
 

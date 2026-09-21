@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Storage;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class MediaUploadController extends Controller
@@ -16,25 +15,17 @@ class MediaUploadController extends Controller
         $file = $request->validate([
             'image' => ['required', 'image', 'max:10240'],
         ])['image'];
-        $disk = config('larasell.images.disk');
-        $path = $file->store(config('larasell.images.path'), $disk);
 
-        try {
-            /** @var class-string<Model> $imageModel */
-            $imageModel = app(ModelRegistry::class)->productImage->class();
-            $imageModel::query()->create([
-                'path' => $path,
-                'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'meta' => [
-                    'mime_type' => $file->getMimeType(),
-                    'original_name' => $file->getClientOriginalName(),
-                ],
-            ]);
-        } catch (\Throwable $exception) {
-            Storage::disk($disk)->delete($path);
-
-            throw $exception;
-        }
+        /** @var class-string<Model> $imageModel */
+        $imageModel = app(ModelRegistry::class)->productImage->class();
+        $imageModel::query()->create([
+            'file' => $file,
+            'alt' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'meta' => [
+                'mime_type' => $file->getMimeType(),
+                'original_name' => $file->getClientOriginalName(),
+            ],
+        ]);
 
         return back();
     }

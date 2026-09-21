@@ -1,11 +1,12 @@
 <?php
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Larasell\Larasell\Images\ColorPlaceholderGenerator;
 use Larasell\Larasell\Images\Placeholder;
 use Larasell\Larasell\Models\ProductImage;
 
-function refreshPlaceholderCommandPng(string $path, int $red, int $green, int $blue): void
+function refreshPlaceholderCommandPng(string $name, int $red, int $green, int $blue): UploadedFile
 {
     $canvas = imagecreatetruecolor(8, 8);
     $color = imagecolorallocate($canvas, $red, $green, $blue);
@@ -15,7 +16,7 @@ function refreshPlaceholderCommandPng(string $path, int $red, int $green, int $b
     $png = ob_get_clean();
     imagedestroy($canvas);
 
-    Storage::disk((string) config('larasell.images.disk'))->put($path, $png);
+    return UploadedFile::fake()->createWithContent($name, $png);
 }
 
 beforeEach(function () {
@@ -24,12 +25,13 @@ beforeEach(function () {
 });
 
 it('rebuilds placeholders with the configured generator', function () {
-    refreshPlaceholderCommandPng('products/front.png', 255, 0, 0);
     $image = ProductImage::query()->create([
-        'path' => 'products/front.png',
+        'file' => refreshPlaceholderCommandPng('front.png', 255, 0, 0),
         'placeholder' => new Placeholder('lqip', 'data:image/jpeg;base64,old', '#ffffff'),
     ]);
-    $svg = ProductImage::query()->create(['path' => 'products/icon.svg']);
+    $svg = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->create('icon.svg', 10, 'image/svg+xml'),
+    ]);
 
     config()->set('larasell.images.placeholder', ColorPlaceholderGenerator::class);
 
