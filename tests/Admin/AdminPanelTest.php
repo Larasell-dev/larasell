@@ -440,11 +440,11 @@ it('shows uploaded images in the admin media index', function () {
         'password' => Hash::make('password'),
     ]);
     ProductImage::query()->create([
-        'path' => 'products/desk-lamp/older.jpg',
+        'file' => UploadedFile::fake()->image('older.jpg'),
         'alt' => 'Older image',
     ]);
     $image = ProductImage::query()->create([
-        'path' => 'products/desk-lamp/hero.jpg',
+        'file' => UploadedFile::fake()->image('hero.jpg'),
         'alt' => 'Desk lamp',
         'meta' => ['original_name' => 'desk-lamp-hero.jpg'],
     ]);
@@ -484,8 +484,8 @@ it('uploads an image to the media library with a generated file name', function 
 
     $image = ProductImage::query()->sole();
 
-    Storage::disk('product-images')->assertExists($image->path);
-    expect($image->path)->toStartWith('media/')
+    Storage::disk('product-images')->assertExists($image->file);
+    expect($image->file)->toStartWith('media/')
         ->not->toEndWith('summer-campaign.jpg')
         ->and($image->alt)->toBe('summer-campaign')
         ->and($image->meta['original_name'])->toBe('summer-campaign.jpg')
@@ -503,17 +503,18 @@ it('deletes selected media images and their stored files', function () {
         'password' => Hash::make('password'),
     ]);
     $images = collect(['one.jpg', 'two.jpg'])->map(function (string $name) {
-        Storage::disk('local')->put("products/$name", 'image');
-
-        return ProductImage::query()->create(['path' => "products/$name"]);
+        return ProductImage::query()->create([
+            'file' => UploadedFile::fake()->image($name),
+        ]);
     });
+    $stored = $images->map->file->all();
 
     $this->actingAs($admin, 'larasell-admin')
         ->delete(route('larasell.admin.media.destroy'), ['ids' => $images->pluck('id')->all()])
         ->assertRedirect();
 
     expect(ProductImage::query()->whereKey($images->pluck('id'))->exists())->toBeFalse();
-    Storage::disk('local')->assertMissing(['products/one.jpg', 'products/two.jpg']);
+    Storage::disk('local')->assertMissing($stored);
 });
 
 it('redirects authenticated admin users to the larasell admin home route from login', function () {
@@ -954,7 +955,7 @@ it('defers product images on the admin product index', function () {
         'status' => Visibility::Visible,
     ]);
     $image = ProductImage::query()->create([
-        'path' => 'products/desk-lamp.jpg',
+        'file' => UploadedFile::fake()->image('desk-lamp.jpg'),
         'alt' => 'A brass desk lamp',
     ]);
     $product->images()->attach($image, ['position' => 0]);
@@ -1072,7 +1073,9 @@ it('uploads an image without attaching it to a product', function () {
 
     $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
     $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999)]);
-    $existingImage = ProductImage::query()->create(['path' => 'products/existing.jpg']);
+    $existingImage = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('existing.jpg'),
+    ]);
     $product->images()->attach($existingImage, ['position' => 0]);
 
     $this->actingAs($admin, 'larasell-admin')
@@ -1085,7 +1088,7 @@ it('uploads an image without attaching it to a product', function () {
 
     $uploadedImage = ProductImage::query()->whereKeyNot($existingImage->id)->sole();
 
-    Storage::disk('product-images')->assertExists($uploadedImage->path);
+    Storage::disk('product-images')->assertExists($uploadedImage->file);
     expect($uploadedImage->alt)->toBe('side-view')
         ->and($uploadedImage->meta['original_name'])->toBe('side-view.jpg')
         ->and($uploadedImage->meta['pending_product_id'])->toBe((string) $product->id)
@@ -1098,8 +1101,14 @@ it('defers ordered images on the admin product page', function () {
 
     $admin = AdminUser::query()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('password')]);
     $product = Product::query()->create(['slug' => 'desk-lamp', 'name' => 'Desk lamp', 'price' => Price::of(4999)]);
-    $first = ProductImage::query()->create(['path' => 'products/first.jpg', 'alt' => 'First']);
-    $second = ProductImage::query()->create(['path' => 'products/second.jpg', 'alt' => 'Second']);
+    $first = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('first.jpg'),
+        'alt' => 'First',
+    ]);
+    $second = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('second.jpg'),
+        'alt' => 'Second',
+    ]);
     $product->images()->attach($first, ['position' => 1]);
     $product->images()->attach($second, ['position' => 0]);
 
@@ -1130,9 +1139,19 @@ it('updates all product settings in the admin panel', function () {
     $black = $option->values()->create(['name' => 'Black', 'slug' => 'black', 'value' => 'black']);
     $white = $option->values()->create(['name' => 'White', 'slug' => 'white', 'value' => 'white']);
     $product->attributeValues()->attach($black);
-    $firstImage = ProductImage::query()->create(['path' => 'products/first.jpg']);
-    $secondImage = ProductImage::query()->create(['path' => 'products/second.jpg']);
-    $uploadedImage = ProductImage::query()->create(['path' => 'products/uploaded.jpg', 'meta' => ['pending_product_id' => (string) $product->id]]);
+    Storage::fake('product-images');
+    config()->set('larasell.images.disk', 'product-images');
+
+    $firstImage = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('first.jpg'),
+    ]);
+    $secondImage = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('second.jpg'),
+    ]);
+    $uploadedImage = ProductImage::query()->create([
+        'file' => UploadedFile::fake()->image('uploaded.jpg'),
+        'meta' => ['pending_product_id' => (string) $product->id],
+    ]);
     $product->images()->attach($firstImage, ['position' => 0]);
     $product->images()->attach($secondImage, ['position' => 1]);
 

@@ -15,7 +15,7 @@ final class Raster
             return null;
         }
 
-        $path = $image->getAttribute('path');
+        $path = $image->getAttribute('file');
 
         if (! is_string($path) || $path === '') {
             return null;

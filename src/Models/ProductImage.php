@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 use Larasell\Larasell\Casts\PlaceholderCast;
+use Larasell\Larasell\Casts\ProductImageFileCast;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
 use Larasell\Larasell\Images\Placeholder;
 
 /**
  * @property int $id
- * @property string $path
+ * @property string $file
  * @property string|null $alt
  * @property Placeholder|null $placeholder
  * @property array<string, mixed>|null $meta
@@ -28,6 +29,7 @@ class ProductImage extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'file' => ProductImageFileCast::class,
         'placeholder' => PlaceholderCast::class,
         'meta' => 'array',
     ];
@@ -41,7 +43,7 @@ class ProductImage extends Model
                 return;
             }
 
-            if ($image->exists && ! $image->isDirty('path')) {
+            if ($image->exists && ! $image->isDirty('file')) {
                 return;
             }
 
@@ -75,7 +77,7 @@ class ProductImage extends Model
 
     public function url(): string
     {
-        return Storage::disk(config('larasell.images.disk'))->url($this->path);
+        return Storage::disk(config('larasell.images.disk'))->url($this->file);
     }
 
     /**
@@ -85,7 +87,7 @@ class ProductImage extends Model
     {
         $meta = $this->getAttribute('meta');
         $candidates = [
-            $this->getAttribute('path'),
+            $this->getAttribute('file'),
             is_array($meta) ? ($meta['original_name'] ?? null) : null,
             is_array($meta) ? ($meta['mime_type'] ?? null) : null,
         ];
