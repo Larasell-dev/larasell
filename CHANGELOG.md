@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.1](https://github.com/Larasell-dev/larasell/compare/v1.18.0...v1.18.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* accept file instead of path when storing product images ([#128](https://github.com/Larasell-dev/larasell/issues/128)) ([045675e](https://github.com/Larasell-dev/larasell/commit/045675eba6697d8dcc3f0b93d5e77868de8fde93))
+* make siblings a relation ([#131](https://github.com/Larasell-dev/larasell/issues/131)) ([a695e49](https://github.com/Larasell-dev/larasell/commit/a695e49396742ba4a91c2492a9ae4324fe499bf1))
+
 ## [1.18.0](https://github.com/Larasell-dev/larasell/compare/v1.17.0...v1.18.0) (2026-09-16)
 
 
