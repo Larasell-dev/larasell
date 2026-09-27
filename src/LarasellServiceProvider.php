@@ -6,7 +6,6 @@ use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
-use Larasell\Larasell\Console\InstallStarterKitCommand;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
@@ -72,7 +71,6 @@ class LarasellServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                InstallStarterKitCommand::class,
                 RefreshPlaceholdersCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,

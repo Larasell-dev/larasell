@@ -1,38 +1,28 @@
-## Setting up the starter kit
+## Contributing to the Larasell package
 
-Start by creating a new laravel application.
+### Setup
+
+Install the dependencies:
 
   ```bash
-  composer create-project laravel/laravel larasell-demo
-  cd larasell-demo
+  composer install
+  npm install
   ```
 
-Add the _local_ version of larasell to your new application.
+### Testing
 
   ```bash
-  composer config repositories.larasell path ../larasell
-  composer require larasell-dev/larasell:@dev
+  composer test
+  composer phpstan
+  composer pint
   ```
 
-Run the migrations and then you can.
+### The starter kit
+
+The starter kit lives in its own repository at
+[larasell-dev/starter-kit](https://github.com/Larasell-dev/starter-kit). It is
+installed with:
 
   ```bash
-  php artisan migrate
-  php artisan larasell:install
-  ```
-
-Now run the vite dev server.
-
-  ```bash
-  composer run dev
-  ```
-
-## Making changes to the starter kit
-
-To make changes to the stater kit edit the code inside the `larasell` repository, not inside the newly created package.
-
-Run the below command after you've made some changes to the `larasell` repository.
-
-  ```bash
-  php artisan larasell:install --force
+  laravel new --using larasell-dev/starter-kit my-store
   ```
