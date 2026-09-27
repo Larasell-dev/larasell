@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\Models\Relations\Siblings;
 use Larasell\Larasell\Translatable;
 
 /**
@@ -69,13 +69,13 @@ class Category extends Model
         return $this->onlyVisible($this->children())->with('descendants');
     }
 
-    /** @return Builder<Category> */
-    public function siblings(): Builder
+    /**
+     * @return Siblings<self>
+     */
+    public function siblings(): Siblings
     {
         return $this->onlyVisible(
-            $this->newRelatedCategoryQuery()
-                ->whereKeyNot($this->getKey())
-                ->where('parent_id', $this->parent_id)
+            $this->newSiblingsRelation()
         );
     }
 
@@ -120,13 +120,21 @@ class Category extends Model
         return app(ModelRegistry::class)->category->query();
     }
 
+    /** @return Siblings<Category> */
+    protected function newSiblingsRelation(): Siblings
+    {
+        $query = $this->newRelatedCategoryQuery();
+
+        return new Siblings($query, $this);
+    }
+
     /**
-     * @template TQuery of Builder<self>|Relation<self, $this, mixed>
+     * @template TQuery of Builder<self>|HasMany<self, $this>|Siblings<self>
      *
      * @param  TQuery  $query
      * @return TQuery
      */
-    private function onlyVisible(Builder|Relation $query): Builder|Relation
+    private function onlyVisible(Builder|HasMany|Siblings $query): Builder|HasMany|Siblings
     {
         return $query->where('status', Visibility::Visible->value);
     }
