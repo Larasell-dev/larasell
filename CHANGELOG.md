@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/Larasell-dev/larasell/compare/v1.18.1...v1.18.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* move starter kit into separate repo ([#132](https://github.com/Larasell-dev/larasell/issues/132)) ([d46f79c](https://github.com/Larasell-dev/larasell/commit/d46f79c17e58aab951cb20f4a262824a4318e5d9))
+
 ## [1.18.1](https://github.com/Larasell-dev/larasell/compare/v1.18.0...v1.18.1) (2026-09-27)
 
 
