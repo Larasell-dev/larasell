@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Discounts\DiscountAllocation;
@@ -30,7 +31,6 @@ use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\ProductVariant;
-use Larasell\Larasell\OrderNumbers\OrderNumberFactory;
 use Larasell\Larasell\Payments\PaymentBreakdownFactory;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Payments\PaymentRequest;
@@ -40,13 +40,14 @@ use Larasell\Larasell\Taxes\CartTaxEstimator;
 use Larasell\Larasell\Taxes\Exceptions\TaxCalculationException;
 use Larasell\Larasell\Taxes\TaxLineResult;
 use Larasell\Larasell\Taxes\TaxSnapshotFactory;
+use RuntimeException;
 
 class Checkout
 {
     public function __construct(
         private readonly ConnectionInterface $database,
         private readonly ModelRegistry $models,
-        private readonly OrderNumberFactory $orderNumbers,
+        private readonly OrderNumberGenerator $orderNumbers,
         private readonly PaymentManager $payments,
         private readonly PromotionManager $promotions,
         private readonly PromotionCustomerResolver $promotionCustomers,
@@ -203,7 +204,7 @@ class Checkout
                 }
 
                 $order = $this->models->order->query()->create([
-                    'number' => $this->orderNumbers->generate(),
+                    'number' => $this->orderNumber(),
                     'idempotency_key' => $idempotencyKey,
                     'idempotency_fingerprint' => $fingerprint,
                     'currency' => $lockedCart->currency,
@@ -521,6 +522,17 @@ class Checkout
         }
 
         return $address instanceof Address ? $address : Address::fromArray($address);
+    }
+
+    private function orderNumber(): string
+    {
+        $number = $this->orderNumbers->generate();
+
+        if ($number === '') {
+            throw new RuntimeException('The order number generator returned an empty order number.');
+        }
+
+        return $number;
     }
 
     /**

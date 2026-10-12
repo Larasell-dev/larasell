@@ -4,5 +4,5 @@ namespace Larasell\Larasell\Contracts;
 
 interface OrderNumberGenerator
 {
-    public function generate(int $sequence): string;
+    public function generate(): string;
 }

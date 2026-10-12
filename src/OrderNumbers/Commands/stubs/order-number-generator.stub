@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use Larasell\Larasell\Contracts\OrderNumberGenerator;
+use Larasell\Larasell\OrderNumbers\SingleOrderNumberSequence;
+
+class {{ class }} implements OrderNumberGenerator
+{
+    public function __construct(private readonly SingleOrderNumberSequence $sequence) {}
+
+    public function generate(): string
+    {
+        $next = $this->sequence->next();
+
+        return 'ORD-'.$next;
+    }
+}

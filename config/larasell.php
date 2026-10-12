@@ -60,8 +60,6 @@ return [
 
     'order_numbers' => [
         'generator' => SequentialOrderNumberGenerator::class,
-        'prefix' => env('LARASELL_ORDER_NUMBER_PREFIX', 'LS-'),
-        'padding' => 6,
     ],
 
     'promotions' => [

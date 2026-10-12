@@ -18,6 +18,8 @@ use Larasell\Larasell\Images\Commands\RefreshPlaceholdersCommand;
 use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberGeneratorCommand;
+use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberSequenceCommand;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
@@ -71,6 +73,8 @@ class LarasellServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                MakeOrderNumberGeneratorCommand::class,
+                MakeOrderNumberSequenceCommand::class,
                 RefreshPlaceholdersCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,
