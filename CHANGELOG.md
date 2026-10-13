@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/Larasell-dev/larasell/compare/v1.18.2...v1.19.0) (2026-10-13)
+
+
+### Features
+
+* support custom order generators ([#135](https://github.com/Larasell-dev/larasell/issues/135)) ([264b9ea](https://github.com/Larasell-dev/larasell/commit/264b9ea9e42cc1e18000ce22cd2f8001a5514220))
+
 ## [1.18.2](https://github.com/Larasell-dev/larasell/compare/v1.18.1...v1.18.2) (2026-09-27)
 
 
