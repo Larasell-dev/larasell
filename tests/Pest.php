@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Larasell\Larasell\Tests\AdminTestCase;
 use Larasell\Larasell\Tests\ConcurrencyTestCase;
 use Larasell\Larasell\Tests\TestCase;
 
@@ -19,10 +18,6 @@ use Larasell\Larasell\Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature', 'Unit');
-
-pest()->extend(AdminTestCase::class)
-    ->use(RefreshDatabase::class)
-    ->in('Admin');
 
 pest()->extend(ConcurrencyTestCase::class)
     ->in('Concurrency');
