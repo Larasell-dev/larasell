@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/Larasell-dev/larasell/compare/v1.19.0...v1.19.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* remove admin panel ([941c143](https://github.com/Larasell-dev/larasell/commit/941c14330938f7c6bde6fdf108b4a76348bc9379))
+
 ## [1.19.0](https://github.com/Larasell-dev/larasell/compare/v1.18.2...v1.19.0) (2026-10-13)
 
 
