@@ -91,13 +91,13 @@ jobs:
             password: ''
             mysql_image: ''
             postgres_image: ''
-          - name: MySQL
-            connection: mysql
-            port: 3306
-            username: root
-            password: password
-            mysql_image: mysql:8.4
-            postgres_image: ''
+          # - name: MySQL
+          #   connection: mysql
+          #   port: 3306
+          #   username: root
+          #   password: password
+          #   mysql_image: mysql:8.4
+          #   postgres_image: ''
           - name: PostgreSQL
             connection: pgsql
             port: 5432
