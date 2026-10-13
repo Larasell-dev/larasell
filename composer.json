@@ -42,7 +42,6 @@
     }
   },
   "require-dev": {
-    "inertiajs/inertia-laravel": "^3.0",
     "larastan/larastan": "^3.0",
     "orchestra/testbench": "^11.0",
     "pestphp/pest": "^5.1",
@@ -54,9 +53,6 @@
     "ext-intl": "*",
     "laravel/framework": "^13.23",
     "php": "^8.3"
-  },
-  "suggest": {
-    "inertiajs/inertia-laravel": "Required when using the optional Larasell admin panel."
   },
   "scripts": {
     "pest": "pest tests --parallel",
@@ -75,10 +71,8 @@
       "/composer.lock",
       "/docs",
       "/node_modules",
-      "/tsconfig.json",
       "/vendor",
-      "/version.txt",
-      "/vite.config.ts"
+      "/version.txt"
     ]
   },
   "config": {
