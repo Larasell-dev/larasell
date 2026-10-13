@@ -1,0 +1,13 @@
+<?php
+
+namespace {{ namespace }};
+
+use Larasell\Larasell\Contracts\OrderNumberSequence;
+
+class {{ class }} implements OrderNumberSequence
+{
+    public function next(string $name): int
+    {
+        //
+    }
+}
