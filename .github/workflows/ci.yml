@@ -13,6 +13,7 @@ jobs:
   commitlint:
     name: Commitlint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -35,6 +36,7 @@ jobs:
   phpstan:
     name: PHPStan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -57,6 +59,7 @@ jobs:
   pint:
     name: Pint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -75,6 +78,7 @@ jobs:
   pest:
     name: Pest (${{ matrix.database.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
