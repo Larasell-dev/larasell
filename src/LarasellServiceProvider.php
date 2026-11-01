@@ -2,12 +2,15 @@
 
 namespace Larasell\Larasell;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
+use Larasell\Larasell\Contracts\PlanResolver;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
@@ -17,6 +20,12 @@ use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Images\Commands\RefreshPlaceholdersCommand;
 use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
+use Larasell\Larasell\Licensing\Commands\ActivateLicenseCommand;
+use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
+use Larasell\Larasell\Licensing\Entitlements;
+use Larasell\Larasell\Licensing\EnvPlanResolver;
+use Larasell\Larasell\Licensing\LeasePlanResolver;
+use Larasell\Larasell\Licensing\License;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberGeneratorCommand;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberSequenceCommand;
@@ -40,6 +49,8 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->singleton(ModelRegistry::class);
         $this->app->singleton(CartTaxEstimator::class);
         $this->app->singleton(CartMerger::class);
+        $this->app->singleton(License::class);
+        $this->app->singleton(Entitlements::class);
         $this->app->singleton(TaxRounding::class, fn ($app) => new TaxRounding(
             TaxRoundingMode::from($app['config']->get('larasell.taxes.rounding', TaxRoundingMode::HalfUp->value))
         ));
@@ -52,6 +63,14 @@ class LarasellServiceProvider extends ServiceProvider
         ));
         $this->app->bind(PlaceholderGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.images.placeholder', NullPlaceholderGenerator::class)
+        ));
+        // Production always uses the lease, so LARASELL_LICENSE_DRIVER=env cannot unlock Pro on a live shop.
+        $this->app->bind(PlanResolver::class, fn ($app) => $app->make(
+            $app->isProduction() ? LeasePlanResolver::class : match ($app['config']->get('larasell.licensing.driver', 'env')) {
+                'env' => EnvPlanResolver::class,
+                'lease' => LeasePlanResolver::class,
+                default => throw new InvalidArgumentException('LARASELL_LICENSE_DRIVER must be "env" or "lease".'),
+            }
         ));
         $this->app->bind(PromotionCustomerResolver::class, fn ($app) => $app->make(
             $app['config']->get('larasell.promotions.customer_resolver', DefaultPromotionCustomerResolver::class)
@@ -73,12 +92,20 @@ class LarasellServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                ActivateLicenseCommand::class,
                 MakeOrderNumberGeneratorCommand::class,
                 MakeOrderNumberSequenceCommand::class,
                 RefreshPlaceholdersCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,
+                RenewLicenseCommand::class,
             ]);
+
+            // Daily, well within the 14 days a lease lasts.
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $schedule->command(RenewLicenseCommand::class)->daily()
+                    ->when(fn (): bool => $this->app->make(PlanResolver::class) instanceof LeasePlanResolver);
+            });
 
             $this->publishes([
                 __DIR__.'/../config/larasell.php' => config_path('larasell.php'),
