@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/Larasell-dev/larasell/compare/v1.19.1...v1.20.0) (2026-11-01)
+
+
+### Features
+
+* add licensing and plan entitlements ([ba856df](https://github.com/Larasell-dev/larasell/commit/ba856df0c9ba9a3735e055226ff3e4c955be2b7e))
+
 ## [1.19.1](https://github.com/Larasell-dev/larasell/compare/v1.19.0...v1.19.1) (2026-10-13)
 
 
