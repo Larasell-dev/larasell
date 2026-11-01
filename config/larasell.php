@@ -59,7 +59,6 @@ return [
     ],
 
     'licensing' => [
-        'public_key' => env('LARASELL_LICENSE_PUBLIC_KEY'),
         'driver' => env('LARASELL_LICENSE_DRIVER', 'env'),
         'plan' => env('LARASELL_PLAN', 'pro'),
     ],

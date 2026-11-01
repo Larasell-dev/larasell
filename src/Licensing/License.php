@@ -20,10 +20,22 @@ final class License
 
     private const API_URL = 'https://larasell.dev/api/v1/licenses';
 
+    /**
+     * The base64-encoded Ed25519 key larasell.dev signs leases with. Hard-coded rather than
+     * configurable: a shop that could pick the key could sign its own Pro lease.
+     */
+    private const PUBLIC_KEY = 'kutEbLkaS3RXdsAA00IjLcwJPiAkOq+4GgtZmCvw1kg=';
+
     /** Denials after which the current lease must not grant anything any more. */
     private const REVOKING_ERRORS = ['larasell.licensing.invalid-activation', 'larasell.licensing.license-revoked', 'larasell.licensing.license-suspended'];
 
-    public function __construct(private readonly ModelRegistry $models) {}
+    /**
+     * @param  string  $publicKey  only for tests, which sign leases with a key of their own
+     */
+    public function __construct(
+        private readonly ModelRegistry $models,
+        private readonly string $publicKey = self::PUBLIC_KEY,
+    ) {}
 
     /**
      * @throws LicenseException when larasell.dev refuses the key, e.g. for an unknown domain
@@ -95,13 +107,8 @@ final class License
     public function lease(): ?Lease
     {
         $token = $this->stored()['lease'] ?? null;
-        $publicKey = config('larasell.licensing.public_key');
 
-        if (! is_string($token) || ! is_string($publicKey)) {
-            return null;
-        }
-
-        return Lease::verify($token, $publicKey, $this->domain());
+        return is_string($token) ? Lease::verify($token, $this->publicKey, $this->domain()) : null;
     }
 
     /**
@@ -126,8 +133,7 @@ final class License
 
     private function verified(mixed $token): Lease
     {
-        $publicKey = config('larasell.licensing.public_key');
-        $lease = is_string($token) && is_string($publicKey) ? Lease::verify($token, $publicKey, $this->domain()) : null;
+        $lease = is_string($token) ? Lease::verify($token, $this->publicKey, $this->domain()) : null;
 
         return $lease ?? throw LicenseException::invalidLease();
     }

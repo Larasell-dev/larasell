@@ -7,6 +7,8 @@ use Larasell\Larasell\Enums\Plan;
 use Larasell\Larasell\Exceptions\Licensing\UnknownEntitlement;
 use Larasell\Larasell\Facades\Entitlement;
 use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
+use Larasell\Larasell\Licensing\License;
+use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Setting;
 
 /** Signs a lease the way larasell.dev does (LicenseSigningService in the website). */
@@ -46,10 +48,11 @@ beforeEach(function () {
     $keyPair = sodium_crypto_sign_keypair();
     $this->secretKey = sodium_crypto_sign_secretkey($keyPair);
 
-    config([
-        'app.url' => 'https://shop.example.com',
-        'larasell.licensing.public_key' => base64_encode(sodium_crypto_sign_publickey($keyPair)),
-    ]);
+    config(['app.url' => 'https://shop.example.com']);
+    $this->app->singleton(License::class, fn ($app) => new License(
+        $app->make(ModelRegistry::class),
+        base64_encode(sodium_crypto_sign_publickey($keyPair)),
+    ));
     $this->app['env'] = 'production';
 
     Entitlement::define('reviews.moderation', Plan::Free);
