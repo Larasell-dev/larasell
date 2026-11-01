@@ -4,6 +4,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Larasell\Larasell\Enums\Plan;
+use Larasell\Larasell\Exceptions\Licensing\UnknownEntitlement;
 use Larasell\Larasell\Facades\Entitlement;
 use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
 use Larasell\Larasell\Models\Setting;
@@ -123,7 +124,7 @@ it('refuses leases that larasell.dev did not sign for this shop', function (Clos
     fakeLicenseServer($lease($this->secretKey));
 
     $this->artisan('larasell:license:activate', ['key' => 'LL-ABCDEFGH-SECRET'])
-        ->expectsOutput('The license could not be activated: invalid_lease.')
+        ->expectsOutput('The lease from larasell.dev is not valid for this shop.')
         ->assertFailed();
 
     expect(Entitlement::plan())->toBe(Plan::Free);
@@ -143,7 +144,8 @@ it('reports why larasell.dev refused the key', function () {
     Http::fake(['*' => Http::response(['error' => 'domain_not_authorized'], 403)]);
 
     $this->artisan('larasell:license:activate', ['key' => 'LL-ABCDEFGH-SECRET'])
-        ->expectsOutput('The license could not be activated: domain_not_authorized.')
+        ->expectsOutput('larasell.dev refused the license: domain_not_authorized.')
+        ->expectsOutput('Add the domain to the license on your larasell.dev dashboard, or correct APP_URL.')
         ->assertFailed();
 });
 
@@ -191,8 +193,14 @@ it('drops the Pro plan at once when the license is revoked', function () {
 });
 
 it('fails loudly on an entitlement that is not defined', function () {
-    Entitlement::active('admin.audit-log-serach');
-})->throws(InvalidArgumentException::class, 'The entitlement [admin.audit-log-serach] is not defined.');
+    try {
+        Entitlement::active('admin.audit-log-serach');
+        $this->fail('Checking an undefined entitlement did not throw.');
+    } catch (UnknownEntitlement $exception) {
+        expect($exception->getMessage())->toBe('The entitlement [admin.audit-log-serach] is not defined.')
+            ->and($exception->errorCode())->toBe('larasell.licensing.unknown-entitlement');
+    }
+});
 
 it('lets tests pretend to have a plan', function () {
     Entitlement::fake(Plan::Pro);

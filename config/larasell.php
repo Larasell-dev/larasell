@@ -59,12 +59,7 @@ return [
     ],
 
     'licensing' => [
-        // Where the license API of larasell.dev lives, and the base64-encoded Ed25519 key its leases are signed with.
-        'url' => env('LARASELL_LICENSE_URL', 'https://larasell.dev/api/v1/licenses'),
         'public_key' => env('LARASELL_LICENSE_PUBLIC_KEY'),
-
-        // Outside production: "env" reads the plan from LARASELL_PLAN (free or pro), "lease" needs an
-        // activated license key like production does. Production always uses the lease.
         'driver' => env('LARASELL_LICENSE_DRIVER', 'env'),
         'plan' => env('LARASELL_PLAN', 'pro'),
     ],

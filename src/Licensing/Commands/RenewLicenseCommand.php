@@ -20,7 +20,8 @@ class RenewLicenseCommand extends Command
         try {
             $lease = $license->renew();
         } catch (LicenseException $exception) {
-            $this->error("The license could not be renewed: {$exception->reason}.");
+            $this->error($exception->getMessage());
+            $this->line((string) $exception->errorFix());
 
             return self::FAILURE;
         }
