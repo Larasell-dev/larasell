@@ -2,9 +2,9 @@
 
 namespace Larasell\Larasell\Licensing;
 
-use InvalidArgumentException;
 use Larasell\Larasell\Contracts\PlanResolver;
 use Larasell\Larasell\Enums\Plan;
+use Larasell\Larasell\Exceptions\Licensing\UnknownEntitlement;
 
 /**
  * What this installation's plan entitles it to. Packages define their entitlements with the
@@ -28,11 +28,11 @@ final class Entitlements
     }
 
     /**
-     * @throws InvalidArgumentException when the entitlement is not defined, so a typo is not mistaken for "not entitled"
+     * @throws UnknownEntitlement
      */
     public function active(string $name): bool
     {
-        $plan = $this->definitions[$name] ?? throw new InvalidArgumentException("The entitlement [{$name}] is not defined.");
+        $plan = $this->definitions[$name] ?? throw UnknownEntitlement::undefined($name);
 
         return $this->plan()->includes($plan);
     }

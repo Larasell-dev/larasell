@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a1ff8e0cff4d72b60137a2059b268f47",
+    "content-hash": "719846ba9f7b443304f79e98bee77d79",
     "packages": [
         {
             "name": "brick/math",
@@ -1056,6 +1056,65 @@
                 }
             ],
             "time": "2026-07-17T13:53:03+00:00"
+        },
+        {
+            "name": "larasell-dev/chronicle",
+            "version": "v0.2.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Larasell-dev/chronicle.git",
+                "reference": "6a0b019fb75ccd7325cbe012814c7d9c966198f9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Larasell-dev/chronicle/zipball/6a0b019fb75ccd7325cbe012814c7d9c966198f9",
+                "reference": "6a0b019fb75ccd7325cbe012814c7d9c966198f9",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/http": "^12.0|^13.0",
+                "illuminate/log": "^12.0|^13.0",
+                "illuminate/routing": "^12.0|^13.0",
+                "illuminate/support": "^12.0|^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.22",
+                "open-telemetry/api": "^1.10",
+                "open-telemetry/exporter-otlp": "^1.4",
+                "open-telemetry/sdk": "^1.15",
+                "orchestra/testbench": "^10.0|^11.0",
+                "pestphp/pest": "^5.0"
+            },
+            "suggest": {
+                "open-telemetry/api": "Required to use the posthog log driver (^1.10)",
+                "open-telemetry/exporter-otlp": "Required to use the posthog log driver (^1.4)",
+                "open-telemetry/sdk": "Required to use the posthog log driver (^1.15)"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Larasell\\Chronicle\\ChronicleServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Larasell\\Chronicle\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Simple structured request logging for Laravel.",
+            "support": {
+                "issues": "https://github.com/Larasell-dev/chronicle/issues",
+                "source": "https://github.com/Larasell-dev/chronicle/tree/v0.2.7"
+            },
+            "time": "2026-10-12T15:51:43+00:00",
+            "published-time": "2026-10-12T15:52:09+00:00"
         },
         {
             "name": "laravel/framework",
@@ -10388,5 +10447,5 @@
         "php": "^8.3"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

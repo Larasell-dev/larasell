@@ -18,8 +18,10 @@ final class License
 {
     private const SETTING = 'license';
 
+    private const API_URL = 'https://larasell.dev/api/v1/licenses';
+
     /** Denials after which the current lease must not grant anything any more. */
-    private const REVOKING_ERRORS = ['invalid_activation', 'license_revoked', 'license_suspended'];
+    private const REVOKING_ERRORS = ['larasell.licensing.invalid-activation', 'larasell.licensing.license-revoked', 'larasell.licensing.license-suspended'];
 
     public function __construct(private readonly ModelRegistry $models) {}
 
@@ -66,7 +68,7 @@ final class License
         $stored = $this->stored();
 
         if (! isset($stored['activation_id'], $stored['activation_secret'])) {
-            throw new LicenseException('not_activated');
+            throw LicenseException::notActivated();
         }
 
         try {
@@ -76,7 +78,7 @@ final class License
             ]);
         } catch (LicenseException $exception) {
             // An expired license keeps its last lease, which runs out at the end of the grace period.
-            if (in_array($exception->reason, self::REVOKING_ERRORS, true)) {
+            if (in_array($exception->errorCode(), self::REVOKING_ERRORS, true)) {
                 $this->store([...$stored, 'lease' => null]);
             }
 
@@ -111,12 +113,12 @@ final class License
     {
         $response = Http::acceptJson()
             ->timeout(10)
-            ->post(rtrim((string) config('larasell.licensing.url'), '/').'/'.$endpoint, $payload);
+            ->post(self::API_URL.'/'.$endpoint, $payload);
 
         if ($response->failed()) {
             $error = $response->json('error');
 
-            throw new LicenseException(is_string($error) ? $error : 'unavailable');
+            throw is_string($error) ? LicenseException::refused($error) : LicenseException::unavailable($response->status());
         }
 
         return $response;
@@ -127,7 +129,7 @@ final class License
         $publicKey = config('larasell.licensing.public_key');
         $lease = is_string($token) && is_string($publicKey) ? Lease::verify($token, $publicKey, $this->domain()) : null;
 
-        return $lease ?? throw new LicenseException('invalid_lease');
+        return $lease ?? throw LicenseException::invalidLease();
     }
 
     private function domain(): string

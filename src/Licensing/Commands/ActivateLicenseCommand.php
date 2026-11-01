@@ -23,7 +23,8 @@ class ActivateLicenseCommand extends Command
         try {
             $lease = $license->activate($key);
         } catch (LicenseException $exception) {
-            $this->error("The license could not be activated: {$exception->reason}.");
+            $this->error($exception->getMessage());
+            $this->line((string) $exception->errorFix());
 
             return self::FAILURE;
         }
