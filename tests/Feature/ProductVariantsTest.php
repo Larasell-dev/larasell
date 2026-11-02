@@ -25,6 +25,15 @@ it('creates a variant from a valid combination of product attribute values', fun
         ->and($variant->combination_key)->not->toBeEmpty();
 });
 
+it('does not allow backorders unless enabled', function () {
+    [$product, $small, $black] = variantProduct();
+
+    $variant = $product->createVariant([$black, $small], ['stock' => 5]);
+
+    expect($product->fresh()->allow_backorders)->toBeFalse()
+        ->and($variant->fresh()->allowsBackorders())->toBeFalse();
+});
+
 it('rejects a variant containing two values from the same attribute', function () {
     [$product, $small] = variantProduct();
     $medium = $small->attribute->values()->create([
