@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.0](https://github.com/Larasell-dev/larasell/compare/v1.20.0...v1.21.0) (2026-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* ProductAttribute::name and ProductAttributeValue::name are Translatable instead of string.
+* Locale enum values use hyphens instead of underscores, and Translatable falls back to larasell.locale.default instead of app.fallback_locale. A migration renames stored translation keys.
+
+### Features
+
+* make product attribute and value names translatable ([#145](https://github.com/Larasell-dev/larasell/issues/145)) ([d144986](https://github.com/Larasell-dev/larasell/commit/d144986bebb60deb16584123b1e9af984c33d3ab))
+* use BCP 47 locale tags and configure supported locales ([#144](https://github.com/Larasell-dev/larasell/issues/144)) ([a1cf928](https://github.com/Larasell-dev/larasell/commit/a1cf928fdde99d1cccaf01dd654fef30b0118d7f))
+
 ## [1.20.0](https://github.com/Larasell-dev/larasell/compare/v1.19.1...v1.20.0) (2026-11-01)
 
 
