@@ -26,3 +26,13 @@ installed with:
   ```bash
   laravel new --using larasell-dev/starter-kit my-store
   ```
+
+### Releases and breaking changes
+
+Releases are cut by release-please from conventional commit titles. Every
+release bumps the patch version, features included. A release that contains a
+breaking change bumps the major version.
+
+Every breaking change needs a `!` in the pull request title, e.g.
+`feat!: ...`, and an upgrade note in `breaking-changes/`. Follow
+[`breaking-changes/AGENT.md`](breaking-changes/AGENT.md) when writing one.
