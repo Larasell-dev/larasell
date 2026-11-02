@@ -22,7 +22,7 @@ included, into the GitHub release.
 Releases bump the patch version, even for features. While this directory holds
 a note, the release workflow switches release-please to
 [`release-please-config.breaking.json`](../release-please-config.breaking.json)
-and the next release bumps the major version instead. Keep both config files
+and the next release bumps the minor version instead. Keep both config files
 identical apart from `versioning`.
 
 CI fails when a pull request adds a file here without a `!` title, or has a `!`

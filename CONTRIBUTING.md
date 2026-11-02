@@ -31,7 +31,7 @@ installed with:
 
 Releases are cut by release-please from conventional commit titles. Every
 release bumps the patch version, features included. A release that contains a
-breaking change bumps the major version.
+breaking change bumps the minor version.
 
 Every breaking change needs a `!` in the pull request title, e.g.
 `feat!: ...`, and an upgrade note in `breaking-changes/`. Follow

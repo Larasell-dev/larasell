@@ -41,7 +41,7 @@ function check() {
   }
   if (!breaking && added.length > 0) {
     fail(
-      `This pull request adds ${added.join(", ")}, but its title is not marked as breaking. Add "!" after the type, e.g. "feat!: ...", so the release bumps the major version.`,
+      `This pull request adds ${added.join(", ")}, but its title is not marked as breaking. Add "!" after the type, e.g. "feat!: ...", so the release bumps the minor version.`,
     );
   }
   for (const file of added) {
@@ -73,7 +73,7 @@ function toChangelog(markdown) {
 const notesInDir = () => readdirSync(path.join(root, dir)).filter(isNote).sort();
 
 // Notes stay on main until a release bundles them, so any note there means the next release
-// contains a breaking change and must bump the major version.
+// contains a breaking change and must bump the minor version.
 function pending() {
   console.log(notesInDir().length > 0 ? "true" : "false");
 }
