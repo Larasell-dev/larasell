@@ -2,9 +2,11 @@
 
 namespace Larasell\Larasell;
 
+use Illuminate\Support\Facades\App;
 use InvalidArgumentException;
 use JsonSerializable;
 use Larasell\Larasell\Enums\Currency as LarasellCurrency;
+use Larasell\Larasell\Enums\Locale;
 use NumberFormatter;
 use RuntimeException;
 
@@ -101,10 +103,10 @@ final readonly class Price implements JsonSerializable
         return self::of(bcmul($this->amount, (string) $multiplier, 0));
     }
 
-    public static function format(self $price, LarasellCurrency|string $currency, ?string $locale = null): string
+    public static function format(self $price, LarasellCurrency|string $currency, Locale|string|null $locale = null): string
     {
         $currency = $currency instanceof LarasellCurrency ? $currency : LarasellCurrency::from(strtoupper($currency));
-        $formatter = new NumberFormatter($locale ?? \Locale::getDefault(), NumberFormatter::CURRENCY);
+        $formatter = new NumberFormatter($locale instanceof Locale ? $locale->value : ($locale ?? App::currentLocale()), NumberFormatter::CURRENCY);
         $majorAmount = bcdiv($price->amount, bcpow('10', (string) $currency->minorUnitDigits(), 0), $currency->minorUnitDigits());
         $formatted = $formatter->formatCurrency((float) $majorAmount, $currency->value);
 

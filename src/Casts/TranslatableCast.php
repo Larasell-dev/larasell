@@ -6,6 +6,7 @@ use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use JsonException;
+use Larasell\Larasell\Settings\LocaleSettings;
 use Larasell\Larasell\Translatable;
 
 /**
@@ -22,7 +23,7 @@ class TranslatableCast implements CastsAttributes
         try {
             $decoded = json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return Translatable::fromString($value, (string) config('app.fallback_locale', 'en'));
+            return Translatable::fromString($value, app(LocaleSettings::class)->default()->value);
         }
 
         if (! is_array($decoded) || $decoded === []) {

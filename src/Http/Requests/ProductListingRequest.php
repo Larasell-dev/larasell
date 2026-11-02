@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
 use Larasell\Larasell\Database\TrustedSqlExpression;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Product;
@@ -45,7 +46,7 @@ class ProductListingRequest extends FormRequest
         }
 
         return $this->resolvedCategory = app(ModelRegistry::class)->category->query()
-            ->where('slug->'.App::currentLocale(), $slug)
+            ->where('slug->'.Locale::canonicalize(App::currentLocale()), $slug)
             ->firstOrFail();
     }
 
@@ -124,7 +125,7 @@ class ProductListingRequest extends FormRequest
         $driver = $query->getModel()->getConnection()->getDriverName();
         $column = $query->getModel()->qualifyColumn('name');
         $wrappedColumn = $query->getModel()->getConnection()->getQueryGrammar()->wrap($column);
-        $locale = str_replace("'", "''", App::currentLocale());
+        $locale = Locale::canonicalize(App::currentLocale());
 
         return match ($driver) {
             'mysql', 'mariadb' => "JSON_UNQUOTE(JSON_EXTRACT({$wrappedColumn}, '$.\"{$locale}\"'))",

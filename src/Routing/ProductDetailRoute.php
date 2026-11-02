@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route as RouteFacade;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Models\ModelRegistry;
 
 class ProductDetailRoute
@@ -14,7 +15,7 @@ class ProductDetailRoute
     {
         RouteFacade::bind('product', function (string $value): Model {
             return app(ModelRegistry::class)->product->query()
-                ->where('slug->'.App::currentLocale(), $value)
+                ->where('slug->'.Locale::canonicalize(App::currentLocale()), $value)
                 ->firstOrFail();
         });
 

@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\App;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Price;
 
 it('stores a currency-independent amount in minor units', function () {
@@ -22,6 +24,13 @@ it('supports arbitrary precision addition and multiplication', function () {
 it('formats an amount with the supplied currency', function () {
     expect(Price::format(Price::of(1299), Currency::USD, 'en_US'))->toBe('$12.99')
         ->and(Price::format(Price::of(1299), Currency::JPY, 'en_US'))->toBe('¥1,299');
+});
+
+it('formats an amount for a Locale case or the current app locale', function () {
+    App::setLocale('de-DE');
+
+    expect(Price::format(Price::of(129900), Currency::EUR))->toBe("1.299,00\u{a0}€")
+        ->and(Price::format(Price::of(129900), Currency::EUR, Locale::ENGLISH_UNITED_STATES))->toBe('€1,299.00');
 });
 
 it('rejects amounts that are not integer minor units', function () {

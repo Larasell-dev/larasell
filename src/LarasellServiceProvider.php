@@ -42,6 +42,7 @@ class LarasellServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
+        $this->mergeConfigFrom(__DIR__.'/../config/larasell/locale.php', 'larasell.locale');
 
         $this->app->singleton(ShippingManager::class);
         $this->app->singleton(PaymentManager::class);
@@ -109,6 +110,7 @@ class LarasellServiceProvider extends ServiceProvider
 
             $this->publishes([
                 __DIR__.'/../config/larasell.php' => config_path('larasell.php'),
+                __DIR__.'/../config/larasell/locale.php' => config_path('larasell/locale.php'),
             ], 'larasell-config');
 
             $this->publishes([
