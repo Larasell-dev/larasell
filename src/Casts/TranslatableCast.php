@@ -22,7 +22,7 @@ class TranslatableCast implements CastsAttributes
         try {
             $decoded = json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return Translatable::fromString($value, (string) config('app.fallback_locale', 'en'));
+            return Translatable::fromString($value, (string) config('larasell.locale.default', 'en'));
         }
 
         if (! is_array($decoded) || $decoded === []) {
