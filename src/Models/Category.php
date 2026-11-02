@@ -21,6 +21,7 @@ use Larasell\Larasell\Translatable;
  * @property Translatable $slug
  * @property Translatable $name
  * @property Visibility $status
+ * @property int $position
  *
  * @method static Builder<static> root()
  */
@@ -37,7 +38,24 @@ class Category extends Model
         'slug' => TranslatableCast::class,
         'name' => TranslatableCast::class,
         'status' => Visibility::class,
+        'position' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        // A new category goes after its siblings, unless it is given a position.
+        static::creating(function (self $category): void {
+            if ($category->getAttribute('position') !== null) {
+                return;
+            }
+
+            $last = $category->newQuery()
+                ->where('parent_id', $category->parent_id)
+                ->max('position');
+
+            $category->position = $last === null ? 0 : (int) $last + 1;
+        });
+    }
 
     /**
      * @return BelongsTo<self, $this>
@@ -55,10 +73,10 @@ class Category extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(
+        return $this->ordered($this->hasMany(
             $this->categoryModel(),
             'parent_id'
-        );
+        ));
     }
 
     /**
@@ -74,9 +92,9 @@ class Category extends Model
      */
     public function siblings(): Siblings
     {
-        return $this->onlyVisible(
+        return $this->ordered($this->onlyVisible(
             $this->newSiblingsRelation()
-        );
+        ));
     }
 
     /**
@@ -86,7 +104,7 @@ class Category extends Model
     #[Scope]
     protected function root(Builder $query): Builder
     {
-        return $this->onlyVisible($query)->whereNull('parent_id');
+        return $this->ordered($this->onlyVisible($query)->whereNull('parent_id'));
     }
 
     /**
@@ -126,6 +144,19 @@ class Category extends Model
         $query = $this->newRelatedCategoryQuery();
 
         return new Siblings($query, $this);
+    }
+
+    /**
+     * @template TQuery of Builder<self>|HasMany<self, $this>|Siblings<self>
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private function ordered(Builder|HasMany|Siblings $query): Builder|HasMany|Siblings
+    {
+        $query->orderBy('position')->orderBy('id');
+
+        return $query;
     }
 
     /**
