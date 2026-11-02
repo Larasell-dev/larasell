@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0](https://github.com/Larasell-dev/larasell/compare/v1.21.0...v1.22.0) (2026-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* products no longer allow backorders unless allow_backorders is set to true.
+
+### Features
+
+* add a position to categories to define their order ([c51fe51](https://github.com/Larasell-dev/larasell/commit/c51fe51b26544e0e44b59c6ef254af4119f8669a))
+* disable backorders by default ([b0a7fc8](https://github.com/Larasell-dev/larasell/commit/b0a7fc8068aa8156deaa7096cf8087c59fc1b196))
+
 ## [1.21.0](https://github.com/Larasell-dev/larasell/compare/v1.20.0...v1.21.0) (2026-11-02)
 
 
