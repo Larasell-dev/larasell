@@ -105,7 +105,11 @@ final class LocaleSettings
 
     private static function locale(mixed $tag, string $key): Locale
     {
-        $locale = is_string($tag) ? Locale::tryFrom(Locale::canonicalize($tag)) : null;
+        $locale = match (true) {
+            $tag instanceof Locale => $tag,
+            is_string($tag) => Locale::tryFrom(Locale::canonicalize($tag)),
+            default => null,
+        };
 
         if ($locale === null) {
             throw new InvalidArgumentException("[{$key}] contains an unknown locale.");

@@ -16,6 +16,14 @@ it('reads configured locales in canonical form', function () {
         ->and(app(LocaleSettings::class)->default())->toBe(Locale::GERMAN_GERMANY);
 });
 
+it('reads configured Locale cases', function () {
+    config()->set('larasell.locale.supported', [Locale::ENGLISH, 'de']);
+    config()->set('larasell.locale.default', Locale::GERMAN);
+
+    expect(app(LocaleSettings::class)->supported())->toBe([Locale::ENGLISH, Locale::GERMAN])
+        ->and(app(LocaleSettings::class)->default())->toBe(Locale::GERMAN);
+});
+
 it('rejects a default locale that is not supported', function () {
     config()->set('larasell.locale.supported', ['en']);
     config()->set('larasell.locale.default', 'de');

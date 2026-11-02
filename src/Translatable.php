@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\App;
 use InvalidArgumentException;
 use JsonSerializable;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\Settings\LocaleSettings;
 
 final readonly class Translatable implements JsonSerializable
 {
@@ -39,7 +40,7 @@ final readonly class Translatable implements JsonSerializable
 
     public function get(?string $locale = null): string
     {
-        $default = self::locale((string) config('larasell.locale.default', 'en'));
+        $default = app(LocaleSettings::class)->default()->value;
 
         foreach (array_unique([...Locale::lookupChain(self::locale($locale)), ...Locale::lookupChain($default)]) as $candidate) {
             if (isset($this->translations[$candidate])) {

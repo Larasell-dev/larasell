@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\App;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Translatable;
 
 it('resolves translations using the laravel locale', function () {
@@ -49,7 +50,8 @@ it('falls back through each shorter prefix of a tag with a script', function () 
 });
 
 it('falls back to the default locale of the shop', function () {
-    config()->set('larasell.locale.default', 'de');
+    config()->set('larasell.locale.supported', [Locale::ENGLISH, Locale::GERMAN]);
+    config()->set('larasell.locale.default', Locale::GERMAN);
     config()->set('app.fallback_locale', 'en');
     $title = new Translatable(['en' => 'Desk lamp', 'de' => 'Schreibtischlampe']);
 

@@ -26,8 +26,10 @@ php artisan vendor:publish --tag=larasell-config
 'fallback_locale' => 'de',
 
 // After: config/larasell/locale.php
+use Larasell\Larasell\Enums\Locale;
+
 return [
-    'supported' => ['de', 'en'],
-    'default' => 'de',
+    'supported' => [Locale::GERMAN, Locale::ENGLISH],
+    'default' => Locale::GERMAN,
 ];
 ```
