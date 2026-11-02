@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
+use Larasell\Larasell\Casts\TranslatableCast;
+use Larasell\Larasell\Translatable;
 
 /**
  * @property int $id
  * @property int $product_attribute_id
  * @property string $slug
- * @property string $name
+ * @property Translatable $name
  * @property mixed $value
  * @property int|null $position
  * @property ProductAttribute $attribute
@@ -29,6 +31,7 @@ class ProductAttributeValue extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'name' => TranslatableCast::class,
         'position' => 'integer',
     ];
 

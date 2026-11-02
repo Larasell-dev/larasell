@@ -194,10 +194,10 @@ class ProductVariant extends Model
                 $value->attribute->slug => [
                     'attribute_id' => $value->attribute->id,
                     'attribute_slug' => $value->attribute->slug,
-                    'attribute_name' => $value->attribute->name,
+                    'attribute_name' => $value->attribute->name->get(),
                     'value_id' => $value->id,
                     'value_slug' => $value->slug,
-                    'value_name' => $value->name,
+                    'value_name' => $value->name->get(),
                 ],
             ])
             ->all();
