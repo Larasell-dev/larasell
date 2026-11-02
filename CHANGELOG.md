@@ -12,6 +12,51 @@
 * add a position to categories to define their order ([c51fe51](https://github.com/Larasell-dev/larasell/commit/c51fe51b26544e0e44b59c6ef254af4119f8669a))
 * disable backorders by default ([b0a7fc8](https://github.com/Larasell-dev/larasell/commit/b0a7fc8068aa8156deaa7096cf8087c59fc1b196))
 
+### Upgrade guide
+
+#### Products no longer allow backorders by default
+
+`larasell_products.allow_backorders` now defaults to `false` instead of `true`,
+so a product created without `allow_backorders` can't be sold beyond its stock.
+Allowing overselling should be an explicit choice, not an accident.
+
+##### Who is affected
+
+Apps that create products without setting `allow_backorders` and rely on them
+accepting orders when stock runs out. Existing products keep their stored
+value; only products created after running the migration are affected. Apps
+that always set `allow_backorders` explicitly are not affected.
+
+##### How to upgrade
+
+Run the new migration:
+
+```bash
+php artisan migrate
+```
+
+Then pass `allow_backorders` wherever products should still accept backorders:
+
+```php
+use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Price;
+
+// Before
+Product::create([
+    'slug' => 'gift-card',
+    'name' => 'Gift card',
+    'price' => Price::of(2500),
+]);
+
+// After
+Product::create([
+    'slug' => 'gift-card',
+    'name' => 'Gift card',
+    'price' => Price::of(2500),
+    'allow_backorders' => true,
+]);
+```
+
 ## [1.21.0](https://github.com/Larasell-dev/larasell/compare/v1.20.0...v1.21.0) (2026-11-02)
 
 
