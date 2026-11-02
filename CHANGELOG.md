@@ -13,6 +13,134 @@
 * make product attribute and value names translatable ([#145](https://github.com/Larasell-dev/larasell/issues/145)) ([d144986](https://github.com/Larasell-dev/larasell/commit/d144986bebb60deb16584123b1e9af984c33d3ab))
 * use BCP 47 locale tags and configure supported locales ([#144](https://github.com/Larasell-dev/larasell/issues/144)) ([a1cf928](https://github.com/Larasell-dev/larasell/commit/a1cf928fdde99d1cccaf01dd654fef30b0118d7f))
 
+### Upgrade guide
+
+#### Product attribute and value names are now `Translatable`
+
+`ProductAttribute::$name` and `ProductAttributeValue::$name` are now
+`Larasell\Larasell\Translatable` instances instead of strings, like product and
+category names. Variant options such as "Color" and "Red" can now be shown in
+the visitor's language.
+
+##### Who is affected
+
+Code that reads `name` on a `ProductAttribute` or `ProductAttributeValue` and
+treats it as a string, for example by printing it, comparing it, or calling
+`pluck('name')`.
+
+`ProductVariant::options()` and `ProductVariant::name()` keep returning strings,
+now in the current locale. Code that only uses them is not affected. Writing
+plain strings keeps working: they are stored for the current locale.
+
+##### How to upgrade
+
+Run the migrations. They turn every existing name into a translation for
+`larasell.locale.default`.
+
+```bash
+php artisan migrate
+```
+
+Call `get()` where you need the text:
+
+```php
+// Before
+$attribute->name; // 'Color'
+$attribute->values()->pluck('name');
+
+// After
+$attribute->name->get(); // 'Color', or 'Farbe' when the locale is 'de'
+$attribute->values->map(fn ($value) => $value->name->get());
+```
+
+Translate names the same way as product names:
+
+```php
+use Larasell\Larasell\Models\ProductAttribute;
+
+ProductAttribute::create(['slug' => 'color', 'name' => ['en' => 'Color', 'de' => 'Farbe']]);
+```
+
+#### `Locale` values are now BCP 47 tags (`de-DE` instead of `de_DE`)
+
+Every value of `Larasell\Larasell\Enums\Locale` that has a region or script now
+uses a hyphen, as in `de-DE`, `zh-Hans` and `es-419`. Translation keys are stored
+the same way. This is the format HTTP headers, HTML `lang` and `hreflang` use, so
+no conversion is needed at the HTTP boundary. Script locales like `zh-Hans`,
+which `Translatable` used to reject, now work.
+
+##### Who is affected
+
+- Code that stores, compares or hard-codes `Locale->value`, or calls
+  `Locale::from()` with an underscore value such as `'de_DE'`.
+- Code that reads translation JSON (`name`, `slug`, `description`,
+  `product_name`) directly from the database, or queries it with paths like
+  `slug->de_DE`.
+
+Apps that only use base locales such as `en` and `de` are not affected: their
+values did not change. `App::setLocale('de_DE')` keeps working, and
+`Translatable` accepts underscore keys and stores them as hyphens.
+
+##### How to upgrade
+
+Run the migration. It renames stored translation keys from `de_DE` to `de-DE`
+and can be rolled back.
+
+```bash
+php artisan migrate
+```
+
+Replace underscore values in your code, or canonicalize input first:
+
+```php
+use Larasell\Larasell\Enums\Locale;
+
+// Before
+Locale::from('de_DE');
+$query->where('slug->de_DE', $slug);
+
+// After
+Locale::from('de-DE');
+Locale::from(Locale::canonicalize('de_DE')); // for input in any case or style
+$query->where('slug->de-DE', $slug);
+```
+
+#### Translations fall back to `larasell.locale.default`, not `app.fallback_locale`
+
+When a translation is missing in the requested locale, `Translatable::get()` now
+falls back to the shop's default locale from the new
+`config/larasell/locale.php`. Plain string values read from the database are
+stored under that locale too. This gives a shop one setting for its default
+language, next to the list of locales it supports.
+
+##### Who is affected
+
+Apps that set `app.fallback_locale` to something other than `en`. Apps whose
+`app.fallback_locale` is `en` are not affected, because
+`larasell.locale.default` also defaults to `en`.
+
+##### How to upgrade
+
+Publish the config and set the default to your previous `app.fallback_locale`.
+The default must also be in `supported`.
+
+```bash
+php artisan vendor:publish --tag=larasell-config
+```
+
+```php
+// Before: config/app.php
+'fallback_locale' => 'de',
+
+// After: config/larasell/locale.php
+use Larasell\Larasell\Enums\Locale;
+
+return [
+    'supported' => [Locale::GERMAN, Locale::ENGLISH],
+    'default' => Locale::GERMAN,
+];
+```
+
 ## [1.20.0](https://github.com/Larasell-dev/larasell/compare/v1.19.1...v1.20.0) (2026-11-01)
 
 
