@@ -26,7 +26,7 @@ it('defines values for a product attribute', function () {
         'position' => 1,
     ]);
 
-    expect($attribute->values()->orderBy('position')->pluck('name')->all())->toBe(['Small', 'Large'])
+    expect($attribute->values()->orderBy('position')->get()->map(fn (ProductAttributeValue $value): string => $value->name->get())->all())->toBe(['Small', 'Large'])
         ->and($small->product_attribute_id)->toBe($attribute->id)
         ->and($large->position)->toBe(1);
 });
@@ -61,9 +61,9 @@ it('assigns attribute values to a product', function () {
     $product = $product->fresh('attributeValues.attribute');
 
     expect($product->attributeValues)->toHaveCount(2)
-        ->and($product->attributeValues->pluck('name')->all())->toBe(['Small', 'Black'])
+        ->and($product->attributeValues->map(fn (ProductAttributeValue $value): string => $value->name->get())->all())->toBe(['Small', 'Black'])
         ->and($product->attributeValues->first()->attribute)->toBeInstanceOf(ProductAttribute::class)
-        ->and($product->attributeValues->first()->attribute->name)->toBe('Size');
+        ->and($product->attributeValues->first()->attribute->name->get())->toBe('Size');
 });
 
 it('can eager load attribute values and their attributes with a scope', function () {
@@ -89,7 +89,7 @@ it('can eager load attribute values and their attributes with a scope', function
 
     expect($product->relationLoaded('attributeValues'))->toBeTrue()
         ->and($product->attributeValues->first()->relationLoaded('attribute'))->toBeTrue()
-        ->and($product->attributeValues->first()->attribute->name)->toBe('Size');
+        ->and($product->attributeValues->first()->attribute->name->get())->toBe('Size');
 });
 
 it('can query products from an attribute value', function () {
