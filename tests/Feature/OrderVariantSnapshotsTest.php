@@ -36,6 +36,22 @@ it('snapshots the selected variant and its ordered attribute labels', function (
         ]);
 });
 
+it('snapshots variant names in the checkout locale', function () {
+    [$cart, $variant, $size, $small, $color, $black] = orderSnapshotVariantCart();
+    $size->update(['name' => ['en' => 'Size', 'de' => 'Größe']]);
+    $small->update(['name' => ['en' => 'Small', 'de' => 'Klein']]);
+    $black->update(['name' => ['en' => 'Black', 'de' => 'Schwarz']]);
+    $cart->add($variant);
+
+    App::setLocale('de');
+    $item = orderSnapshotCheckout($cart)->items->sole();
+
+    expect($item->variant_name)->toBe('Klein / Schwarz')
+        ->and($item->variant_options['size']['attribute_name'])->toBe('Größe')
+        ->and($item->variant_options['size']['value_name'])->toBe('Klein')
+        ->and($item->variant_options['color']['attribute_name'])->toBe('Color');
+});
+
 it('keeps variant snapshots unchanged when catalog data changes', function () {
     [$cart, $variant, $size, $small] = orderSnapshotVariantCart();
     $cart->add($variant);
