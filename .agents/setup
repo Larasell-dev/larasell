@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Prepares an Amp orb (Debian 12) to build, test, and lint this package.
+# Runs on fresh orbs and again on stale snapshots, so every step is idempotent.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+PHP_VERSION=8.4 # Matches .github/workflows/ci.yml
+
+step() {
+  local name="$1"
+  shift
+  local start=$SECONDS
+  echo "==> $name"
+  "$@"
+  echo "<== $name ($((SECONDS - start))s)"
+}
+
+install_php() {
+  local packages=(
+    "php$PHP_VERSION-cli"
+    "php$PHP_VERSION-bcmath"
+    "php$PHP_VERSION-curl"
+    "php$PHP_VERSION-gd"
+    "php$PHP_VERSION-intl"
+    "php$PHP_VERSION-mbstring"
+    "php$PHP_VERSION-mysql"
+    "php$PHP_VERSION-pgsql"
+    "php$PHP_VERSION-sqlite3"
+    "php$PHP_VERSION-xml"
+    "php$PHP_VERSION-zip"
+    unzip
+  )
+  local missing=()
+  local package
+  for package in "${packages[@]}"; do
+    dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q 'install ok installed' || missing+=("$package")
+  done
+  if [ ${#missing[@]} -eq 0 ]; then
+    echo "PHP $PHP_VERSION packages already installed"
+    return
+  fi
+
+  if [ ! -f /etc/apt/sources.list.d/php.list ]; then
+    sudo apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ca-certificates curl lsb-release
+    sudo curl -fsSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" |
+      sudo tee /etc/apt/sources.list.d/php.list >/dev/null
+  fi
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
+  sudo update-alternatives --set php "/usr/bin/php$PHP_VERSION"
+}
+
+install_composer() {
+  if command -v composer >/dev/null 2>&1; then
+    composer --version
+    return
+  fi
+  local tmp
+  tmp="$(mktemp -d)"
+  curl -fsSLo "$tmp/composer-setup.php" https://getcomposer.org/installer
+  local expected actual
+  expected="$(curl -fsSL https://composer.github.io/installer.sig)"
+  actual="$(php -r "echo hash_file('sha384', '$tmp/composer-setup.php');")"
+  if [ "$expected" != "$actual" ]; then
+    echo "Composer installer checksum mismatch" >&2
+    rm -rf "$tmp"
+    exit 1
+  fi
+  sudo php "$tmp/composer-setup.php" --quiet --install-dir=/usr/local/bin --filename=composer
+  rm -rf "$tmp"
+  composer --version
+}
+
+composer_install() {
+  composer install --no-interaction --no-progress --prefer-dist
+}
+
+npm_install() {
+  npm ci --no-audit --no-fund
+}
+
+step "Install PHP $PHP_VERSION" install_php
+step "Install Composer" install_composer
+step "Install Composer dependencies" composer_install
+step "Install npm dependencies" npm_install
