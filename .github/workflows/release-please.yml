@@ -1,9 +1,9 @@
 name: Release Please
 
-# Releases bump the patch version, features included, and bump the major version when they
+# Releases bump the patch version, features included, and bump the minor version when they
 # contain a breaking change. release-please has no such setting for versions from 1.0, so there
 # are two configs that differ only in "versioning": release-please-config.json always bumps the
-# patch version, release-please-config.breaking.json always bumps the major version. Upgrade
+# patch version, release-please-config.breaking.json always bumps the minor version. Upgrade
 # notes in breaking-changes/ stay on main until a release bundles them, and the breaking-changes
 # workflow requires one for every "!" pull request, so the breaking config is used while any
 # note is on main.
@@ -50,7 +50,7 @@ jobs:
         id: bump
         run: |
           if [ "$(node scripts/breaking-changes.mjs pending)" = true ]; then
-            echo 'Unreleased breaking changes found, bumping the major version.'
+            echo 'Unreleased breaking changes found, bumping the minor version.'
             echo 'config-file=release-please-config.breaking.json' >> "$GITHUB_OUTPUT"
           else
             echo 'No unreleased breaking changes, bumping the patch version.'
