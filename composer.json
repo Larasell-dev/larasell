@@ -52,7 +52,7 @@
     "ext-bcmath": "*",
     "ext-intl": "*",
     "laravel/framework": "^13.23",
-    "php": "^8.3",
+    "php": "^8.4",
     "larasell-dev/chronicle": "^0.2.7"
   },
   "scripts": {
