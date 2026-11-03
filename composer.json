@@ -53,7 +53,7 @@
     "ext-intl": "*",
     "laravel/framework": "^13.23",
     "php": "^8.4",
-    "larasell-dev/chronicle": "^0.2.7"
+    "larasell-dev/chronicle": "^0.4"
   },
   "scripts": {
     "pest": "pest tests --parallel",
