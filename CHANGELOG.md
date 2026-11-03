@@ -17,6 +17,77 @@
 
 * require PHP 8.4 ([bc8bb56](https://github.com/Larasell-dev/larasell/commit/bc8bb56b5931d79ffe82a99a9eef8558594d5080))
 
+### Upgrade guide
+
+#### Larasell uses Chronicle 0.4
+
+Larasell's structured exceptions, `LicenseException` and `UnknownEntitlement`, now implement
+Chronicle 0.4's `Larasell\Chronicle\Exceptions\StructuredException` instead of
+`Larasell\Chronicle\StructuredError`. Chronicle 0.4 bounds and redacts every event it logs and adds
+a fake for tests, and Larasell needs it so apps and the admin panel can upgrade too.
+
+##### Who is affected
+
+- Apps that catch Larasell's exceptions as `Larasell\Chronicle\StructuredError`.
+- Apps that use Chronicle themselves, e.g. its `LogRequests` middleware or structured exceptions.
+  Composer now installs Chronicle 0.4, so follow
+  [Chronicle's upgrade guide](https://github.com/Larasell-dev/chronicle/blob/main/CHANGELOG.md).
+
+Apps that catch `LicenseException` or `UnknownEntitlement` by name, or only read `errorCode()`,
+`errorWhy()`, `errorFix()` and `errorLink()`, are not affected.
+
+##### How to upgrade
+
+Catch the new interface:
+
+```php
+// Before
+use Larasell\Chronicle\StructuredError;
+
+try {
+    $license->activate($key);
+} catch (StructuredError $exception) {
+    report($exception);
+}
+
+// After
+use Larasell\Chronicle\Exceptions\StructuredException;
+
+try {
+    $license->activate($key);
+} catch (StructuredException $exception) {
+    report($exception);
+}
+```
+
+#### Larasell requires PHP 8.4
+
+Larasell now needs PHP 8.4 or newer. Chronicle, the logging package Larasell is built on, requires
+PHP 8.4 from version 0.3.0, and Larasell's CI already runs on PHP 8.4 only, so PHP 8.3 was
+untested.
+
+##### Who is affected
+
+Apps that run on PHP 8.3. Composer won't install this version of Larasell there. Apps on PHP 8.4
+or 8.5 are not affected.
+
+##### How to upgrade
+
+Upgrade PHP to 8.4 or newer on every server and in CI, then raise the PHP requirement in your
+app's `composer.json`:
+
+```json
+// Before
+"require": {
+    "php": "^8.3"
+}
+
+// After
+"require": {
+    "php": "^8.4"
+}
+```
+
 ## [1.22.0](https://github.com/Larasell-dev/larasell/compare/v1.21.0...v1.22.0) (2026-11-02)
 
 
