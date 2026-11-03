@@ -2,16 +2,16 @@
 
 namespace Larasell\Larasell\Exceptions\Licensing;
 
-use Larasell\Chronicle\HasStructuredError;
-use Larasell\Chronicle\StructuredError;
+use Larasell\Chronicle\Exceptions\HasStructuredException;
+use Larasell\Chronicle\Exceptions\StructuredException;
 use RuntimeException;
 
 /**
  * larasell.dev refused to activate or renew the license, or could not be reached.
  */
-class LicenseException extends RuntimeException implements StructuredError
+class LicenseException extends RuntimeException implements StructuredException
 {
-    use HasStructuredError;
+    use HasStructuredException;
 
     /**
      * @param  string  $reason  the machine-readable reason larasell.dev answered with, e.g. "license_expired"
@@ -31,7 +31,7 @@ class LicenseException extends RuntimeException implements StructuredError
         };
 
         return static::structured(
-            code: 'larasell.licensing.'.str_replace('_', '-', $reason),
+            errorCode: 'larasell.licensing.'.str_replace('_', '-', $reason),
             message: "larasell.dev refused the license: {$reason}.",
             why: $why,
             fix: $fix,
@@ -41,7 +41,7 @@ class LicenseException extends RuntimeException implements StructuredError
     public static function unavailable(int $status): static
     {
         return static::structured(
-            code: 'larasell.licensing.unavailable',
+            errorCode: 'larasell.licensing.unavailable',
             message: "larasell.dev could not check the license (HTTP {$status}).",
             why: 'The license API failed or answered without a reason.',
             fix: 'Try again later. The shop keeps its current lease until it expires.',
@@ -51,7 +51,7 @@ class LicenseException extends RuntimeException implements StructuredError
     public static function invalidLease(): static
     {
         return static::structured(
-            code: 'larasell.licensing.invalid-lease',
+            errorCode: 'larasell.licensing.invalid-lease',
             message: 'The lease from larasell.dev is not valid for this shop.',
             why: 'Its signature, domain or expiry did not check out, so it may be forged or meant for another shop.',
             fix: 'Check that APP_URL is the domain the license was activated for.',
@@ -61,7 +61,7 @@ class LicenseException extends RuntimeException implements StructuredError
     public static function notActivated(): static
     {
         return static::structured(
-            code: 'larasell.licensing.not-activated',
+            errorCode: 'larasell.licensing.not-activated',
             message: 'This installation has no activated license to renew.',
             why: 'larasell:license:activate has not run here, or its activation was lost.',
             fix: 'Run php artisan larasell:license:activate with the key from your larasell.dev dashboard.',
