@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.23.0](https://github.com/Larasell-dev/larasell/compare/v1.22.0...v1.23.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrade Chronicle to 0.4
+* require PHP 8.4
+
+### Features
+
+* upgrade Chronicle to 0.4 ([1aec70d](https://github.com/Larasell-dev/larasell/commit/1aec70ddc1f7f33f9fff66181bb71b9fc5906280))
+
+
+### Build System
+
+* require PHP 8.4 ([bc8bb56](https://github.com/Larasell-dev/larasell/commit/bc8bb56b5931d79ffe82a99a9eef8558594d5080))
+
 ## [1.22.0](https://github.com/Larasell-dev/larasell/compare/v1.21.0...v1.22.0) (2026-11-02)
 
 
