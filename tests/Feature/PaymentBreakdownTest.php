@@ -132,7 +132,6 @@ function configurePaymentBreakdown(TaxPriceMode $priceMode): void
 function paymentBreakdownCart(int $price, int $quantity = 1): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'payment-breakdown-'.fake()->unique()->numerify('######'),
         'name' => 'Payment breakdown product',
         'price' => Price::of($price),
         'sku' => 'PAYMENT-BREAKDOWN',

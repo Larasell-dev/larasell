@@ -11,7 +11,6 @@ it('exposes the first ordered product image as the thumbnail', function () {
     config()->set('larasell.images.disk', 'product-images');
 
     $product = Product::query()->create([
-        'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
         'price' => Price::of(4999),
     ]);
@@ -36,7 +35,6 @@ it('exposes the first ordered product image as the thumbnail', function () {
 
 it('returns a null thumbnail when a product has no images', function () {
     $product = Product::query()->create([
-        'slug' => 'plain-tee',
         'name' => 'Plain tee',
         'price' => Price::of(1000),
     ]);

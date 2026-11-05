@@ -8,7 +8,6 @@ use Larasell\Larasell\Price;
 
 it('defaults products to no compare-at price', function () {
     $product = Product::create([
-        'slug' => 'plain-tee',
         'name' => 'Plain tee',
         'price' => Price::of(1000),
     ]);
@@ -21,7 +20,6 @@ it('defaults products to no compare-at price', function () {
 
 it('treats a product as on sale when compare-at is higher than the selling price', function () {
     $product = Product::create([
-        'slug' => 'sale-tee',
         'name' => 'Sale tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(1500),
@@ -35,7 +33,6 @@ it('treats a product as on sale when compare-at is higher than the selling price
 
 it('does not treat a product as on sale when compare-at is missing, equal, or lower', function (mixed $compareAt) {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => 'Reference tee',
         'price' => Price::of(1000),
         'compare_at' => $compareAt,
@@ -51,7 +48,6 @@ it('does not treat a product as on sale when compare-at is missing, equal, or lo
 
 it('keeps a leftover compare-at when a sale ends by raising the selling price first', function () {
     $product = Product::create([
-        'slug' => 'ended-sale-tee',
         'name' => 'Ended sale tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(1500),
@@ -67,7 +63,6 @@ it('keeps a leftover compare-at when a sale ends by raising the selling price fi
 
 it('allows setting compare-at before lowering the selling price', function () {
     $product = Product::create([
-        'slug' => 'upcoming-sale-tee',
         'name' => 'Upcoming sale tee',
         'price' => Price::of(1500),
     ]);
@@ -86,7 +81,6 @@ it('allows setting compare-at before lowering the selling price', function () {
 
 it('accepts selling price and compare-at updates in either order', function (array $first, array $second) {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => 'Either order tee',
         'price' => Price::of(1500),
     ]);
@@ -111,7 +105,6 @@ it('accepts selling price and compare-at updates in either order', function (arr
 
 it('syncs the default variant compare-at when the product compare-at changes', function () {
     $product = Product::create([
-        'slug' => 'synced-tee',
         'name' => 'Synced tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(1500),
@@ -129,7 +122,6 @@ it('syncs the default variant compare-at when the product compare-at changes', f
 
 it('lets a variant inherit or override the product compare-at price', function () {
     $product = Product::create([
-        'slug' => 'variant-sale-tee',
         'name' => 'Variant sale tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(1800),
@@ -155,7 +147,6 @@ it('lets a variant inherit or override the product compare-at price', function (
 it('charges the selling price when a compare-at price is set', function () {
     $cart = Cart::create(['currency' => Currency::USD]);
     $product = Product::create([
-        'slug' => 'cart-sale-tee',
         'name' => 'Cart sale tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(2000),

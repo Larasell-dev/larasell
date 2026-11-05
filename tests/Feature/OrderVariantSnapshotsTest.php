@@ -58,14 +58,13 @@ it('keeps variant snapshots unchanged when catalog data changes', function () {
     $item = orderSnapshotCheckout($cart)->items->sole();
     $productNameSnapshot = $item->product_name->all();
     $snapshot = $item->only([
-        'product_slug',
         'product_sku',
         'product_barcode',
         'variant_name',
         'variant_options',
     ]);
 
-    $variant->product->update(['name' => 'Renamed shirt', 'slug' => 'renamed-shirt']);
+    $variant->product->update(['name' => 'Renamed shirt']);
     $variant->update(['sku' => 'NEW-SKU', 'barcode' => '9999999999999']);
     $size->update(['name' => 'Renamed size', 'slug' => 'renamed-size']);
     $small->update(['name' => 'Renamed small', 'slug' => 'renamed-small']);
@@ -92,7 +91,6 @@ it('keeps historical variant snapshots after the variant is deleted', function (
 
 it('snapshots simple products without variant options', function () {
     $product = Product::create([
-        'slug' => 'simple-snapshot-product',
         'name' => ['en' => 'Simple product', 'de' => 'Einfaches Produkt'],
         'price' => Price::of(1000),
         'status' => Visibility::Visible,
@@ -113,7 +111,6 @@ it('snapshots simple products without variant options', function () {
 function orderSnapshotVariantCart(): array
 {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => 'Classic T-shirt',
         'price' => Price::of(1000),
         'stock' => 10,

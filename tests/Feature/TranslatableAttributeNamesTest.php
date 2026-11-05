@@ -35,7 +35,6 @@ it('accepts string attribute and value names for the current locale', function (
 
 it('names variant options in the current locale', function () {
     $product = Product::create([
-        'slug' => 'shirt',
         'name' => ['en' => 'Shirt', 'de' => 'Hemd'],
         'price' => Price::of(1000),
         'status' => Visibility::Visible,

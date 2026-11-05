@@ -333,7 +333,6 @@ function promotionCart(array $prices): Cart
 
     foreach ($prices as $index => $price) {
         $product = Product::query()->create([
-            'slug' => 'promotion-product-'.$cart->getKey().'-'.$index,
             'name' => 'Promotion product '.$index,
             'price' => Price::of($price),
             'allow_backorders' => true,

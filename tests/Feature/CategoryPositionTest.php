@@ -5,7 +5,6 @@ use Larasell\Larasell\Models\Category;
 function categoryWithPosition(string $slug, ?Category $parent = null, ?int $position = null): Category
 {
     return Category::query()->create(array_filter([
-        'slug' => ['en' => $slug],
         'name' => ['en' => ucfirst($slug)],
         'parent_id' => $parent?->id,
         'position' => $position,

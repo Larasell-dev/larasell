@@ -70,7 +70,6 @@ it('includes the concrete variant in inventory events', function () {
 function variantContextCart(): array
 {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => 'Context shirt',
         'price' => Price::of(1000),
         'stock' => 10,

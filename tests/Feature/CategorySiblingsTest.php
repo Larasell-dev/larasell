@@ -5,31 +5,26 @@ use Larasell\Larasell\Models\Category;
 
 it('exposes siblings as a relation property', function () {
     $clothing = Category::query()->create([
-        'slug' => ['en' => 'clothing'],
         'name' => ['en' => 'Clothing'],
     ]);
 
     $shirts = Category::query()->create([
-        'slug' => ['en' => 'shirts'],
         'name' => ['en' => 'Shirts'],
         'parent_id' => $clothing->id,
     ]);
 
     $shoes = Category::query()->create([
-        'slug' => ['en' => 'shoes'],
         'name' => ['en' => 'Shoes'],
         'parent_id' => $clothing->id,
     ]);
 
     Category::query()->create([
-        'slug' => ['en' => 'hidden-scarves'],
         'name' => ['en' => 'Scarves'],
         'parent_id' => $clothing->id,
         'status' => Visibility::Hidden,
     ]);
 
     Category::query()->create([
-        'slug' => ['en' => 'electronics'],
         'name' => ['en' => 'Electronics'],
     ]);
 
@@ -41,18 +36,15 @@ it('exposes siblings as a relation property', function () {
 
 it('eager loads siblings for multiple categories', function () {
     $clothing = Category::query()->create([
-        'slug' => ['en' => 'clothing'],
         'name' => ['en' => 'Clothing'],
     ]);
 
     $shirts = Category::query()->create([
-        'slug' => ['en' => 'shirts'],
         'name' => ['en' => 'Shirts'],
         'parent_id' => $clothing->id,
     ]);
 
     $shoes = Category::query()->create([
-        'slug' => ['en' => 'shoes'],
         'name' => ['en' => 'Shoes'],
         'parent_id' => $clothing->id,
     ]);

@@ -99,7 +99,6 @@ it('uses promotion allocations after cumulative target caps', function () {
     app(PromotionManager::class)->register(OverlappingCartTaxEstimatePromotionB::class);
     $cart = cartForTaxEstimate(1000);
     $secondProduct = Product::query()->create([
-        'slug' => 'second-tax-estimate-product-'.$cart->getKey(),
         'name' => 'Second tax estimate product',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -182,7 +181,6 @@ function cartForTaxEstimate(int $price): Cart
 {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $product = Product::query()->create([
-        'slug' => 'tax-estimate-product-'.$cart->getKey(),
         'name' => 'Tax estimate product',
         'price' => Price::of($price),
         'allow_backorders' => true,

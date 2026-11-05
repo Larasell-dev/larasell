@@ -21,7 +21,6 @@ use Larasell\Larasell\Price;
 function inventoryEventOrder(?int $stock = 5, int $quantity = 2): array
 {
     $product = Product::query()->create([
-        'slug' => 'inventory-event-'.str()->random(8),
         'name' => 'Inventory event product',
         'price' => Price::of(1000),
         'stock' => $stock,

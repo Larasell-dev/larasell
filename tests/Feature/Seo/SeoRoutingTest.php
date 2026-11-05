@@ -21,7 +21,6 @@ beforeEach(function () {
 function routedProduct(array|string $name, Visibility $status = Visibility::Visible): Product
 {
     return Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
@@ -32,7 +31,6 @@ function routedCategory(string $name, ?Category $parent = null, Visibility $stat
 {
     return Category::create([
         'parent_id' => $parent?->getKey(),
-        'slug' => fake()->unique()->slug(),
         'name' => ['en' => $name],
         'status' => $status,
     ]);

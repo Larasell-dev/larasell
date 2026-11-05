@@ -19,7 +19,6 @@ function orderWithExpiringInventory(?Carbon $expiresAt): array
     config()->set('larasell.payments.methods.cash.inventory_reservation_minutes', 60);
 
     $product = Product::query()->create([
-        'slug' => 'expiring-reservation-'.Product::query()->count(),
         'name' => 'Expiring reservation product',
         'price' => Price::of(1000),
         'stock' => 5,

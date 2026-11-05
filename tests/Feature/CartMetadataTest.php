@@ -39,7 +39,6 @@ it('stores and manages cart metadata', function () {
 
 it('snapshots cart metadata on the order', function () {
     $product = Product::query()->create([
-        'slug' => 'metadata-product',
         'name' => 'Metadata product',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -62,7 +61,6 @@ it('snapshots cart metadata on the order', function () {
 
 it('stores metadata on cart items and uses it as part of line identity', function () {
     $product = Product::query()->create([
-        'slug' => 'customizable-product',
         'name' => 'Customizable product',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -93,7 +91,6 @@ it('stores metadata on cart items and uses it as part of line identity', functio
 
 it('snapshots cart item metadata on the order item', function () {
     $product = Product::query()->create([
-        'slug' => 'line-metadata-product',
         'name' => 'Line metadata product',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -111,7 +108,6 @@ it('snapshots cart item metadata on the order item', function () {
 
 it('enforces variant stock across customized lines', function () {
     $product = Product::query()->create([
-        'slug' => 'limited-customizable-product',
         'name' => 'Limited customizable product',
         'price' => Price::of(1000),
         'stock' => 3,

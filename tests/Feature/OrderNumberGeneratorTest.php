@@ -234,7 +234,6 @@ class CountingOrderNumberGenerator implements OrderNumberGenerator
 function orderNumberCart(): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'order-number-product-'.fake()->unique()->numerify('######'),
         'name' => 'Order number product',
         'price' => Price::of(1000),
         'allow_backorders' => true,
