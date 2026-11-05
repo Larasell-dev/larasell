@@ -6,6 +6,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
@@ -497,3 +498,45 @@ it('stops instead of looping when categories form a cycle that bypassed MoveCate
 
     updateCatalog($a, ['name' => ['en' => 'A2']]);
 })->throws(LogicException::class, 'cycle');
+
+it('stores and finds paths of any length', function () {
+    $name = str_repeat('Very long boots ', 40);
+    $product = seoProduct($name);
+    $automatic = 'p/'.Str::slug($name);
+    $custom = str_repeat('winter-sale/', 60).'boots';
+
+    expect(strlen($automatic))->toBeGreaterThan(600)
+        ->and(seoPaths($product))->toBe([$automatic => 'canonical'])
+        ->and(app(SeoPages::class)->resolve($automatic, seoContext())->resource?->is($product))->toBeTrue();
+
+    app(SeoUrlManager::class)->setCustom($product, seoContext(), $custom);
+
+    expect(app(SeoPages::class)->resolve($custom, seoContext())->resource?->is($product))->toBeTrue()
+        ->and(app(SeoPages::class)->resolve($automatic, seoContext())->redirect?->url)->toBe('http://localhost/'.$custom);
+});
+
+it('numbers any number of pages with the same name, with one lookup for the taken numbers', function () {
+    foreach (range(1, 100) as $i) {
+        seoProduct('Boots');
+    }
+    $queries = 0;
+    DB::listen(function ($query) use (&$queries): void {
+        $queries += str_contains($query->sql, 'larasell_seo_urls') ? 1 : 0;
+    });
+
+    $product = seoProduct('Boots');
+
+    expect(seoPaths($product))->toBe(['p/boots-101' => 'canonical'])
+        ->and($queries)->toBeLessThan(15);
+});
+
+it('gives a page the lowest free number', function () {
+    seoProduct('Boots');
+    $second = seoProduct('Boots');
+    seoProduct('Boots');
+    app(SeoUrlManager::class)->setCustom($second, seoContext(), 'second-boots');
+    app(SeoUrlManager::class)->remove(SeoUrl::query()->where('path', 'p/boots-2')->sole());
+
+    expect(seoPaths(seoProduct('Boots')))->toBe(['p/boots-2' => 'canonical'])
+        ->and(seoPaths(seoProduct('Boots')))->toBe(['p/boots-4' => 'canonical']);
+});
