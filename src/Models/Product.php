@@ -62,6 +62,7 @@ class Product extends Model
 
     protected $attributes = [
         'tax_category' => 'standard',
+        'status' => 'visible',
     ];
 
     protected $casts = [

@@ -34,6 +34,10 @@ class Category extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'status' => 'visible',
+    ];
+
     protected $casts = [
         'slug' => TranslatableCast::class,
         'name' => TranslatableCast::class,
