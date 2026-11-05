@@ -12,9 +12,6 @@ use Larasell\Larasell\Seo\SeoUrlManager;
 
 class RegenerateSeoUrlsCommand extends Command
 {
-    /** Passes over all resources until no path changes; deep category trees settle one level per pass. */
-    private const MAX_PASSES = 20;
-
     protected $signature = 'larasell:regenerate-seo-urls
         {type? : Only this resource type, by model name, e.g. "product"}
         {--channel= : Only this channel}
@@ -46,32 +43,28 @@ class RegenerateSeoUrlsCommand extends Command
         }
 
         $changes = [];
-        $connection = (new SeoUrl)->getConnection();
-        $connection->beginTransaction();
-
-        try {
-            for ($pass = 0; $pass < self::MAX_PASSES; $pass++) {
-                $changed = 0;
-
-                foreach ($types as $type) {
-                    foreach ($type->model()::query()->lazyById() as $resource) {
-                        $passChanges = $manager->refresh($resource, $contexts, cascade: false);
-                        $changed += count($passChanges);
-                        array_push($changes, ...$passChanges);
-                    }
-                }
-
-                if ($changed === 0) {
-                    break;
+        $refreshAll = function () use ($types, $contexts, $manager, &$changes): void {
+            foreach ($types as $type) {
+                // Each page in its own transaction, so admins can keep saving; subcategories follow their parent.
+                foreach ($type->model()::query()->lazyById() as $resource) {
+                    array_push($changes, ...$manager->refresh($resource, $contexts));
                 }
             }
-        } catch (\Throwable $exception) {
-            $connection->rollBack();
+        };
 
-            throw $exception;
+        if (! $this->option('dry-run')) {
+            $refreshAll();
+        } else {
+            // One transaction that is rolled back, so nothing is saved; it holds every page's lock until then.
+            $connection = (new SeoUrl)->getConnection();
+            $connection->beginTransaction();
+
+            try {
+                $refreshAll();
+            } finally {
+                $connection->rollBack();
+            }
         }
-
-        $this->option('dry-run') ? $connection->rollBack() : $connection->commit();
 
         if ($changes !== []) {
             $this->table(['Channel', 'Locale', 'Old path', 'New path'], array_map(fn (SeoUrlChanged $change): array => [

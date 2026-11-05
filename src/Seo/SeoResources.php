@@ -53,6 +53,23 @@ final class SeoResources
         return null;
     }
 
+    /**
+     * The type whose pages are instances of the model class, e.g. Product::class.
+     *
+     * @param  class-string<Model>  $class
+     * @return SeoResourceType<Model>
+     */
+    public function forClass(string $class): SeoResourceType
+    {
+        foreach ($this->all() as $type) {
+            if (is_a($class, $type->model(), true)) {
+                return $type;
+            }
+        }
+
+        throw new InvalidArgumentException("No SEO resource type is registered for [{$class}].");
+    }
+
     /** The page a URL row points at, e.g. its resource or replacement, or null when it no longer exists. */
     public function page(?string $key, ?int $id): ?Model
     {

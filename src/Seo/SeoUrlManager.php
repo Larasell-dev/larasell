@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Seo;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
@@ -13,7 +14,6 @@ use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoResourceGone;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
-use Larasell\Larasell\Seo\Jobs\RefreshSeoUrls;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use LogicException;
 
@@ -77,32 +77,27 @@ final class SeoUrlManager
 
     /**
      * Brings the resource's automatic URLs up to date in every context at once, or in none when one
-     * fails, and queues its dependents when a path changed.
+     * fails, together with the pages built on its URL, such as subcategories.
      *
      * @param  list<SeoContext>|null  $contexts  null for every context
-     * @return list<SeoUrlChanged> One change per context whose path changed
+     * @return list<SeoUrlChanged> One change per page and context whose path changed
      */
     public function refresh(Model $resource, ?array $contexts = null, bool $cascade = true): array
     {
-        $type = $this->resources->for($resource);
+        return $this->refreshPage($this->resources->for($resource), $resource->getKey(), $contexts, $cascade);
+    }
 
-        $changes = $this->transaction(function () use ($type, $resource, $contexts): array {
-            $changes = [];
-
-            foreach ($contexts ?? $this->contexts() as $context) {
-                if ($change = $this->refreshIn($type, $resource, $context)) {
-                    $changes[] = $change;
-                }
-            }
-
-            return $changes;
-        });
-
-        if ($changes !== [] && $cascade) {
-            $this->refreshDependents($type, $resource);
-        }
-
-        return $changes;
+    /**
+     * Like refresh(), by ID: the page is loaded and locked inside the transaction, so a stale copy
+     * cannot write outdated URLs, and a page that no longer exists gets none.
+     *
+     * @param  SeoResourceType<Model>  $type
+     * @param  list<SeoContext>|null  $contexts  null for every context
+     * @return list<SeoUrlChanged>
+     */
+    public function refreshPage(SeoResourceType $type, int|string $id, ?array $contexts = null, bool $cascade = true): array
+    {
+        return $this->transaction(fn (): array => $this->refreshTree($type, $id, $contexts ?? $this->contexts(), $cascade, []));
     }
 
     /** Makes the path the resource's custom URL. Renames never change it until resetToAutomatic(). */
@@ -111,39 +106,37 @@ final class SeoUrlManager
         $type = $this->resources->for($resource);
         $path = $this->normalize($path);
 
-        [$row, $changed] = $this->transaction(function () use ($type, $resource, $context, $path): array {
+        return $this->transaction(function () use ($type, $resource, $context, $path): SeoUrl {
+            $resource = $this->lock($type, $resource->getKey()) ?? throw (new ModelNotFoundException)->setModel($resource::class, [$resource->getKey()]);
             $current = $this->canonical($resource, $context);
             $row = $this->place($type, $resource, $context, $path, true, $current);
 
-            return [$row, $this->changed($resource, $context, $current?->path, $row->path) !== null];
+            if ($this->changed($type, $resource, $context, $current?->path, $row->path) !== null) {
+                $this->refreshDependents($type, $resource, [$context], []);
+            }
+
+            return $row;
         });
-
-        if ($changed) {
-            $this->refreshDependents($type, $resource);
-        }
-
-        return $row;
     }
 
     public function resetToAutomatic(Model $resource, SeoContext $context): void
     {
         $type = $this->resources->for($resource);
 
-        $changed = $this->transaction(function () use ($type, $resource, $context): bool {
-            $current = $this->canonical($resource, $context);
+        $this->transaction(function () use ($type, $resource, $context): void {
+            $resource = $this->lock($type, $resource->getKey());
+            $current = $resource === null ? null : $this->canonical($resource, $context);
 
-            if ($current === null || ! $current->is_custom) {
-                return false;
+            if ($resource === null || $current === null || ! $current->is_custom) {
+                return;
             }
 
             $current->update(['is_custom' => false]);
 
-            return $this->refreshIn($type, $resource, $context) !== null;
+            if ($this->refreshIn($type, $resource, $context) !== null) {
+                $this->refreshDependents($type, $resource, [$context], []);
+            }
         });
-
-        if ($changed) {
-            $this->refreshDependents($type, $resource);
-        }
     }
 
     /**
@@ -154,38 +147,19 @@ final class SeoUrlManager
     public function markGone(Model $resource, ?Model $replacement = null): void
     {
         $type = $this->resources->for($resource);
-        $replacementKey = $replacement === null ? null : $this->resources->for($replacement)->key();
 
-        if ($replacementKey === $type->key() && $replacement->getKey() == $resource->getKey()) {
-            throw new LogicException('A page cannot be its own replacement.');
-        }
+        $this->gone($type, $resource->getKey(), fn (SeoContext $context): array => $type->snapshot($resource, $context), $replacement);
+    }
 
-        $gone = $this->transaction(function () use ($type, $resource, $replacement, $replacementKey): bool {
-            $gone = false;
-
-            foreach ($this->contexts() as $context) {
-                $rows = $this->rows($type->key(), $resource->getKey(), $context);
-                $live = (clone $rows)->where('status', '!=', SeoUrlStatus::Gone->value);
-
-                (clone $live)->whereNull('went_public_at')->delete();
-
-                $gone = $live->update([
-                    'status' => SeoUrlStatus::Gone->value,
-                    'gone_snapshot' => json_encode($type->snapshot($resource, $context), JSON_THROW_ON_ERROR),
-                    'updated_at' => now(),
-                ]) > 0 || $gone;
-
-                if ($replacement !== null) {
-                    $rows->update(['replacement_type' => $replacementKey, 'replacement_id' => $replacement->getKey(), 'updated_at' => now()]);
-                }
-            }
-
-            return $gone;
-        });
-
-        if ($gone) {
-            event(new SeoResourceGone($resource));
-        }
+    /**
+     * Like markGone(), by ID, for a page that is already deleted, with what was known about it.
+     *
+     * @param  SeoResourceType<Model>  $type
+     * @param  Closure(SeoContext): array<string, mixed>  $snapshot
+     */
+    public function markGoneById(SeoResourceType $type, int|string $id, Closure $snapshot): void
+    {
+        $this->gone($type, $id, $snapshot, null);
     }
 
     /** Frees an old or gone URL, so the path is unknown again or can be used by another page. */
@@ -196,7 +170,7 @@ final class SeoUrlManager
         }
 
         $url->delete();
-        event(new SeoUrlReleased($url));
+        event(SeoUrlReleased::of($url));
     }
 
     /** @param  SeoResourceType<Model>  $type */
@@ -219,12 +193,12 @@ final class SeoUrlManager
                 $this->retire($current);
             }
 
-            return $this->changed($resource, $context, $current?->path, null);
+            return $this->changed($type, $resource, $context, $current?->path, null);
         }
 
         $row = $this->place($type, $resource, $context, $path, false, $current, $available);
 
-        return $this->changed($resource, $context, $current?->path, $row->path);
+        return $this->changed($type, $resource, $context, $current?->path, $row->path);
     }
 
     /**
@@ -304,7 +278,7 @@ final class SeoUrlManager
             if ($row->status !== SeoUrlStatus::Canonical) {
                 // Another page's old or gone URL: the new canonical URL claims it.
                 $row->delete();
-                event(new SeoUrlReleased($row));
+                event(SeoUrlReleased::of($row));
 
                 return $candidate;
             }
@@ -329,26 +303,126 @@ final class SeoUrlManager
         $row->save();
     }
 
-    /** Announces the change once the transaction commits, and returns it; null when nothing changed. */
-    private function changed(Model $resource, SeoContext $context, ?string $old, ?string $new): ?SeoUrlChanged
+    /**
+     * Announces the change once the transaction commits, and returns it; null when nothing changed.
+     *
+     * @param  SeoResourceType<Model>  $type
+     */
+    private function changed(SeoResourceType $type, Model $resource, SeoContext $context, ?string $old, ?string $new): ?SeoUrlChanged
     {
         if ($old === $new) {
             return null;
         }
 
-        event($change = new SeoUrlChanged($resource, $context, $old, $new));
+        event($change = new SeoUrlChanged($type->key(), (int) $resource->getKey(), $context, $old, $new));
 
         return $change;
     }
 
-    /** @param  SeoResourceType<Model>  $type */
-    private function refreshDependents(SeoResourceType $type, Model $resource): void
+    /**
+     * @param  SeoResourceType<Model>  $type
+     * @param  list<SeoContext>  $contexts
+     * @param  array<string, true>  $ancestors  The pages this refresh came through, to stop at a cycle
+     * @return list<SeoUrlChanged>
+     */
+    private function refreshTree(SeoResourceType $type, int|string $id, array $contexts, bool $cascade, array $ancestors): array
     {
-        $dependents = $type->dependents($resource);
+        $resource = $this->lock($type, $id);
 
-        if ($dependents->isNotEmpty()) {
-            RefreshSeoUrls::dispatch($dependents);
+        if ($resource === null) {
+            return [];
         }
+
+        $changes = [];
+
+        foreach ($contexts as $context) {
+            if ($change = $this->refreshIn($type, $resource, $context)) {
+                $changes[] = $change;
+            }
+        }
+
+        if ($changes !== [] && $cascade) {
+            array_push($changes, ...$this->refreshDependents($type, $resource, $contexts, $ancestors));
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Refreshes the pages built on this one's URL, in the same transaction, however many there are.
+     *
+     * @param  SeoResourceType<Model>  $type
+     * @param  list<SeoContext>  $contexts
+     * @param  array<string, true>  $ancestors
+     * @return list<SeoUrlChanged>
+     */
+    private function refreshDependents(SeoResourceType $type, Model $resource, array $contexts, array $ancestors): array
+    {
+        $ancestors[$type->key().':'.$resource->getKey()] = true;
+        $changes = [];
+
+        foreach ($type->dependents($resource) as $dependent) {
+            $dependentType = $this->resources->for($dependent);
+
+            // The catalog keeps categories acyclic; a cycle means a write bypassed it, and refreshing would never end.
+            if (isset($ancestors[$dependentType->key().':'.$dependent->getKey()])) {
+                throw new LogicException('['.$dependentType->key().' '.$dependent->getKey().'] depends on itself: the pages form a cycle.');
+            }
+
+            array_push($changes, ...$this->refreshTree($dependentType, $dependent->getKey(), $contexts, true, $ancestors));
+        }
+
+        return $changes;
+    }
+
+    /**
+     * The page as stored now, locked until the transaction ends, so writes for one page queue up.
+     *
+     * @param  SeoResourceType<Model>  $type
+     */
+    private function lock(SeoResourceType $type, int|string $id): ?Model
+    {
+        return $type->model()::query()->lockForUpdate()->find($id);
+    }
+
+    /**
+     * @param  SeoResourceType<Model>  $type
+     * @param  Closure(SeoContext): array<string, mixed>  $snapshot
+     */
+    private function gone(SeoResourceType $type, int|string $id, Closure $snapshot, ?Model $replacement): void
+    {
+        $replacementKey = $replacement === null ? null : $this->resources->for($replacement)->key();
+
+        if ($replacement !== null && $replacementKey === $type->key() && $replacement->getKey() == $id) {
+            throw new LogicException('A page cannot be its own replacement.');
+        }
+
+        $this->transaction(function () use ($type, $id, $snapshot, $replacement, $replacementKey): void {
+            $gone = false;
+
+            foreach ($this->contexts() as $context) {
+                $rows = $this->rows($type->key(), $id, $context);
+                $live = (clone $rows)->where('status', '!=', SeoUrlStatus::Gone->value);
+
+                (clone $live)->whereNull('went_public_at')->delete();
+
+                if ((clone $live)->exists()) {
+                    $gone = $live->update([
+                        'status' => SeoUrlStatus::Gone->value,
+                        'gone_snapshot' => json_encode($snapshot($context), JSON_THROW_ON_ERROR),
+                        'updated_at' => now(),
+                    ]) > 0 || $gone;
+                }
+
+                if ($replacement !== null) {
+                    $rows->update(['replacement_type' => $replacementKey, 'replacement_id' => $replacement->getKey(), 'updated_at' => now()]);
+                }
+            }
+
+            if ($gone) {
+                event(new SeoResourceGone($type->key(), (int) $id));
+            }
+        });
     }
 
     /** @return Builder<SeoUrl> */

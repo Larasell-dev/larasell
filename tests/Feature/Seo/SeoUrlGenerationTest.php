@@ -2,7 +2,8 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
@@ -18,7 +19,7 @@ beforeEach(function () {
 /** @param  array<string, string>  $name */
 function linkedProduct(array $name, Visibility $status = Visibility::Visible): Product
 {
-    return Product::create([
+    return app(CreateProduct::class)->handle([
         'name' => $name,
         'price' => Price::of(1000),
         'status' => $status,
@@ -63,7 +64,7 @@ it('has no URL where the page has none, and no available URL for hidden pages', 
 
 it('loads the URLs of a listing in one query per kind of page', function () {
     $products = collect(range(1, 5))->map(fn (int $i) => linkedProduct(['en' => "Boots {$i}"]));
-    $category = Category::create(['name' => ['en' => 'Shoes']]);
+    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes']]);
     $unsaved = new Product(['name' => ['en' => 'Unsaved']]);
     $unsaved->id = 999;
 
@@ -82,7 +83,7 @@ it('does not link to a preloaded path after it changed', function () {
     $product = linkedProduct(['en' => 'Boots']);
     Seo::preload([$product]);
 
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect(Seo::url($product))->toBe('http://localhost/p/leather-boots');
 });

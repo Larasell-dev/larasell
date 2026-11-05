@@ -133,10 +133,14 @@ final class SeoPages
         }
     }
 
-    /** Drops a preloaded path, e.g. after it changed. */
-    public function forget(Model $resource, SeoContext $context): void
+    /**
+     * Drops a preloaded path, e.g. after it changed.
+     *
+     * @param  string  $type  The resource type's key(), e.g. "product"
+     */
+    public function forget(string $type, int|string $id, SeoContext $context): void
     {
-        unset($this->preloaded[self::key($this->resources->for($resource)->key(), $resource->getKey(), $context)]);
+        unset($this->preloaded[self::key($type, $id, $context)]);
     }
 
     /** The request's context inside Route::storefront(), otherwise the first configured one. */

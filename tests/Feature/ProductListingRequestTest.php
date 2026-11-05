@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
@@ -133,7 +134,7 @@ it('lists the products of the category at a nested URL in the current locale', f
 
 function categoryForListing(array $attributes = []): Category
 {
-    return Category::create(array_merge([
+    return app(CreateCategory::class)->handle(array_merge([
         'name' => 'Shirts',
     ], $attributes));
 }

@@ -37,14 +37,16 @@ php artisan migrate
 php artisan larasell:regenerate-seo-urls
 ```
 
-Stop passing `slug` when creating products and categories:
+Stop passing `slug` when creating products and categories, and create them
+through the catalog's actions, which give them their URLs (see
+`catalog-writes-through-actions.md`):
 
 ```php
 // Before
 Product::create(['slug' => 'boots', 'name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
 
 // After
-Product::create(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
 ```
 
 Register storefront routes inside `Route::storefront()`. Typed parameters are

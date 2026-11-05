@@ -10,6 +10,7 @@ use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoUrlManager;
+use Larasell\Larasell\Translatable;
 
 /**
  * Categories live at their parent's current URL plus their own name: "schuhe/stiefel".
@@ -68,9 +69,16 @@ class CategoryResourceType implements SeoResourceType
     /** @param  Category  $resource */
     public function snapshot(Model $resource, SeoContext $context): array
     {
-        return [
-            'name' => $resource->name->get($context->locale->value),
-            'parent_id' => $resource->parent_id,
-        ];
+        return self::snapshotOf($resource->name, $resource->parent_id, $context);
+    }
+
+    /**
+     * What a deleted category's URLs keep: its name, and its parent, which RedirectToParentCategory leads to.
+     *
+     * @return array{name: string, parent_id: int|null}
+     */
+    public static function snapshotOf(Translatable $name, ?int $parentId, SeoContext $context): array
+    {
+        return ['name' => $name->get($context->locale->value), 'parent_id' => $parentId];
     }
 }

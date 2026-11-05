@@ -4,6 +4,8 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
@@ -20,7 +22,7 @@ beforeEach(function () {
 /** @param  array<string, string>  $name */
 function routedProduct(array|string $name, Visibility $status = Visibility::Visible): Product
 {
-    return Product::create([
+    return app(CreateProduct::class)->handle([
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
@@ -29,7 +31,7 @@ function routedProduct(array|string $name, Visibility $status = Visibility::Visi
 
 function routedCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
 {
-    return Category::create([
+    return app(CreateCategory::class)->handle([
         'parent_id' => $parent?->getKey(),
         'name' => ['en' => $name],
         'status' => $status,
@@ -65,7 +67,7 @@ it('redirects an old URL to the current one and keeps the query string', functio
     storefrontRoutes();
     Route::storefront(fn () => Route::post('p/{product}', fn (Product $product) => 'added'));
     $product = routedProduct('Boots');
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     $this->get('/p/boots?utm_source=mail')->assertStatus(301)->assertRedirect('http://localhost/p/leather-boots?utm_source=mail');
     $this->post('/p/boots')->assertStatus(308);
@@ -91,20 +93,20 @@ it('redirects a trailing slash, which the test client would strip', function () 
 it('answers 404 for a hidden product until it is published again', function () {
     storefrontRoutes();
     $product = routedProduct('Boots');
-    $product->update(['name' => ['en' => 'Leather Boots']]);
-    $product->update(['status' => Visibility::Hidden]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['status' => Visibility::Hidden]);
 
     $this->get('/p/leather-boots')->assertNotFound();
     $this->get('/p/boots')->assertNotFound();
 
-    $product->update(['status' => Visibility::Visible]);
+    updateCatalog($product, ['status' => Visibility::Visible]);
 
     $this->get('/p/leather-boots')->assertOk();
 });
 
 it('answers 410 for a deleted product, which the app can render', function () {
     storefrontRoutes();
-    routedProduct('Boots')->delete();
+    deleteFromCatalog(routedProduct('Boots'));
 
     $this->get('/p/boots')->assertStatus(410);
 
@@ -123,7 +125,7 @@ it('redirects a deleted product to its replacement while that is available', fun
 
     $this->get('/p/boots')->assertStatus(301)->assertRedirect('http://localhost/p/boots-2027');
 
-    $new->update(['status' => Visibility::Hidden]);
+    updateCatalog($new, ['status' => Visibility::Hidden]);
 
     $this->get('/p/boots')->assertStatus(410);
 });
@@ -131,11 +133,11 @@ it('redirects a deleted product to its replacement while that is available', fun
 it('redirects a deleted category to its parent while the parent is available', function () {
     storefrontRoutes();
     $shoes = routedCategory('Shoes');
-    routedCategory('Boots', $shoes)->delete();
+    deleteFromCatalog(routedCategory('Boots', $shoes));
 
     $this->get('/shoes/boots')->assertStatus(302)->assertRedirect('http://localhost/shoes');
 
-    $shoes->update(['status' => Visibility::Hidden]);
+    updateCatalog($shoes, ['status' => Visibility::Hidden]);
 
     $this->get('/shoes/boots')->assertStatus(410);
 });
