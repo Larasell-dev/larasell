@@ -1,8 +1,33 @@
 includes:
     - vendor/larastan/larastan/extension.neon
+    - phpstan/rules.neon
+    - phpstan-baseline.neon
 
 parameters:
     paths:
         - src
 
     level: 8
+
+    # Which module each class belongs to, by namespace or class name prefix; the longest prefix wins.
+    # Classes outside every module (value objects, enums, settings) are shared and unchecked.
+    larasell:
+        modules:
+            SalesChannels: ['Larasell\Larasell\SalesChannels\']
+            Catalog:
+                - 'Larasell\Larasell\Catalog\'
+                - 'Larasell\Larasell\Images\'
+                - 'Larasell\Larasell\Models\Category'
+                - 'Larasell\Larasell\Models\Product'
+                - 'Larasell\Larasell\Models\Relations\'
+            Inventory: ['Larasell\Larasell\Inventory\', 'Larasell\Larasell\Models\InventoryReservation']
+            Taxes: ['Larasell\Larasell\Taxes\']
+            Shipping: ['Larasell\Larasell\Shipping\']
+            Promotions: ['Larasell\Larasell\Promotions\', 'Larasell\Larasell\Discounts\', 'Larasell\Larasell\Models\PromotionRedemption']
+            Customers: ['Larasell\Larasell\Customers\', 'Larasell\Larasell\Models\Customer']
+            Carts: ['Larasell\Larasell\Carts\', 'Larasell\Larasell\Models\Cart']
+            Checkout: ['Larasell\Larasell\Checkout\', 'Larasell\Larasell\OrderNumbers\', 'Larasell\Larasell\Models\Order']
+            Payments: ['Larasell\Larasell\Payments\', 'Larasell\Larasell\Models\Payment']
+            Refunds: ['Larasell\Larasell\Refunds\', 'Larasell\Larasell\Models\Refund']
+            Seo: ['Larasell\Larasell\Seo\']
+            Workflows: ['Larasell\Larasell\Workflows\']
