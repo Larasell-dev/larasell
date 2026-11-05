@@ -1,6 +1,11 @@
 <?php
 
+use Larasell\Larasell\Seo\Catalog\CategoryResourceType;
+use Larasell\Larasell\Seo\Catalog\ProductResourceType;
+use Larasell\Larasell\Seo\DefaultSlugifier;
 use Larasell\Larasell\Seo\EntryPointResolver;
+use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Seo\SuffixCollisionPolicy;
 
 return [
     /*
@@ -30,5 +35,29 @@ return [
             'url' => null,
             'locales' => null, // null serves larasell.locale.supported
         ],
+    ],
+
+    /*
+     * The kinds of models that have pages. Each type builds the automatic path of its models and may
+     * reserve path prefixes for itself, e.g. products reserve "p".
+     */
+    'resources' => [
+        ProductResourceType::class,
+        CategoryResourceType::class,
+    ],
+
+    /*
+     * Paths no page may use, together with everything below them, e.g. "cart" or "account".
+     */
+    'reserved_paths' => [],
+
+    /* Turns a name into a path segment. */
+    'slugifier' => DefaultSlugifier::class,
+
+    /* What happens when a path is taken: automatic paths get "-2", custom paths fail. */
+    'collision_policy' => SuffixCollisionPolicy::class,
+
+    'models' => [
+        'seo_url' => SeoUrl::class,
     ],
 ];
