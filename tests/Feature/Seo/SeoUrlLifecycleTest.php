@@ -15,6 +15,7 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\DefaultSlugifier;
@@ -335,7 +336,7 @@ it('lets the database refuse a second canonical URL for the same page and contex
     seoProduct('Boots');
     $current = SeoUrl::query()->where('locale', 'en')->sole();
     $row = fn (string $path, SeoUrlStatus $status): array => [
-        ...$current->only(['channel', 'locale', 'resource_type', 'resource_id']),
+        ...$current->only(['sales_channel_id', 'locale', 'resource_type', 'resource_id']),
         'path' => $path,
         'status' => $status,
     ];
@@ -555,4 +556,15 @@ it('gives existing pages their URLs in a locale a channel gains, in a queued job
     expect(seoPaths($product, 'de'))->toBe(['p/stiefel' => 'canonical'])
         ->and(seoPaths($category, 'de'))->toBe(['schuhe' => 'canonical'])
         ->and(seoPaths($product, 'en'))->toBe(['p/boots' => 'canonical']);
+});
+
+it('stores URLs by sales channel ID, and they go with their channel', function () {
+    $product = seoProduct('Boots');
+    $channelId = SalesContext::for('default', 'en')->channelId;
+
+    expect(SeoUrl::query()->sole()->sales_channel_id)->toBe($channelId);
+
+    SalesChannel::query()->whereKey($channelId)->delete();
+
+    expect(SeoUrl::query()->where('resource_id', $product->id)->exists())->toBeFalse();
 });

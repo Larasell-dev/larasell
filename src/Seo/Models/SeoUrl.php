@@ -13,7 +13,7 @@ use Larasell\Larasell\Seo\SeoUrlStatus;
  * morph class; SeoResources::page() loads the model they point at.
  *
  * @property int $id
- * @property string $channel
+ * @property int $sales_channel_id
  * @property string $locale
  * @property string $path
  * @property string $path_hash
