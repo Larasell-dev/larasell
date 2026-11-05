@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
@@ -104,4 +105,13 @@ it('forgets preloaded paths between requests and jobs of a long-running process'
     app()->forgetScopedInstances(); // what Octane and the queue worker do between requests and jobs
 
     expect(Seo::url($product))->toBe('http://localhost/p/leather-boots');
+});
+
+it('links in no context it has to guess', function () {
+    $product = linkedProduct(['en' => 'Boots']);
+    Context::forgetHidden(StorefrontContext::KEY);
+
+    expect(fn () => Seo::url($product))->toThrow(LogicException::class, 'StorefrontContext')
+        ->and(fn () => Seo::preload([$product]))->toThrow(LogicException::class, 'StorefrontContext')
+        ->and(Seo::url($product, StorefrontContext::for('default', 'en')))->toBe('http://localhost/p/boots');
 });

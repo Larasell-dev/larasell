@@ -25,7 +25,7 @@ function refundEvents(): array
 
 function refundEventPayment(string $number): Payment
 {
-    $order = Order::query()->create([
+    $order = Order::createIn(shopContext(), [
         'number' => $number,
         'currency' => Currency::EUR,
         'customer_email' => 'refund-events@example.com',

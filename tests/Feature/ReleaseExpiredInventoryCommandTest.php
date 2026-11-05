@@ -18,7 +18,7 @@ function commandReservationOrder(string $slug, string $expiresAt): Order
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, [

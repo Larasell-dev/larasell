@@ -102,7 +102,7 @@ function variantInventoryCart(): array
         'status' => Visibility::Visible,
     ]);
 
-    return [Cart::create(['currency' => Currency::EUR]), $variants->first()->refresh(), $variants->last()->refresh()];
+    return [Cart::createIn(shopContext(), ['currency' => Currency::EUR]), $variants->first()->refresh(), $variants->last()->refresh()];
 }
 
 function variantCheckout(Cart $cart, ?string $idempotencyKey = null): mixed

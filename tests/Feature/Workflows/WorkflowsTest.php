@@ -70,7 +70,7 @@ it('refuses a replacement that is the product itself or does not exist, and keep
 it('keeps a product of an open order with its URL, and sets no replacement', function () {
     $product = workflowProduct('Boots', stock: 5);
     $new = workflowProduct('Boots 2027');
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, 1);
     app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A']);
 

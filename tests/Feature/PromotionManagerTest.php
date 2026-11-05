@@ -329,7 +329,7 @@ it('rejects invalid promotion availability windows', function (array $window) {
 /** @param array<int, int> $prices */
 function promotionCart(array $prices): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     foreach ($prices as $index => $price) {
         $product = Product::query()->create([

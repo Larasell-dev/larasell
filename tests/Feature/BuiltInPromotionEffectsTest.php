@@ -155,7 +155,7 @@ it('rejects invalid percentages', function (int|string $percentage) {
 /** @param array<int, array{string, int}> $products */
 function promotionEffectsCart(array $products): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     foreach ($products as [$slug, $price]) {
         $product = Product::query()->create([

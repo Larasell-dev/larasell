@@ -139,7 +139,7 @@ function paymentBreakdownCart(int $price, int $quantity = 1): Cart
         'status' => Visibility::Visible,
         'tax_category' => 'standard',
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, $quantity);
 
     return $cart;

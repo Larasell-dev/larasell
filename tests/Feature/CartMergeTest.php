@@ -97,8 +97,8 @@ final class CartMergeShippingMethod extends ShippingMethod
 it('combines matching lines by default and deletes the source cart', function () {
     $product = cartMergeProduct();
     $otherProduct = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 42]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 42]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $destination->add($product, 2);
     $source->add($product, 3);
@@ -117,8 +117,8 @@ it('combines matching lines by default and deletes the source cart', function ()
 
 it('keeps cart item metadata as part of line identity when merging', function () {
     $product = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $destination->add($product, 1, ['belongs_to' => 'Alice']);
     $source->add($product, 2, ['belongs_to' => 'Bob']);
@@ -179,8 +179,8 @@ it('can keep destination lines and discard source lines', function () {
 
 it('accepts a callback strategy', function () {
     $product = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $destination->add($product, 2);
     $source->add($product, 5);
 
@@ -199,8 +199,8 @@ it('clamps merged quantities and records adjustments', function () {
         'allow_backorders' => false,
         'stock' => 10,
     ]);
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $destination->add($product, 8);
     $source->add($product, 2);
@@ -217,8 +217,8 @@ it('clamps merged quantities and records adjustments', function () {
 
 it('skips unavailable source lines', function () {
     $product = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $source->add($product, 1);
     $product->update(['status' => Visibility::Hidden]);
 
@@ -231,8 +231,8 @@ it('skips unavailable source lines', function () {
 
 it('can fail instead of clamping conflicts', function () {
     $product = cartMergeProduct(['max_quantity' => 5]);
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $destination->add($product, 3);
     $source->add($product, 2);
     $source->items()->first()->update(['quantity' => 3]);
@@ -245,16 +245,16 @@ it('can fail instead of clamping conflicts', function () {
 });
 
 it('rejects carts with different currencies', function () {
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::USD]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
 
     expect(fn () => $destination->merge($source))
         ->toThrow(CartMergeException::class, 'Carts with different currencies cannot be merged.');
 });
 
 it('rejects carts owned by different users', function () {
-    $destination = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 1]);
-    $source = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 2]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 1]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 2]);
 
     expect(fn () => $destination->merge($source))
         ->toThrow(CartMergeException::class, 'A cart owned by another user cannot be merged.');
@@ -266,11 +266,11 @@ it('merges attributes, revalidates promotion codes, and falls back to available 
     app(ShippingManager::class)->register(CartMergeShippingMethod::class);
 
     $product = cartMergeProduct();
-    $destination = Cart::query()->create([
+    $destination = Cart::createIn(shopContext(), [
         'currency' => Currency::EUR,
         'metadata' => ['gift' => true],
     ]);
-    $source = Cart::query()->create([
+    $source = Cart::createIn(shopContext(), [
         'currency' => Currency::EUR,
         'metadata' => ['gift' => false, 'note' => 'guest'],
     ]);
@@ -295,8 +295,8 @@ it('drops promotion codes that no longer apply after merging', function () {
     app(PromotionManager::class)->register(CartMergeSingleItemOnly::class);
 
     $product = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $destination->add($product, 1);
     $source->add($product, 1);
@@ -327,8 +327,8 @@ function cartMergeStrategyCarts(): array
     $shared = cartMergeProduct();
     $destinationOnly = cartMergeProduct();
     $sourceOnly = cartMergeProduct();
-    $destination = Cart::query()->create(['currency' => Currency::EUR]);
-    $source = Cart::query()->create(['currency' => Currency::EUR]);
+    $destination = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+    $source = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $destination->add($shared, 2);
     $destination->add($destinationOnly, 1);

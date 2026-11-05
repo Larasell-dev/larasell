@@ -86,7 +86,7 @@ it('lets a variant inherit or override the product measurements', function () {
 });
 
 it('sums cart weight from effective variant weights and quantities', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $light = Product::create([
         'name' => 'Light parcel',
         'price' => Price::of(1000),
@@ -111,7 +111,7 @@ it('sums cart weight from effective variant weights and quantities', function ()
 });
 
 it('returns no cart weight when any line is missing a weight', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $weighed = Product::create([
         'name' => 'Weighed parcel',
         'price' => Price::of(1000),

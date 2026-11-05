@@ -77,7 +77,7 @@ it('attaches carts to the authenticatable user, not the customer', function () {
     ]);
     $user->createCustomer();
 
-    $cart = Cart::query()->create([
+    $cart = Cart::createIn(shopContext(), [
         'currency' => Currency::EUR,
         'user_id' => $user->getKey(),
     ]);

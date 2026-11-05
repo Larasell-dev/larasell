@@ -7,8 +7,8 @@ use LogicException;
 
 /**
  * For records made in a sales context, such as carts and orders: they store it in sales_channel_id,
- * locale and currency, readable as $model->sales_context. A new record without them
- * takes the current context (a storefront request or a job it queued); without one it cannot be saved.
+ * locale and currency, readable as $model->sales_context. Create them with createIn(), which takes
+ * the context explicitly; a record never picks one up from whatever context happens to be current.
  *
  * @property SalesContext $sales_context
  * @property int $sales_channel_id
@@ -16,22 +16,22 @@ use LogicException;
  */
 trait HasSalesContext
 {
+    /**
+     * Creates a record in the context. A currency given in the attributes wins over the context's,
+     * e.g. for a cart in another currency the channel also takes.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function createIn(SalesContext $context, array $attributes = []): static
+    {
+        return static::query()->create(['sales_context' => $context, ...$attributes]);
+    }
+
     public static function bootHasSalesContext(): void
     {
         static::creating(function (self $model): void {
-            if ($model->getAttribute('sales_channel_id') !== null && $model->getAttribute('locale') !== null) {
-                return;
-            }
-
-            $context = SalesContext::current()
-                ?? throw new LogicException('A new ['.$model::class.'] needs a sales context: create it in a storefront request, or set sales_context, e.g. SalesContext::for(\'default\', \'en\').');
-
-            // A currency given explicitly stays; the rest comes from the context.
-            $currency = $model->getAttribute('currency');
-            $model->sales_context = $context;
-
-            if ($currency !== null) {
-                $model->setAttribute('currency', $currency);
+            if ($model->getAttribute('sales_channel_id') === null || $model->getAttribute('locale') === null) {
+                throw new LogicException('A new ['.$model::class.'] needs a sales context: create it with '.class_basename($model).'::createIn($context, [...]).');
             }
         });
     }

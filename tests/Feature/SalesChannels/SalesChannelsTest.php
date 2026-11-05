@@ -77,12 +77,11 @@ it('gives a context only in a locale and currency of the channel', function (Clo
 it('sells through a channel that has no URL at all', function () {
     $channel = createSalesChannel(['key' => 'pos', 'name' => 'Shop floor']);
     $context = SalesContext::for('pos', Locale::GERMAN);
-    $context->activate();
     $product = app(CreateProduct::class)->handle([
         'name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5,
     ]);
 
-    $cart = Cart::query()->create();
+    $cart = Cart::createIn($context);
     $cart->add($product, 1);
     $order = app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A'])->order;
 
@@ -95,14 +94,22 @@ it('sells through a channel that has no URL at all', function () {
 
 it('keeps a cart in its own currency, also after its context was read', function () {
     createSalesChannel();
-    SalesContext::for('ch', 'fr-CH')->activate();
+    $fr = SalesContext::for('ch', 'fr-CH');
 
-    $cart = Cart::query()->create();
+    $cart = Cart::createIn($fr);
     $cart->sales_context;
     $cart->update(['currency' => Currency::EUR]);
-    $euro = Cart::query()->create(['currency' => Currency::EUR]);
+    $euro = Cart::createIn($fr, ['currency' => Currency::EUR]);
 
     expect($cart->fresh()->currency)->toBe(Currency::EUR)
         ->and($cart->fresh()->sales_context->currency)->toBe(Currency::EUR)
         ->and($euro->fresh()->currency)->toBe(Currency::EUR);
+});
+
+it('creates a cart only in a context it is given, not in one that happens to be current', function () {
+    createSalesChannel();
+    SalesContext::for('ch', 'de')->activate();
+
+    expect(fn () => Cart::query()->create())->toThrow(LogicException::class, 'Cart::createIn(')
+        ->and(Cart::createIn(SalesContext::for('default', 'en'))->fresh()->sales_context->channel)->toBe('default');
 });

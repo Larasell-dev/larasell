@@ -145,7 +145,7 @@ it('lets a variant inherit or override the product compare-at price', function (
 });
 
 it('charges the selling price when a compare-at price is set', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = Product::create([
         'name' => 'Cart sale tee',
         'price' => Price::of(1000),

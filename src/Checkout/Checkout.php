@@ -201,12 +201,10 @@ class Checkout
                     throw new TaxCalculationException('The tax calculation did not return the shipping line.');
                 }
 
-                $order = Order::query()->create([
+                $order = Order::createIn($lockedCart->sales_context, [
                     'number' => $this->orderNumber(),
                     'idempotency_key' => $idempotencyKey,
                     'idempotency_fingerprint' => $fingerprint,
-                    'sales_channel_id' => $lockedCart->sales_channel_id,
-                    'locale' => $lockedCart->locale,
                     'currency' => $lockedCart->currency,
                     'customer_id' => $data['customer_id'] ?? null,
                     'customer_email' => $data['customer_email'],

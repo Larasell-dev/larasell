@@ -29,7 +29,7 @@ it('gives concurrent checkouts different order numbers', function () {
     ]);
     $variant = $product->defaultVariant();
     $cartIds = collect([0, 1])->map(function () use ($product): int {
-        $cart = Cart::query()->create(['currency' => Currency::EUR]);
+        $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
         $cart->add($product);
 
         return (int) $cart->getKey();

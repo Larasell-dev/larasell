@@ -8,7 +8,7 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
 
 it('checks product min and max quantities when adding products to the cart', function (?int $minQuantity, ?int $maxQuantity, int $quantity, ?string $exceptionMessage) {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = product([
         'min_quantity' => $minQuantity,
         'max_quantity' => $maxQuantity,
@@ -48,7 +48,7 @@ it('checks product min and max quantities when adding products to the cart', fun
 ]);
 
 it('checks max quantity against the final quantity when adding an existing product again', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = product(['max_quantity' => 5]);
 
     $cart->add($product, 3);
@@ -60,7 +60,7 @@ it('checks max quantity against the final quantity when adding an existing produ
 });
 
 it('allows repeated adds once the final quantity satisfies the product minimum quantity', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = product(['min_quantity' => 3]);
 
     $cart->add($product, 3);
@@ -70,7 +70,7 @@ it('allows repeated adds once the final quantity satisfies the product minimum q
 });
 
 it('checks product min and max quantities when setting cart item quantities', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = product([
         'min_quantity' => 3,
         'max_quantity' => 5,
@@ -90,7 +90,7 @@ it('checks product min and max quantities when setting cart item quantities', fu
 });
 
 it('checks product max quantity before available stock', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = product([
         'max_quantity' => 5,
         'stock' => 4,

@@ -100,7 +100,7 @@ it('checks out a guest cart with the default cash payment method', function () {
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR, 'session_id' => 'guest-session']);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'session_id' => 'guest-session']);
     $cart->add($product, 2);
 
     $result = app(Checkout::class)->create($cart, checkoutData());
@@ -143,7 +143,7 @@ it('locks product variants in a deterministic order', function () {
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($secondProduct);
     $cart->add($firstProduct);
     $queries = [];
@@ -173,7 +173,7 @@ it('keeps snapshots after the source product changes', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR, 'user_id' => 42]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 42]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData(42))->order;
@@ -205,7 +205,7 @@ it('snapshots company and tax identifiers from address payloads', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
     $data = checkoutData();
     $data['billing_address'] = [
@@ -239,7 +239,7 @@ it('records declined payments and marks the order as failed', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData(), 'declining')->order;
@@ -256,7 +256,7 @@ it('supports the bank transfer payment method', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData(), 'bank_transfer')->order;
@@ -279,7 +279,7 @@ it('passes persisted models and options to a redirecting payment provider', func
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $result = app(Checkout::class)->create(
@@ -314,7 +314,7 @@ it('returns the original checkout when an idempotency key is retried', function 
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
     $options = ['success_url' => 'https://shop.example.com/success'];
 
@@ -351,7 +351,7 @@ it('rejects an idempotency key reused with different checkout input', function (
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     app(Checkout::class)->create(
@@ -376,7 +376,7 @@ it('treats equivalent payment option ordering as the same idempotent input', fun
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $first = app(Checkout::class)->create(
@@ -396,7 +396,7 @@ it('treats equivalent payment option ordering as the same idempotent input', fun
 });
 
 it('rejects invalid checkout idempotency keys', function (?string $key) {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     expect(fn () => app(Checkout::class)->create($cart, checkoutData(), idempotencyKey: $key))
         ->toThrow(InvalidArgumentException::class, 'The idempotency key must be a non-empty string of at most 255 characters.');
@@ -418,7 +418,7 @@ it('keeps an unknown provider outcome pending and recovers it on retry', functio
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     expect(fn () => app(Checkout::class)->create(
@@ -457,7 +457,7 @@ it('rejects an unknown payment method before modifying the cart', function () {
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     expect(fn () => app(Checkout::class)->create($cart, checkoutData(), 'unknown'))
@@ -475,7 +475,7 @@ it('rejects invalid order status transitions', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
     $order = app(Checkout::class)->create($cart, checkoutData())->order;
 
