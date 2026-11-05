@@ -3,12 +3,14 @@
 namespace Larasell\Larasell\Seo\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Larasell\Larasell\Seo\SeoUrlStatus;
 
 /**
  * One path in one channel and locale. Only SeoUrlManager writes these rows.
+ *
+ * resource_type and replacement_type hold the resource type's key(), such as "product", not a
+ * morph class; SeoResources::page() loads the model they point at.
  *
  * @property int $id
  * @property string $channel
@@ -25,6 +27,9 @@ use Larasell\Larasell\Seo\SeoUrlStatus;
  */
 class SeoUrl extends Model
 {
+    /** The longest path the path column holds, in characters. */
+    public const MAX_PATH_LENGTH = 512;
+
     protected $table = 'larasell_seo_urls';
 
     protected $guarded = [];
@@ -37,16 +42,4 @@ class SeoUrl extends Model
         'gone_snapshot' => 'array',
         'replacement_id' => 'integer',
     ];
-
-    /** @return MorphTo<Model, $this> */
-    public function resource(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    /** @return MorphTo<Model, $this> */
-    public function replacement(): MorphTo
-    {
-        return $this->morphTo();
-    }
 }

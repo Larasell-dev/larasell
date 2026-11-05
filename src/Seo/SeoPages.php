@@ -55,8 +55,8 @@ final class SeoPages
             return Resolution::gone($url);
         }
 
-        $resource = $url->resource;
-        $type = $resource instanceof Model ? $this->resources->find($resource) : null;
+        $type = $this->resources->findByKey($url->resource_type);
+        $resource = $this->resources->page($url->resource_type, $url->resource_id);
 
         if ($resource === null || $type === null) {
             return Resolution::notFound();
@@ -87,11 +87,12 @@ final class SeoPages
     public function url(Model $resource, ?SeoContext $context = null): ?string
     {
         $context ??= $this->currentContext();
-        $key = self::key($resource->getMorphClass(), $resource->getKey(), $context);
+        $type = $this->resources->for($resource)->key();
+        $key = self::key($type, $resource->getKey(), $context);
 
         $path = array_key_exists($key, $this->preloaded)
             ? $this->preloaded[$key]
-            : $this->manager->canonicalPath($resource->getMorphClass(), $resource->getKey(), $context);
+            : $this->manager->canonicalPath($type, $resource->getKey(), $context);
 
         return $path === null ? null : $context->url($path);
     }
@@ -117,7 +118,7 @@ final class SeoPages
         $ids = [];
 
         foreach ($resources as $resource) {
-            $ids[$resource->getMorphClass()][] = $resource->getKey();
+            $ids[$this->resources->for($resource)->key()][] = $resource->getKey();
         }
 
         foreach ($ids as $type => $keys) {
@@ -143,7 +144,7 @@ final class SeoPages
     /** Drops a preloaded path, e.g. after it changed. */
     public function forget(Model $resource, SeoContext $context): void
     {
-        unset($this->preloaded[self::key($resource->getMorphClass(), $resource->getKey(), $context)]);
+        unset($this->preloaded[self::key($this->resources->for($resource)->key(), $resource->getKey(), $context)]);
     }
 
     /** The request's context inside Route::storefront(), otherwise the first configured one. */
@@ -160,7 +161,7 @@ final class SeoPages
     /** @return list<GoneStrategy> */
     private function goneStrategies(SeoUrl $url): array
     {
-        $type = $this->resources->findByMorphClass($url->resource_type);
+        $type = $this->resources->findByKey($url->resource_type);
         $strategies = [];
 
         foreach ((array) config('larasell.seo.gone', []) as $typeClass => $classes) {
