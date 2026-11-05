@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Seo;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
+use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 
 /** The resource types in larasell.seo.resources, and the paths reserved for them. */
 final class SeoResources
@@ -30,6 +31,32 @@ final class SeoResources
         return null;
     }
 
+    /** @return SeoResourceType<Model>|null */
+    public function findByMorphClass(string $morphClass): ?SeoResourceType
+    {
+        foreach ($this->all() as $type) {
+            $model = $type->model();
+
+            if ((new $model)->getMorphClass() === $morphClass) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    /** Whether pages of a type are instances of the class, e.g. a route parameter typed as Product. */
+    public function handles(string $class): bool
+    {
+        foreach ($this->all() as $type) {
+            if (is_a($type->model(), $class, true) || is_a($class, $type->model(), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @return SeoResourceType<Model> */
     public function for(Model $resource): SeoResourceType
     {
@@ -38,13 +65,14 @@ final class SeoResources
     }
 
     /**
-     * Whether the path is reserved for everyone (larasell.seo.reserved_paths) or for a type other than this one.
+     * Whether the path is reserved for everyone (larasell.seo.reserved_paths and the static routes in
+     * Route::storefront(), such as "cart") or for a type other than this one.
      *
      * @param  SeoResourceType<Model>  $type
      */
     public function isReservedFor(string $path, SeoResourceType $type): bool
     {
-        $prefixes = (array) config('larasell.seo.reserved_paths', []);
+        $prefixes = [...(array) config('larasell.seo.reserved_paths', []), ...$this->staticStorefrontPaths()];
 
         foreach ($this->all() as $other) {
             if ($other::class !== $type::class) {
@@ -61,5 +89,25 @@ final class SeoResources
         }
 
         return false;
+    }
+
+    /** @return list<string> */
+    private function staticStorefrontPaths(): array
+    {
+        $paths = [];
+
+        foreach (app('router')->getRoutes()->getRoutes() as $route) {
+            if (! in_array(ResolveStorefront::class, $route->middleware(), true)) {
+                continue;
+            }
+
+            $uri = (string) preg_replace('#^\{'.ResolveStorefront::PREFIX.'\}/?#', '', $route->uri());
+
+            if ($uri !== '' && ! str_contains($uri, '{')) {
+                $paths[] = $uri;
+            }
+        }
+
+        return $paths;
     }
 }

@@ -26,6 +26,8 @@ final readonly class SeoContext
         $segments = array_filter([$this->prefix, trim($path, '/')], fn (string $segment): bool => $segment !== '');
         $port = $this->port === null ? '' : ':'.$this->port;
 
-        return rtrim($this->scheme.'://'.$this->host.$port.'/'.implode('/', $segments), '/');
+        $path = implode('/', array_map(rawurlencode(...), explode('/', implode('/', $segments))));
+
+        return rtrim($this->scheme.'://'.$this->host.$port.'/'.$path, '/');
     }
 }

@@ -177,7 +177,7 @@ it('rejects a custom URL that another page uses or that is malformed', function 
         ->toThrow(InvalidSeoPath::class, $message);
 })->with([
     'taken' => ['p/boots', 'already used'],
-    'empty segment' => ['sale//boots', 'not a valid'],
+    'query string' => ['sale?page=2', 'not a valid'],
     'spaces' => ['winter sale', 'not a valid'],
 ]);
 
