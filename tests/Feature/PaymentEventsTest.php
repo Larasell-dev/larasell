@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Enums\Currency;
@@ -10,7 +11,6 @@ use Larasell\Larasell\Events\PaymentFailed;
 use Larasell\Larasell\Events\PaymentPending;
 use Larasell\Larasell\Events\PaymentSucceeded;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Price;

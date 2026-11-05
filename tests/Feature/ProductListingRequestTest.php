@@ -1,10 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 
 beforeEach(function () {

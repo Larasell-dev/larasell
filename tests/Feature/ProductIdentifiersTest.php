@@ -2,7 +2,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Price;
 
 it('stores nullable product identifiers', function () {

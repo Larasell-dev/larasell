@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\App;
 use Illuminate\Validation\Rule;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Database\TrustedSqlExpression;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductListingRequest extends FormRequest

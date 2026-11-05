@@ -4,12 +4,12 @@ namespace Larasell\Larasell\Discounts;
 
 use Illuminate\Database\Eloquent\Collection;
 use InvalidArgumentException;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttributeValue;
-use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingOption;
 

@@ -1,13 +1,13 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\LengthUnit;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Enums\WeightUnit;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Weight;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Models;
+namespace Larasell\Larasell\Catalog\Models;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

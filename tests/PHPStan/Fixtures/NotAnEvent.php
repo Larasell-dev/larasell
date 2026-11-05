@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Seo\Fixtures;
 
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Product;
 
 /** Not in an Events namespace, so it may hold a model. */
 final readonly class NotAnEvent

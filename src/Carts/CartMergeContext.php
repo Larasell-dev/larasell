@@ -3,9 +3,9 @@
 namespace Larasell\Larasell\Carts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
-use Larasell\Larasell\Models\ProductVariant;
 
 final readonly class CartMergeContext
 {

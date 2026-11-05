@@ -1,10 +1,10 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityBelowMinimumException;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 it('checks product min and max quantities when adding products to the cart', function (?int $minQuantity, ?int $maxQuantity, int $quantity, ?string $exceptionMessage) {

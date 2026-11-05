@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Models;
+namespace Larasell\Larasell\Catalog\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;

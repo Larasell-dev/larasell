@@ -1,7 +1,7 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Category;
 
 it('exposes siblings as a relation property', function () {
     $clothing = Category::query()->create([

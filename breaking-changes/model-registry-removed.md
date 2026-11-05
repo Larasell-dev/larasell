@@ -26,7 +26,7 @@ the core table:
 ```php
 // Before: config/larasell.php
 'models' => [
-    'product' => App\Models\Product::class, // extends Larasell\Larasell\Models\Product
+    'product' => App\Models\Product::class, // extends Larasell\Larasell\Catalog\Models\Product
 ],
 
 // After: a model of your own, linked by product ID

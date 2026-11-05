@@ -1,12 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 it('gives concurrent checkouts different order numbers', function () {

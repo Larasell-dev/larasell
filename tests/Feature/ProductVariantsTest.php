@@ -1,11 +1,11 @@
 <?php
 
 use Illuminate\Database\QueryException;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
+use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
-use Larasell\Larasell\Models\ProductAttributeValue;
-use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 
 it('creates a variant from a valid combination of product attribute values', function () {

@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 

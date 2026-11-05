@@ -5,9 +5,9 @@ namespace Larasell\Larasell\Events;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductVariant;
 
 class InventoryRestocked implements ShouldDispatchAfterCommit
 {

@@ -1,7 +1,7 @@
 <?php
 
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Price;
 
 it('queries products directly assigned to a category', function () {

@@ -6,8 +6,8 @@ use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use JsonException;
+use Larasell\Larasell\Catalog\Models\ProductImage;
 use Larasell\Larasell\Images\Placeholder;
-use Larasell\Larasell\Models\ProductImage;
 
 /**
  * @implements CastsAttributes<Placeholder|null, mixed>

@@ -2,8 +2,8 @@
 
 namespace Larasell\Larasell\Images;
 
+use Larasell\Larasell\Catalog\Models\ProductImage;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
-use Larasell\Larasell\Models\ProductImage;
 
 class ColorPlaceholderGenerator implements PlaceholderGenerator
 {

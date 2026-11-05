@@ -1,6 +1,6 @@
 <?php
 
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Price;
 
 it('accepts nullable min and max quantities', function () {

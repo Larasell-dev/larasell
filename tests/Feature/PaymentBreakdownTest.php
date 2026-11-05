@@ -1,6 +1,7 @@
 <?php
 
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
@@ -11,7 +12,6 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Payments\PaymentBreakdownFactory;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;

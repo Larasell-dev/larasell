@@ -12,6 +12,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 

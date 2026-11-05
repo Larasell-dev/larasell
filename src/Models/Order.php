@@ -18,6 +18,8 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Casts\AddressCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\PriceCast;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;

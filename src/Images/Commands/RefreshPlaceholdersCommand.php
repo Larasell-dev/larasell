@@ -4,7 +4,7 @@ namespace Larasell\Larasell\Images\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
-use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Catalog\Models\ProductImage;
 
 class RefreshPlaceholdersCommand extends Command
 {

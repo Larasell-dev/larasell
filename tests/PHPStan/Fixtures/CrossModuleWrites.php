@@ -2,8 +2,8 @@
 
 namespace Larasell\Larasell\Seo\Fixtures;
 
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 
 final class CrossModuleWrites

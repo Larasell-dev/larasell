@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Carts;
 use Closure;
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Carts\Strategies\CallbackCartMergeStrategy;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\CartMerged;
@@ -12,7 +13,6 @@ use Larasell\Larasell\Exceptions\Cart\CartMergeException;
 use Larasell\Larasell\Exceptions\Promotions\PromotionException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\CartItem;
-use Larasell\Larasell\Models\ProductVariant;
 
 final readonly class CartMerger
 {

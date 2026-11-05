@@ -1,6 +1,6 @@
 <?php
 
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Price;
 
 it('defaults products to the standard tax category', function () {

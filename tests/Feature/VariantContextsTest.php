@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Discounts\PromotionContext;
 use Larasell\Larasell\Discounts\ProportionalDiscountAllocator;
@@ -9,8 +11,6 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\InventoryDecremented;
 use Larasell\Larasell\Events\InventoryRestocked;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 
 it('selects promotion lines by product variant and attribute value', function () {

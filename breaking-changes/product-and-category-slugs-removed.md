@@ -61,8 +61,8 @@ ProductListingRoute::get(ShowCategory::class, prefix: 'c');
 
 // After
 use Illuminate\Support\Facades\Route;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 
 Route::storefront(function () {
     Route::get('p/{product}', ShowProduct::class);

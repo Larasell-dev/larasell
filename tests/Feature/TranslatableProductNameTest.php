@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
-use Larasell\Larasell\Models\Product;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 
