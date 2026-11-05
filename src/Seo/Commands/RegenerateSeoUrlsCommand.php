@@ -3,7 +3,6 @@
 namespace Larasell\Larasell\Seo\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Models\SeoUrl;
@@ -47,10 +46,6 @@ class RegenerateSeoUrlsCommand extends Command
         }
 
         $changes = [];
-        Event::listen(SeoUrlChanged::class, function (SeoUrlChanged $event) use (&$changes): void {
-            $changes[] = [$event->context->channel, $event->context->locale->value, $event->oldPath ?? '-', $event->newPath ?? '-'];
-        });
-
         $connection = (new SeoUrl)->getConnection();
         $connection->beginTransaction();
 
@@ -60,7 +55,9 @@ class RegenerateSeoUrlsCommand extends Command
 
                 foreach ($types as $type) {
                     foreach ($type->model()::query()->lazyById() as $resource) {
-                        $changed += $manager->refresh($resource, $contexts, cascade: false);
+                        $passChanges = $manager->refresh($resource, $contexts, cascade: false);
+                        $changed += count($passChanges);
+                        array_push($changes, ...$passChanges);
                     }
                 }
 
@@ -77,7 +74,9 @@ class RegenerateSeoUrlsCommand extends Command
         $this->option('dry-run') ? $connection->rollBack() : $connection->commit();
 
         if ($changes !== []) {
-            $this->table(['Channel', 'Locale', 'Old path', 'New path'], $changes);
+            $this->table(['Channel', 'Locale', 'Old path', 'New path'], array_map(fn (SeoUrlChanged $change): array => [
+                $change->context->channel, $change->context->locale->value, $change->oldPath ?? '-', $change->newPath ?? '-',
+            ], $changes));
         }
 
         $this->info(count($changes).' '.str('URL')->plural(count($changes)).($this->option('dry-run') ? ' would change.' : ' changed.'));

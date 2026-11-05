@@ -84,25 +84,33 @@ final class SeoUrlManager
     }
 
     /**
-     * Brings the resource's automatic URLs up to date and queues its dependents when a path changed.
+     * Brings the resource's automatic URLs up to date in every context at once, or in none when one
+     * fails, and queues its dependents when a path changed.
      *
      * @param  list<SeoContext>|null  $contexts  null for every context
-     * @return int The number of contexts whose path changed
+     * @return list<SeoUrlChanged> One change per context whose path changed
      */
-    public function refresh(Model $resource, ?array $contexts = null, bool $cascade = true): int
+    public function refresh(Model $resource, ?array $contexts = null, bool $cascade = true): array
     {
         $type = $this->resources->for($resource);
-        $changed = 0;
 
-        foreach ($contexts ?? $this->contexts() as $context) {
-            $changed += $this->transaction(fn (): bool => $this->refreshIn($type, $resource, $context)) ? 1 : 0;
-        }
+        $changes = $this->transaction(function () use ($type, $resource, $contexts): array {
+            $changes = [];
 
-        if ($changed > 0 && $cascade) {
+            foreach ($contexts ?? $this->contexts() as $context) {
+                if ($change = $this->refreshIn($type, $resource, $context)) {
+                    $changes[] = $change;
+                }
+            }
+
+            return $changes;
+        });
+
+        if ($changes !== [] && $cascade) {
             $this->refreshDependents($type, $resource);
         }
 
-        return $changed;
+        return $changes;
     }
 
     /** Makes the path the resource's custom URL. Renames never change it until resetToAutomatic(). */
@@ -115,7 +123,7 @@ final class SeoUrlManager
             $current = $this->canonical($resource, $context);
             $row = $this->place($type, $resource, $context, $path, true, $current);
 
-            return [$row, $this->changed($resource, $context, $current?->path, $row->path)];
+            return [$row, $this->changed($resource, $context, $current?->path, $row->path) !== null];
         });
 
         if ($changed) {
@@ -138,7 +146,7 @@ final class SeoUrlManager
 
             $current->update(['is_custom' => false]);
 
-            return $this->refreshIn($type, $resource, $context);
+            return $this->refreshIn($type, $resource, $context) !== null;
         });
 
         if ($changed) {
@@ -147,30 +155,41 @@ final class SeoUrlManager
     }
 
     /**
-     * Keeps the deleted resource's public URLs as tombstones, with the snapshot its type takes and an
-     * optional replacement for them to lead to. URLs that were never public are dropped.
+     * Keeps the deleted resource's public URLs as tombstones, with the snapshot its type takes. URLs
+     * that were never public are dropped. A replacement makes the tombstones lead to it; it can be
+     * given before or after the resource is deleted.
      */
     public function markGone(Model $resource, ?Model $replacement = null): void
     {
         $type = $this->resources->for($resource);
-        $gone = false;
+        $replacementKey = $replacement === null ? null : $this->resources->for($replacement)->key();
 
-        foreach ($this->contexts() as $context) {
-            $gone = $this->transaction(function () use ($type, $resource, $replacement, $context): bool {
-                $rows = $this->rows($type->key(), $resource->getKey(), $context)
-                    ->where('status', '!=', SeoUrlStatus::Gone->value);
+        if ($replacementKey === $type->key() && $replacement->getKey() == $resource->getKey()) {
+            throw new LogicException('A page cannot be its own replacement.');
+        }
 
-                (clone $rows)->whereNull('went_public_at')->delete();
+        $gone = $this->transaction(function () use ($type, $resource, $replacement, $replacementKey): bool {
+            $gone = false;
 
-                return (clone $rows)->update([
+            foreach ($this->contexts() as $context) {
+                $rows = $this->rows($type->key(), $resource->getKey(), $context);
+                $live = (clone $rows)->where('status', '!=', SeoUrlStatus::Gone->value);
+
+                (clone $live)->whereNull('went_public_at')->delete();
+
+                $gone = $live->update([
                     'status' => SeoUrlStatus::Gone->value,
                     'gone_snapshot' => json_encode($type->snapshot($resource, $context), JSON_THROW_ON_ERROR),
-                    'replacement_type' => $replacement === null ? null : $this->resources->for($replacement)->key(),
-                    'replacement_id' => $replacement?->getKey(),
                     'updated_at' => now(),
-                ]) > 0;
-            }) || $gone;
-        }
+                ]) > 0 || $gone;
+
+                if ($replacement !== null) {
+                    $rows->update(['replacement_type' => $replacementKey, 'replacement_id' => $replacement->getKey(), 'updated_at' => now()]);
+                }
+            }
+
+            return $gone;
+        });
 
         if ($gone) {
             event(new SeoResourceGone($resource));
@@ -189,7 +208,7 @@ final class SeoUrlManager
     }
 
     /** @param  SeoResourceType<Model>  $type */
-    private function refreshIn(SeoResourceType $type, Model $resource, SeoContext $context): bool
+    private function refreshIn(SeoResourceType $type, Model $resource, SeoContext $context): ?SeoUrlChanged
     {
         $current = $this->canonical($resource, $context);
         $available = $type->isAvailable($resource, $context);
@@ -197,7 +216,7 @@ final class SeoUrlManager
         if ($current?->is_custom) {
             $this->markPublic($current, $available);
 
-            return false;
+            return null;
         }
 
         $path = $type->path($resource, $context);
@@ -318,15 +337,16 @@ final class SeoUrlManager
         $row->save();
     }
 
-    private function changed(Model $resource, SeoContext $context, ?string $old, ?string $new): bool
+    /** Announces the change once the transaction commits, and returns it; null when nothing changed. */
+    private function changed(Model $resource, SeoContext $context, ?string $old, ?string $new): ?SeoUrlChanged
     {
         if ($old === $new) {
-            return false;
+            return null;
         }
 
-        event(new SeoUrlChanged($resource, $context, $old, $new));
+        event($change = new SeoUrlChanged($resource, $context, $old, $new));
 
-        return true;
+        return $change;
     }
 
     /** @param  SeoResourceType<Model>  $type */

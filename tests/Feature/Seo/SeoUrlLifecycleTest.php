@@ -3,12 +3,14 @@
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
 use Larasell\Larasell\Seo\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
@@ -270,12 +272,15 @@ it('keeps exactly one canonical URL and no duplicate paths through any sequence 
 it('regenerates URLs that bulk updates left behind', function () {
     $product = seoProduct('Boots');
     Product::query()->whereKey($product->getKey())->update(['name' => json_encode(['en' => 'Leather Boots'])]);
+    Event::fake([SeoUrlChanged::class]);
 
     $this->artisan('larasell:regenerate-seo-urls', ['--dry-run' => true])
+        ->expectsOutputToContain('p/leather-boots')
         ->expectsOutputToContain('1 URL would change.')
         ->assertSuccessful();
 
     expect(seoPaths($product))->toBe(['p/boots' => 'canonical']);
+    Event::assertNotDispatched(SeoUrlChanged::class);
 
     $this->artisan('larasell:regenerate-seo-urls', ['type' => 'product'])
         ->expectsOutputToContain('1 URL changed.')
@@ -366,4 +371,38 @@ it('treats paths that differ only in accents as different paths', function () {
         ->and(seoPaths($street))->toEqual(['p/street' => 'historic', 'straße' => 'canonical'])
         ->and(app(SeoPages::class)->resolve('strasse', seoContext())->resource?->is($street))->toBeFalse()
         ->and(app(SeoPages::class)->resolve('the', seoContext())->kind)->toBe(ResolutionKind::NotFound);
+});
+
+it('announces URL changes only once they are committed', function () {
+    $announced = [];
+    Event::listen(SeoUrlChanged::class, function (SeoUrlChanged $event) use (&$announced): void {
+        $announced[] = $event->newPath;
+    });
+    $product = seoProduct('Boots');
+
+    try {
+        DB::transaction(function () use ($product): void {
+            $product->update(['name' => ['en' => 'Leather Boots']]);
+
+            throw new RuntimeException('Rolled back.');
+        });
+    } catch (RuntimeException) {
+    }
+
+    expect($announced)->toBe(['p/boots'])
+        ->and(seoPaths($product))->toBe(['p/boots' => 'canonical']);
+
+    $product->update(['name' => ['en' => 'Leather Boots']]);
+
+    expect($announced)->toBe(['p/boots', 'p/leather-boots']);
+});
+
+it('redirects a deleted page to a replacement chosen after the delete', function () {
+    $old = seoProduct('Boots');
+    $new = seoProduct('Boots 2027');
+
+    $old->delete();
+    app(SeoUrlManager::class)->markGone($old, $new);
+
+    expect(app(SeoPages::class)->resolve('p/boots', seoContext())->redirect?->url)->toBe('http://localhost/p/boots-2027');
 });
