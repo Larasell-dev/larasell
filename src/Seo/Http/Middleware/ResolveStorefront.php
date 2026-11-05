@@ -8,7 +8,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Reflector;
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
 use Larasell\Larasell\Seo\Exceptions\SeoPageHidden;
@@ -18,6 +17,7 @@ use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoRedirect;
 use Larasell\Larasell\Seo\SeoResources;
+use Larasell\Larasell\Storefront\StorefrontContext;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -39,8 +39,8 @@ final class ResolveStorefront
     {
         /** @var Route $route */
         $route = $request->route();
-        // SetSalesContext set it, and RestoreStorefrontPath let only the route copy of its locale through.
-        $context = SalesContext::current() ?? throw new SeoPageNotFound($request->path());
+        // SetStorefrontContext set it, and RestoreStorefrontPath let only the route copy of its locale through.
+        $context = StorefrontContext::current() ?? throw new SeoPageNotFound($request->path());
 
         $parameter = $this->pageParameter($route);
 
@@ -106,7 +106,7 @@ final class ResolveStorefront
     }
 
     /** The decoded request path below the entry point's prefix, as the client sent it. */
-    private function pathBelow(Request $request, SalesContext $context): string
+    private function pathBelow(Request $request, StorefrontContext $context): string
     {
         $path = rawurldecode(substr($request->getPathInfo(), 1));
 

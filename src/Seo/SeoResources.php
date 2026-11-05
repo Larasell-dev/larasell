@@ -5,8 +5,8 @@ namespace Larasell\Larasell\Seo;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\SalesChannels\SalesContext;
-use Larasell\Larasell\SalesChannels\StorefrontRoutes;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
+use Larasell\Larasell\Storefront\StorefrontRoutes;
 use LogicException;
 
 /** The resource types in larasell.seo.resources, and the paths reserved for them. */

@@ -7,13 +7,12 @@ use LogicException;
 
 /**
  * For records made in a sales context, such as carts and orders: they store it in sales_channel_id,
- * locale, currency and entry_point_id, readable as $model->sales_context. A new record without them
+ * locale and currency, readable as $model->sales_context. A new record without them
  * takes the current context (a storefront request or a job it queued); without one it cannot be saved.
  *
  * @property SalesContext $sales_context
  * @property int $sales_channel_id
  * @property string $locale
- * @property int|null $entry_point_id
  */
 trait HasSalesContext
 {

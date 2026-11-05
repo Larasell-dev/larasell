@@ -8,32 +8,32 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\SalesChannels\Actions\AddEntryPoint;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Settings\CurrencySettings;
+use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 beforeEach(function () {
     config()->set('larasell.locale.supported', ['en', 'de']);
     app(CurrencySettings::class)->save([Currency::EUR, Currency::USD]);
     app('translator')->addLines(['routes.cart' => 'warenkorb'], 'de');
-    app(CreateSalesChannel::class)->handle([
+    $shop = app(CreateSalesChannel::class)->handle([
         'key' => 'shop',
         'name' => 'Shop',
+        'type' => 'storefront',
         'locales' => ['de', 'en'],
         'currencies' => ['EUR'],
-        'entry_points' => [
-            ['url' => 'https://shop.de', 'locale' => 'de'],
-            ['url' => 'https://shop.de/en', 'locale' => 'en'],
-        ],
     ]);
+    app(AddEntryPoint::class)->handle($shop->id, ['url' => 'https://shop.de', 'locale' => 'de']);
+    app(AddEntryPoint::class)->handle($shop->id, ['url' => 'https://shop.de/en', 'locale' => 'en']);
 });
 
 function shopRoutes(): void
 {
     Route::storefront(function () {
-        Route::get('/', fn (SalesContext $context) => "home {$context->channel} {$context->locale->value} ".app()->getLocale());
+        Route::get('/', fn (SalesContext $context, StorefrontContext $storefront) => "home {$context->channel} {$context->locale->value} ".app()->getLocale().' '.$storefront->url());
         Route::get('cart', fn () => 'cart '.storefront_route('cart'))->name('cart')->localized();
         Route::get('orders/{order}', fn (string $order) => 'order '.$order)->name('order');
     });
@@ -46,15 +46,15 @@ final class RecordSalesContext implements ShouldQueue
 
     public function handle(): void
     {
-        cache()->put('recorded-context', SalesContext::current()?->entryPoint->url());
+        cache()->put('recorded-context', [StorefrontContext::current()?->url(), SalesContext::current()?->locale->value]);
     }
 }
 
 it('serves the routes of every entry point from one copy per language', function () {
     shopRoutes();
 
-    $this->get('https://shop.de/')->assertOk()->assertSee('home shop de de');
-    $this->get('https://shop.de/en')->assertOk()->assertSee('home shop en en');
+    $this->get('https://shop.de/')->assertOk()->assertSee('home shop de de https://shop.de');
+    $this->get('https://shop.de/en')->assertOk()->assertSee('home shop en en https://shop.de/en');
     $this->get('https://shop.de/warenkorb')->assertOk()->assertSee('cart https://shop.de/warenkorb');
     $this->get('https://shop.de/en/cart')->assertOk()->assertSee('cart https://shop.de/en/cart');
     $this->get('https://shop.de/cart')->assertNotFound();
@@ -95,12 +95,12 @@ it('leaves routes outside the storefront on the same host alone', function () {
 
 it('builds storefront URLs for any context, and refuses without one', function () {
     shopRoutes();
-    $en = SalesContext::for('shop', Locale::ENGLISH);
-    Context::forgetHidden(SalesContext::KEY);
+    $en = StorefrontContext::for('shop', Locale::ENGLISH);
+    Context::forgetHidden(StorefrontContext::KEY);
 
     expect(storefront_route('order', ['order' => 'A-1'], $en))->toBe('https://shop.de/en/orders/A-1')
-        ->and(storefront_route('cart', [], SalesContext::for('shop', Locale::GERMAN)))->toBe('https://shop.de/warenkorb')
-        ->and(fn () => storefront_route('cart'))->toThrow(LogicException::class, 'SalesContext');
+        ->and(storefront_route('cart', [], StorefrontContext::for('shop', Locale::GERMAN)))->toBe('https://shop.de/warenkorb')
+        ->and(fn () => storefront_route('cart'))->toThrow(LogicException::class, 'StorefrontContext');
 });
 
 it('carries the sales context of a request into the jobs it queues', function () {
@@ -124,5 +124,5 @@ it('carries the sales context of a request into the jobs it queues', function ()
     Context::flush();
     $this->artisan('queue:work', ['--once' => true, '--queue' => 'default'])->assertSuccessful();
 
-    expect(cache()->get('recorded-context'))->toBe('https://shop.de/en');
+    expect(cache()->get('recorded-context'))->toBe(['https://shop.de/en', 'en']);
 });

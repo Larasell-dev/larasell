@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -50,8 +50,8 @@ it('serves each translated path only in its own locale', function () {
 it('names each copy by locale', function () {
     localizedRoutes();
 
-    expect(storefront_route('cart', [], SalesContext::for('default', 'de')))->toBe('http://localhost/warenkorb')
-        ->and(storefront_route('cart', [], SalesContext::for('default', 'en')))->toBe('http://localhost/en/cart')
+    expect(storefront_route('cart', [], StorefrontContext::for('default', 'de')))->toBe('http://localhost/warenkorb')
+        ->and(storefront_route('cart', [], StorefrontContext::for('default', 'en')))->toBe('http://localhost/en/cart')
         ->and(Route::has(['de.cart', 'en.cart', 'de.cart.add']))->toBeTrue();
 });
 
@@ -92,5 +92,5 @@ it('keeps translated paths in cached routes', function () {
     $this->get('/en/cart')->assertOk()->assertSee('cart en');
     $this->get('/cart')->assertNotFound();
     $this->get('/en/warenkorb')->assertNotFound();
-    expect(storefront_route('cart.add', [], SalesContext::for('default', 'de')))->toBe('http://localhost/warenkorb/hinzufuegen');
+    expect(storefront_route('cart.add', [], StorefrontContext::for('default', 'de')))->toBe('http://localhost/warenkorb/hinzufuegen');
 });

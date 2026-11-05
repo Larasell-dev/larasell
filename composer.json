@@ -29,7 +29,7 @@
       "Larasell\\Larasell\\": "src"
     },
     "files": [
-      "src/helpers.php"
+      "src/Storefront/helpers.php"
     ]
   },
   "autoload-dev": {
@@ -42,6 +42,7 @@
     "laravel": {
       "providers": [
         "Larasell\\Larasell\\LarasellServiceProvider",
+        "Larasell\\Larasell\\Storefront\\StorefrontServiceProvider",
         "Larasell\\Larasell\\Seo\\SeoServiceProvider"
       ]
     }

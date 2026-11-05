@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\SalesChannels;
+namespace Larasell\Larasell\Storefront;
 
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
@@ -18,7 +18,7 @@ final readonly class EntryPoint
         public string $prefix,
         public Locale $locale,
         public Currency $currency,
-        /** The entry point SalesContext::for() uses for its channel, locale and currency. */
+        /** The entry point StorefrontContext::for() uses for its channel, locale and currency. */
         public bool $primary,
     ) {}
 

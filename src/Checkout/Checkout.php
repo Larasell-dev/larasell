@@ -207,7 +207,6 @@ class Checkout
                     'idempotency_fingerprint' => $fingerprint,
                     'sales_channel_id' => $lockedCart->sales_channel_id,
                     'locale' => $lockedCart->locale,
-                    'entry_point_id' => $lockedCart->entry_point_id,
                     'currency' => $lockedCart->currency,
                     'customer_id' => $data['customer_id'] ?? null,
                     'customer_email' => $data['customer_email'],

@@ -1,12 +1,12 @@
 <?php
 
-namespace Larasell\Larasell\SalesChannels\Http\Middleware;
+namespace Larasell\Larasell\Storefront\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
-use Larasell\Larasell\SalesChannels\SalesContext;
-use Larasell\Larasell\SalesChannels\StorefrontRoutes;
+use Larasell\Larasell\Storefront\StorefrontContext;
+use Larasell\Larasell\Storefront\StorefrontRoutes;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -20,15 +20,15 @@ final class RestoreStorefrontPath
     {
         /** @var Route $route */
         $route = $request->route();
-        $original = $request->attributes->get(SetSalesContext::ORIGINAL_URI);
-        $context = SalesContext::current();
+        $original = $request->attributes->get(SetStorefrontContext::ORIGINAL_URI);
+        $context = StorefrontContext::current();
 
-        if (! is_string($original) || $context === null || $context->locale !== StorefrontRoutes::localeOf($route)) {
+        if (! is_string($original) || $context === null || $context->sales->locale !== StorefrontRoutes::localeOf($route)) {
             throw new NotFoundHttpException;
         }
 
-        SetSalesContext::rewrite($request, $original);
-        $request->attributes->remove(SetSalesContext::ORIGINAL_URI);
+        SetStorefrontContext::rewrite($request, $original);
+        $request->attributes->remove(SetStorefrontContext::ORIGINAL_URI);
 
         return $next($request);
     }

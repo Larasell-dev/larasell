@@ -2,9 +2,9 @@
 
 namespace Larasell\Larasell\Seo;
 
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 /** A permanent redirect to the replacement chosen when the page was deleted, while it is available. */
 final class RedirectToReplacement implements GoneStrategy
@@ -14,7 +14,7 @@ final class RedirectToReplacement implements GoneStrategy
         private readonly SeoResources $resources,
     ) {}
 
-    public function redirect(SeoUrl $url, SalesContext $context): ?SeoRedirect
+    public function redirect(SeoUrl $url, StorefrontContext $context): ?SeoRedirect
     {
         $replacement = $this->resources->page($url->replacement_type, $url->replacement_id);
         $location = $replacement === null ? null : $this->pages->availableUrl($replacement, $context);

@@ -9,6 +9,7 @@
 
 const MODULE_TIERS = [
     ['SalesChannels' => ['Larasell\Larasell\SalesChannels']],
+    ['Storefront' => ['Larasell\Larasell\Storefront']],
     ['Catalog' => ['Larasell\Larasell\Catalog', 'Larasell\Larasell\Images']],
     [
         'Inventory' => ['Larasell\Larasell\Inventory', 'Larasell\Larasell\Models\InventoryReservation'],
@@ -31,7 +32,7 @@ const LEAF_MODULES = [
 ];
 
 /** What SEO may use besides the shared kernel. */
-const SEO_DEPENDS_ON = ['SalesChannels', 'Catalog'];
+const SEO_DEPENDS_ON = ['SalesChannels', 'Storefront', 'Catalog'];
 
 /** Today's violations: module => forbidden module => classes of the module that use it. */
 const BASELINE = [

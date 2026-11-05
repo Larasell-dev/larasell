@@ -15,8 +15,6 @@ use Larasell\Larasell\Catalog\Events\CategoryUpdated;
 use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Events\ProductUpdated;
-use Larasell\Larasell\SalesChannels\Events\EntryPointCreated;
-use Larasell\Larasell\SalesChannels\StorefrontRoutes;
 use Larasell\Larasell\Seo\Catalog\CatalogUrls;
 use Larasell\Larasell\Seo\Commands\RegenerateSeoUrlsCommand;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
@@ -26,6 +24,8 @@ use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 use Larasell\Larasell\Seo\Jobs\BackfillSeoUrls;
+use Larasell\Larasell\Storefront\Events\EntryPointCreated;
+use Larasell\Larasell\Storefront\StorefrontRoutes;
 
 /**
  * The SEO module: public storefront URLs, their history, and what search engines see.

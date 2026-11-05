@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\SalesChannels;
+namespace Larasell\Larasell\Storefront;
 
 use Closure;
 use Illuminate\Routing\Route;
@@ -12,7 +12,7 @@ use LogicException;
 
 /**
  * Route::storefront() and ->localized(). Storefront routes are registered once per language, below an
- * internal prefix such as "~de". SetSalesContext maps a request's entry point (host plus prefix) onto
+ * internal prefix such as "~de". SetStorefrontContext maps a request's entry point (host plus prefix) onto
  * that prefix before routing, so new entry points need no new routes and route:cache keeps working.
  */
 final class StorefrontRoutes
@@ -121,11 +121,11 @@ final class StorefrontRoutes
      *
      * @param  array<array-key, mixed>  $parameters
      */
-    public static function url(string $name, array $parameters, SalesContext $context): string
+    public static function url(string $name, array $parameters, StorefrontContext $context): string
     {
-        $relative = route($context->locale->value.'.'.$name, $parameters, false);
+        $relative = route($context->sales->locale->value.'.'.$name, $parameters, false);
         [$path, $query] = array_pad(explode('?', $relative, 2), 2, null);
-        $path = substr(trim((string) $path, '/'), strlen(self::prefix($context->locale)));
+        $path = substr(trim((string) $path, '/'), strlen(self::prefix($context->sales->locale)));
 
         return $context->url(rawurldecode(trim($path, '/'))).($query === null ? '' : '?'.$query);
     }

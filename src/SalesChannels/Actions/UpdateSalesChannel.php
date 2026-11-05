@@ -7,9 +7,7 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
-use Larasell\Larasell\SalesChannels\Models\SalesChannelEntryPoint;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 
 final readonly class UpdateSalesChannel
@@ -21,7 +19,7 @@ final readonly class UpdateSalesChannel
     ) {}
 
     /**
-     * Gaining a locale needs an entry point in it (AddEntryPoint) before its pages are reachable.
+     * Listeners of SalesChannelUpdated may refuse the change by throwing, e.g. a storefront for a locale its entry points still serve.
      *
      * @param  array{name?: string, locales?: list<Locale|string>, currencies?: list<Currency|string>, default_locale?: Locale|string, default_currency?: Currency|string, active?: bool}  $input
      */
@@ -35,14 +33,6 @@ final readonly class UpdateSalesChannel
             $channel->default_locale = isset($input['default_locale']) ? $this->rules->locale($input['default_locale']) : $channel->default_locale;
             $channel->default_currency = isset($input['default_currency']) ? $this->rules->currency($input['default_currency']) : $channel->default_currency;
             $this->rules->defaults($locales, $currencies, $channel->default_locale, $channel->default_currency);
-
-            $orphan = SalesChannelEntryPoint::query()->where('sales_channel_id', $channel->id)->get()->first(
-                fn (SalesChannelEntryPoint $entryPoint): bool => ! in_array($entryPoint->locale, $locales, true) || ! in_array($entryPoint->currency, $currencies, true),
-            );
-
-            if ($orphan !== null) {
-                throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still serves [{$orphan->locale->value}, {$orphan->currency->value}]; delete it first.");
-            }
 
             $changed = array_keys($channel->getDirty());
             $channel->save();

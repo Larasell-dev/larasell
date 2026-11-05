@@ -3,18 +3,16 @@
 namespace Larasell\Larasell\SalesChannels\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\SalesChannels\SalesChannelType;
 
 /**
- * Write through the actions in Larasell\Larasell\SalesChannels\Actions; they keep the cached entry points current.
+ * Write through the actions in Larasell\Larasell\SalesChannels\Actions; they keep the cached channels current.
  *
  * @property int $id
  * @property string $key
  * @property string $name
- * @property SalesChannelType $type
+ * @property string $type a key registered with Larasell\Larasell\SalesChannels\SalesChannelTypes, e.g. "storefront"
  * @property Locale $default_locale
  * @property Currency $default_currency
  * @property bool $active
@@ -26,17 +24,10 @@ class SalesChannel extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'type' => SalesChannelType::class,
         'default_locale' => Locale::class,
         'default_currency' => Currency::class,
         'active' => 'boolean',
     ];
-
-    /** @return HasMany<SalesChannelEntryPoint, $this> */
-    public function entryPoints(): HasMany
-    {
-        return $this->hasMany(SalesChannelEntryPoint::class, 'sales_channel_id');
-    }
 
     /** @return list<Locale> */
     public function locales(): array

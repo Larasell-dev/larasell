@@ -27,6 +27,7 @@ use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
 use Larasell\Larasell\Seo\SeoUrlStatus;
+use Larasell\Larasell\Storefront\StorefrontContext;
 use Larasell\Larasell\Translatable;
 
 beforeEach(function () {
@@ -244,7 +245,7 @@ it('gives a product a URL only in the locales it has a name in', function () {
 
     expect(seoPaths($product, 'en'))->toBe(['p/size-chart' => 'canonical'])
         ->and(seoPaths($product, 'de-DE'))->toBe(['p/groessentabelle' => 'canonical'])
-        ->and(seoContext('de-DE')->url('p/groessentabelle'))->toBe('http://localhost/de-de/p/groessentabelle');
+        ->and(StorefrontContext::for(seoContext('de-DE'))->url('p/groessentabelle'))->toBe('http://localhost/de-de/p/groessentabelle');
 });
 
 it('keeps exactly one canonical URL and no duplicate paths through any sequence of changes', function () {
@@ -324,7 +325,7 @@ it('keeps the URLs of a page when the app adds a morph map later', function () {
         updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
         expect(allSeoPaths())->toEqual(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
-            ->and(app(SeoPages::class)->url($product, seoContext()))->toBe('http://localhost/p/leather-boots');
+            ->and(app(SeoPages::class)->url($product, StorefrontContext::for(seoContext())))->toBe('http://localhost/p/leather-boots');
     } finally {
         Relation::morphMap([], false);
     }
@@ -364,8 +365,8 @@ it('treats paths that differ only in accents as different paths', function () {
 
     expect(seoPaths($coffee))->toEqual(['p/coffee' => 'historic', 'café' => 'historic', 'cafe' => 'canonical'])
         ->and(seoPaths($street))->toEqual(['p/street' => 'historic', 'straße' => 'canonical'])
-        ->and(app(SeoPages::class)->resolve('strasse', seoContext())->resource?->is($street))->toBeFalse()
-        ->and(app(SeoPages::class)->resolve('the', seoContext())->kind)->toBe(ResolutionKind::NotFound);
+        ->and(app(SeoPages::class)->resolve('strasse', StorefrontContext::for(seoContext()))->resource?->is($street))->toBeFalse()
+        ->and(app(SeoPages::class)->resolve('the', StorefrontContext::for(seoContext()))->kind)->toBe(ResolutionKind::NotFound);
 });
 
 it('announces URL changes only once they are committed', function () {
@@ -399,7 +400,7 @@ it('redirects a deleted page to a replacement chosen after the delete', function
     deleteFromCatalog($old);
     app(SeoUrlManager::class)->markGone($old, $new);
 
-    expect(app(SeoPages::class)->resolve('p/boots', seoContext())->redirect?->url)->toBe('http://localhost/p/boots-2027');
+    expect(app(SeoPages::class)->resolve('p/boots', StorefrontContext::for(seoContext()))->redirect?->url)->toBe('http://localhost/p/boots-2027');
 });
 
 /** Slugs like the default one, but fails for the name "Kaputt", e.g. a transliteration service that is down. */
@@ -433,7 +434,7 @@ it('keeps a product and its URLs as they were when its delete fails', function (
 
     expect(Product::query()->whereKey($product->getKey())->exists())->toBeTrue()
         ->and(seoPaths($product))->toBe(['p/boots' => 'canonical'])
-        ->and(app(SeoPages::class)->resolve('p/boots', seoContext())->kind)->toBe(ResolutionKind::Found);
+        ->and(app(SeoPages::class)->resolve('p/boots', StorefrontContext::for(seoContext()))->kind)->toBe(ResolutionKind::Found);
 });
 
 it('saves a product and its URLs in every locale together, or none of them', function () {
@@ -507,12 +508,12 @@ it('stores and finds paths of any length', function () {
 
     expect(strlen($automatic))->toBeGreaterThan(600)
         ->and(seoPaths($product))->toBe([$automatic => 'canonical'])
-        ->and(app(SeoPages::class)->resolve($automatic, seoContext())->resource?->is($product))->toBeTrue();
+        ->and(app(SeoPages::class)->resolve($automatic, StorefrontContext::for(seoContext()))->resource?->is($product))->toBeTrue();
 
     app(SeoUrlManager::class)->setCustom($product, seoContext(), $custom);
 
-    expect(app(SeoPages::class)->resolve($custom, seoContext())->resource?->is($product))->toBeTrue()
-        ->and(app(SeoPages::class)->resolve($automatic, seoContext())->redirect?->url)->toBe('http://localhost/'.$custom);
+    expect(app(SeoPages::class)->resolve($custom, StorefrontContext::for(seoContext()))->resource?->is($product))->toBeTrue()
+        ->and(app(SeoPages::class)->resolve($automatic, StorefrontContext::for(seoContext()))->redirect?->url)->toBe('http://localhost/'.$custom);
 });
 
 it('numbers any number of pages with the same name, with one lookup for the taken numbers', function () {

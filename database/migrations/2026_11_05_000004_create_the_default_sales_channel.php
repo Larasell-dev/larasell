@@ -42,7 +42,7 @@ return new class extends Migration
         foreach ($locales as $locale) {
             $prefix = trim(($url['path'] ?? '').(count($locales) > 1 ? '/'.strtolower($locale->value) : ''), '/');
 
-            DB::table('larasell_sales_channel_entry_points')->insert([
+            DB::table('larasell_storefront_entry_points')->insert([
                 'sales_channel_id' => $channelId,
                 'scheme' => strtolower($url['scheme'] ?? 'http'),
                 'host' => strtolower($url['host'] ?? 'localhost'),
@@ -57,6 +57,7 @@ return new class extends Migration
         }
 
         cache()->forget('larasell.sales_channels');
+        cache()->forget('larasell.storefront_entry_points');
     }
 
     public function down(): void

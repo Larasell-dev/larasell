@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
@@ -16,6 +15,8 @@ use Larasell\Larasell\Seo\Events\SeoResourceGone;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Storefront\StorefrontContext;
+use Larasell\Larasell\Storefront\Storefronts;
 use LogicException;
 
 /**
@@ -30,19 +31,19 @@ final class SeoUrlManager
 {
     public function __construct(
         private readonly SeoResources $resources,
-        private readonly SalesChannels $channels,
+        private readonly Storefronts $storefronts,
         private readonly CollisionPolicy $collisions,
         private readonly PathNormalizer $paths,
     ) {}
 
     /**
-     * One context per sales channel and locale; each has its own URLs.
+     * One context per storefront channel and locale; each has its own URLs.
      *
      * @return list<SalesContext>
      */
     public function contexts(): array
     {
-        return $this->channels->contexts();
+        return array_map(fn (StorefrontContext $context): SalesContext => $context->sales, $this->storefronts->contexts());
     }
 
     public function canonical(Model $resource, SalesContext $context): ?SeoUrl

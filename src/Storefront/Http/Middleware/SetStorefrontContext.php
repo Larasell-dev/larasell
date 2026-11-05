@@ -1,13 +1,13 @@
 <?php
 
-namespace Larasell\Larasell\SalesChannels\Http\Middleware;
+namespace Larasell\Larasell\Storefront\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\App;
-use Larasell\Larasell\SalesChannels\SalesChannels;
-use Larasell\Larasell\SalesChannels\StorefrontRoutes;
+use Larasell\Larasell\Storefront\StorefrontRoutes;
+use Larasell\Larasell\Storefront\Storefronts;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -17,33 +17,33 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * below the entry point onto its locale's route copy, e.g. https://shop.de/en/cart to /~en/cart.
  * RestoreStorefrontPath puts the path back once the route is matched.
  */
-final readonly class SetSalesContext
+final readonly class SetStorefrontContext
 {
     /** The request attribute holding the REQUEST_URI the client sent. */
     public const ORIGINAL_URI = 'larasell.original_request_uri';
 
     public function __construct(
-        private SalesChannels $channels,
+        private Storefronts $storefronts,
         private Router $router,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $context = $this->channels->resolve($request);
+        $context = $this->storefronts->resolve($request);
 
         if ($context === null || $this->matchesOtherRoute($request)) {
             return $next($request);
         }
 
         $context->activate();
-        App::setLocale($context->locale->value);
+        App::setLocale($context->sales->locale->value);
 
         $prefix = $context->entryPoint->prefix;
         $rest = ltrim(substr(ltrim($request->getPathInfo(), '/'), strlen($prefix)), '/');
         $query = $request->server->get('QUERY_STRING');
 
         $request->attributes->set(self::ORIGINAL_URI, $request->server->get('REQUEST_URI'));
-        self::rewrite($request, $request->getBaseUrl().'/'.StorefrontRoutes::prefix($context->locale)
+        self::rewrite($request, $request->getBaseUrl().'/'.StorefrontRoutes::prefix($context->sales->locale)
             .($rest === '' ? '' : '/'.$rest).(is_string($query) && $query !== '' ? '?'.$query : ''));
 
         return $next($request);

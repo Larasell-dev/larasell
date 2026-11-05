@@ -33,7 +33,8 @@ return new class extends Migration
             $table->unique(['sales_channel_id', 'currency'], 'larasell_channel_currencies_unique');
         });
 
-        Schema::create('larasell_sales_channel_entry_points', function (Blueprint $table) {
+        // Storefront channels only: how customers reach them.
+        Schema::create('larasell_storefront_entry_points', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sales_channel_id')->constrained('larasell_sales_channels')->cascadeOnDelete();
             $table->string('scheme', 8);
@@ -54,7 +55,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('larasell_sales_channel_entry_points');
+        Schema::dropIfExists('larasell_storefront_entry_points');
         Schema::dropIfExists('larasell_sales_channel_currencies');
         Schema::dropIfExists('larasell_sales_channel_locales');
         Schema::dropIfExists('larasell_sales_channels');
