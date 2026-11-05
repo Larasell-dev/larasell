@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
@@ -10,8 +12,12 @@ use Larasell\Larasell\Price;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
 use Larasell\Larasell\Seo\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\Seo\SeoPages;
+use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
+use Larasell\Larasell\Seo\SeoUrlStatus;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -44,7 +50,7 @@ function seoCategory(string $name, ?Category $parent = null, Visibility $status 
 function seoPaths(Model $resource, string $locale = 'en'): array
 {
     return SeoUrl::query()
-        ->where('resource_type', $resource->getMorphClass())
+        ->where('resource_type', app(SeoResources::class)->for($resource)->key())
         ->where('resource_id', $resource->getKey())
         ->where('locale', $locale)
         ->orderBy('path')
@@ -289,4 +295,75 @@ it('uses German transliteration for German paths', function () {
     config()->set('larasell.locale.default', Locale::GERMAN);
 
     expect(seoPaths(seoProduct(['de' => 'Schöne Grüße']), 'de'))->toBe(['p/schoene-gruesse' => 'canonical']);
+});
+
+class SwappedSeoProduct extends Product {}
+
+/** @return array<string, string> Every stored path with its status, for checks that must not filter by type. */
+function allSeoPaths(): array
+{
+    return SeoUrl::query()->pluck('status', 'path')->map(fn ($status): string => $status->value)->all();
+}
+
+it('keeps the URLs of a page when the app adds a morph map later', function () {
+    $product = seoProduct('Boots');
+    Relation::morphMap(['shop-product' => Product::class]);
+
+    try {
+        $product->update(['name' => ['en' => 'Leather Boots']]);
+
+        expect(allSeoPaths())->toEqual(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
+            ->and(app(SeoPages::class)->url($product, seoContext()))->toBe('http://localhost/p/leather-boots');
+    } finally {
+        Relation::morphMap([], false);
+    }
+});
+
+it('keeps the URLs of a page when the app swaps in its own product model', function () {
+    $product = seoProduct('Boots');
+    config()->set('larasell.models.product', SwappedSeoProduct::class);
+
+    $swapped = SwappedSeoProduct::query()->findOrFail($product->getKey());
+    $swapped->update(['name' => ['en' => 'Leather Boots']]);
+
+    expect(allSeoPaths())->toEqual(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
+        ->and(app(SeoPages::class)->resolve('p/boots', seoContext())->redirect?->url)->toBe('http://localhost/p/leather-boots');
+});
+
+it('lets the database refuse a second canonical URL for the same page and context', function () {
+    seoProduct('Boots');
+    $current = SeoUrl::query()->where('locale', 'en')->sole();
+    $row = fn (string $path, SeoUrlStatus $status): array => [
+        ...$current->only(['channel', 'locale', 'resource_type', 'resource_id']),
+        'path' => $path,
+        'status' => $status,
+    ];
+
+    // Any number of old URLs is fine, and so is a canonical URL in another locale.
+    SeoUrl::query()->create($row('p/old-boots', SeoUrlStatus::Historic));
+    SeoUrl::query()->create($row('p/older-boots', SeoUrlStatus::Historic));
+    SeoUrl::query()->create([...$row('p/bottes', SeoUrlStatus::Canonical), 'locale' => 'fr']);
+
+    expect(fn () => SeoUrl::query()->create($row('p/other-boots', SeoUrlStatus::Canonical)))
+        ->toThrow(UniqueConstraintViolationException::class);
+});
+
+it('treats paths that differ only in accents as different paths', function () {
+    $manager = app(SeoUrlManager::class);
+
+    $coffee = seoProduct('Coffee');
+    $manager->setCustom($coffee, seoContext(), 'café');
+    $manager->setCustom($coffee, seoContext(), 'cafe');
+
+    $street = seoProduct('Street');
+    $manager->setCustom($street, seoContext(), 'straße');
+    $manager->setCustom(seoProduct('Strasse'), seoContext(), 'strasse');
+
+    $tea = seoProduct('Tea');
+    $manager->setCustom($tea, seoContext(), 'thé');
+
+    expect(seoPaths($coffee))->toEqual(['p/coffee' => 'historic', 'café' => 'historic', 'cafe' => 'canonical'])
+        ->and(seoPaths($street))->toEqual(['p/street' => 'historic', 'straße' => 'canonical'])
+        ->and(app(SeoPages::class)->resolve('strasse', seoContext())->resource?->is($street))->toBeFalse()
+        ->and(app(SeoPages::class)->resolve('the', seoContext())->kind)->toBe(ResolutionKind::NotFound);
 });

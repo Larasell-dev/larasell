@@ -20,6 +20,11 @@ class ProductResourceType implements SeoResourceType
 
     public function __construct(private readonly Slugifier $slugs) {}
 
+    public function key(): string
+    {
+        return 'product';
+    }
+
     public function model(): string
     {
         return app(ModelRegistry::class)->product->class();

@@ -22,6 +22,11 @@ class CategoryResourceType implements SeoResourceType
 {
     public function __construct(private readonly Slugifier $slugs) {}
 
+    public function key(): string
+    {
+        return 'category';
+    }
+
     public function model(): string
     {
         return app(ModelRegistry::class)->category->class();
@@ -41,7 +46,7 @@ class CategoryResourceType implements SeoResourceType
             return $slug;
         }
 
-        $parent = app(SeoUrlManager::class)->canonicalPath($resource->getMorphClass(), $resource->parent_id, $context);
+        $parent = app(SeoUrlManager::class)->canonicalPath($this->key(), $resource->parent_id, $context);
 
         return $parent === null ? null : $parent.'/'.$slug;
     }

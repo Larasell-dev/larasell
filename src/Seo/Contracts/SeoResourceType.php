@@ -14,6 +14,12 @@ use Larasell\Larasell\Seo\SeoContext;
  */
 interface SeoResourceType
 {
+    /**
+     * The name stored with this type's URLs, such as "product". It must stay the same for as long as
+     * the URLs exist, so it does not follow the model class, a morph map, or a swapped model.
+     */
+    public function key(): string;
+
     /** @return class-string<Model> */
     public function model(): string;
 

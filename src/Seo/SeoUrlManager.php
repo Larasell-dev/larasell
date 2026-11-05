@@ -62,11 +62,20 @@ final class SeoUrlManager
 
     public function canonical(Model $resource, SeoContext $context): ?SeoUrl
     {
-        return $this->rows($resource->getMorphClass(), $resource->getKey(), $context)
+        $rows = $this->rows($this->resources->for($resource)->key(), $resource->getKey(), $context)
             ->where('status', SeoUrlStatus::Canonical->value)
-            ->first();
+            ->limit(2)
+            ->get();
+
+        // The unique index on is_canonical makes a second row impossible; reading one means the index is missing.
+        if ($rows->count() > 1) {
+            throw new LogicException('['.$resource::class.' '.$resource->getKey()."] has more than one canonical URL in [{$context->channel}/{$context->locale->value}].");
+        }
+
+        return $rows->first();
     }
 
+    /** @param  string  $type  The resource type's key(), e.g. "category" */
     public function canonicalPath(string $type, int|string $id, SeoContext $context): ?string
     {
         $path = $this->rows($type, $id, $context)->where('status', SeoUrlStatus::Canonical->value)->value('path');
@@ -148,7 +157,7 @@ final class SeoUrlManager
 
         foreach ($this->contexts() as $context) {
             $gone = $this->transaction(function () use ($type, $resource, $replacement, $context): bool {
-                $rows = $this->rows($resource->getMorphClass(), $resource->getKey(), $context)
+                $rows = $this->rows($type->key(), $resource->getKey(), $context)
                     ->where('status', '!=', SeoUrlStatus::Gone->value);
 
                 (clone $rows)->whereNull('went_public_at')->delete();
@@ -156,7 +165,7 @@ final class SeoUrlManager
                 return (clone $rows)->update([
                     'status' => SeoUrlStatus::Gone->value,
                     'gone_snapshot' => json_encode($type->snapshot($resource, $context), JSON_THROW_ON_ERROR),
-                    'replacement_type' => $replacement?->getMorphClass(),
+                    'replacement_type' => $replacement === null ? null : $this->resources->for($replacement)->key(),
                     'replacement_id' => $replacement?->getKey(),
                     'updated_at' => now(),
                 ]) > 0;
@@ -219,7 +228,7 @@ final class SeoUrlManager
 
         if ($current?->path === $path) {
             $row = $current->fill(['is_custom' => $custom]);
-        } elseif ($own = $this->rows($resource->getMorphClass(), $resource->getKey(), $context)->where('path', $path)->first()) {
+        } elseif ($own = $this->rows($type->key(), $resource->getKey(), $context)->where('path', $path)->first()) {
             // Renamed back: the old URL becomes canonical again instead of a duplicate being created.
             if ($current !== null) {
                 $this->retire($current);
@@ -236,7 +245,7 @@ final class SeoUrlManager
                 'channel' => $context->channel,
                 'locale' => $context->locale->value,
                 'path' => $path,
-                'resource_type' => $resource->getMorphClass(),
+                'resource_type' => $type->key(),
                 'resource_id' => $resource->getKey(),
                 'status' => SeoUrlStatus::Canonical,
                 'is_custom' => $custom,
@@ -277,7 +286,7 @@ final class SeoUrlManager
                 ->where('path', $candidate)
                 ->first();
 
-            if ($row === null || ($row->resource_type === $resource->getMorphClass() && $row->resource_id === (int) $resource->getKey())) {
+            if ($row === null || ($row->resource_type === $type->key() && $row->resource_id === (int) $resource->getKey())) {
                 return $candidate;
             }
 
@@ -365,7 +374,7 @@ final class SeoUrlManager
         $path = $this->paths->normalize(trim($path));
         $segment = '[\p{L}\p{N}][\p{L}\p{N}._-]*';
 
-        if (mb_strlen($path) > 512 || preg_match("~^{$segment}(?:/{$segment})*$~u", $path) !== 1) {
+        if (mb_strlen($path) > SeoUrl::MAX_PATH_LENGTH || preg_match("~^{$segment}(?:/{$segment})*$~u", $path) !== 1) {
             throw InvalidSeoPath::malformed($path);
         }
 

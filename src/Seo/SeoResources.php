@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Seo;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
+use LogicException;
 
 /** The resource types in larasell.seo.resources, and the paths reserved for them. */
 final class SeoResources
@@ -12,10 +13,20 @@ final class SeoResources
     /** @return list<SeoResourceType<Model>> */
     public function all(): array
     {
-        return array_values(array_map(
-            fn (string $class): SeoResourceType => app($class),
-            (array) config('larasell.seo.resources', []),
-        ));
+        $types = [];
+
+        foreach ((array) config('larasell.seo.resources', []) as $class) {
+            $type = app($class);
+            $key = $type->key();
+
+            if (isset($types[$key])) {
+                throw new LogicException('The SEO resource types ['.$types[$key]::class."] and [{$class}] both use the key [{$key}].");
+            }
+
+            $types[$key] = $type;
+        }
+
+        return array_values($types);
     }
 
     /** @return SeoResourceType<Model>|null */
@@ -31,17 +42,23 @@ final class SeoResources
     }
 
     /** @return SeoResourceType<Model>|null */
-    public function findByMorphClass(string $morphClass): ?SeoResourceType
+    public function findByKey(string $key): ?SeoResourceType
     {
         foreach ($this->all() as $type) {
-            $model = $type->model();
-
-            if ((new $model)->getMorphClass() === $morphClass) {
+            if ($type->key() === $key) {
                 return $type;
             }
         }
 
         return null;
+    }
+
+    /** The page a URL row points at, e.g. its resource or replacement, or null when it no longer exists. */
+    public function page(?string $key, ?int $id): ?Model
+    {
+        $type = $key === null || $id === null ? null : $this->findByKey($key);
+
+        return $type?->model()::query()->find($id);
     }
 
     /** Whether pages of a type are instances of the class, e.g. a route parameter typed as Product. */
