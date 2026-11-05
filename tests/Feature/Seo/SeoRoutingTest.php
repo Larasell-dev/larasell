@@ -2,12 +2,14 @@
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
@@ -220,4 +222,19 @@ it('leaves the path of other storefront routes as sent', function () {
     Route::storefront(fn () => Route::get('orders/{order}', fn (string $order) => 'order '.$order));
 
     $this->get('/orders/A-1001')->assertOk()->assertSee('order A-1001');
+});
+
+it('refuses a Route::seo() key that no resource type handles', function () {
+    Route::storefront(fn () => Route::seo([ProductAttribute::class => fn () => 'attribute']));
+})->throws(LogicException::class, 'no SEO resource type');
+
+it('refuses a Route::seo() controller whose page parameter does not accept its key', function () {
+    Route::storefront(fn () => Route::seo([Product::class => fn (Category $category) => 'category']));
+})->throws(LogicException::class, 'cannot receive');
+
+it('hands the page to a parameter typed with any class it is an instance of', function () {
+    Route::storefront(fn () => Route::seo([Product::class => fn (Model $page) => 'page '.$page->getKey()]));
+    $product = routedProduct('Boots');
+
+    $this->get('/p/boots')->assertOk()->assertSee('page '.$product->getKey());
 });
