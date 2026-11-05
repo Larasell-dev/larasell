@@ -302,8 +302,6 @@ it('uses German transliteration for German paths', function () {
     expect(seoPaths(seoProduct(['de' => 'Schöne Grüße']), 'de'))->toBe(['p/schoene-gruesse' => 'canonical']);
 });
 
-class SwappedSeoProduct extends Product {}
-
 /** @return array<string, string> Every stored path with its status, for checks that must not filter by type. */
 function allSeoPaths(): array
 {
@@ -322,17 +320,6 @@ it('keeps the URLs of a page when the app adds a morph map later', function () {
     } finally {
         Relation::morphMap([], false);
     }
-});
-
-it('keeps the URLs of a page when the app swaps in its own product model', function () {
-    $product = seoProduct('Boots');
-    config()->set('larasell.models.product', SwappedSeoProduct::class);
-
-    $swapped = SwappedSeoProduct::query()->findOrFail($product->getKey());
-    $swapped->update(['name' => ['en' => 'Leather Boots']]);
-
-    expect(allSeoPaths())->toEqual(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
-        ->and(app(SeoPages::class)->resolve('p/boots', seoContext())->redirect?->url)->toBe('http://localhost/p/leather-boots');
 });
 
 it('lets the database refuse a second canonical URL for the same page and context', function () {

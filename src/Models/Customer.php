@@ -42,7 +42,7 @@ class Customer extends Model
     /** @return HasMany<Order, $this> */
     public function orders(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->order->class());
+        return $this->hasMany(Order::class);
     }
 
     /** @return class-string<Authenticatable> */

@@ -65,7 +65,7 @@ class Category extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(
-            $this->categoryModel(),
+            Category::class,
             'parent_id'
         );
     }
@@ -76,7 +76,7 @@ class Category extends Model
     public function children(): HasMany
     {
         return $this->ordered($this->hasMany(
-            $this->categoryModel(),
+            Category::class,
             'parent_id'
         ));
     }
@@ -115,37 +115,17 @@ class Category extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productModel(),
+            Product::class,
             'larasell_category_product',
             'category_id',
             'product_id'
         )->withTimestamps();
     }
 
-    /** @return class-string<Category> */
-    protected function categoryModel(): string
-    {
-        return app(ModelRegistry::class)->category->class();
-    }
-
-    /** @return class-string<Product> */
-    protected function productModel(): string
-    {
-        return app(ModelRegistry::class)->product->class();
-    }
-
-    /** @return Builder<Category> */
-    protected function newRelatedCategoryQuery(): Builder
-    {
-        return app(ModelRegistry::class)->category->query();
-    }
-
     /** @return Siblings<Category> */
     protected function newSiblingsRelation(): Siblings
     {
-        $query = $this->newRelatedCategoryQuery();
-
-        return new Siblings($query, $this);
+        return new Siblings(Category::query(), $this);
     }
 
     /**

@@ -26,7 +26,6 @@ use Larasell\Larasell\Licensing\Entitlements;
 use Larasell\Larasell\Licensing\EnvPlanResolver;
 use Larasell\Larasell\Licensing\LeasePlanResolver;
 use Larasell\Larasell\Licensing\License;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberGeneratorCommand;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberSequenceCommand;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
@@ -47,7 +46,6 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->singleton(ShippingManager::class);
         $this->app->singleton(PaymentManager::class);
         $this->app->singleton(PromotionManager::class);
-        $this->app->singleton(ModelRegistry::class);
         $this->app->singleton(CartTaxEstimator::class);
         $this->app->singleton(CartMerger::class);
         $this->app->singleton(License::class);

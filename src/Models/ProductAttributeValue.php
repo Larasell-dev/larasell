@@ -59,7 +59,7 @@ class ProductAttributeValue extends Model
     public function attribute(): BelongsTo
     {
         return $this->belongsTo(
-            $this->productAttributeModel(),
+            ProductAttribute::class,
             'product_attribute_id'
         );
     }
@@ -70,7 +70,7 @@ class ProductAttributeValue extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productModel(),
+            Product::class,
             'larasell_product_product_attribute_value',
             'product_attribute_value_id',
             'product_id'
@@ -83,23 +83,11 @@ class ProductAttributeValue extends Model
     public function variants(): BelongsToMany
     {
         return $this->belongsToMany(
-            app(ModelRegistry::class)->productVariant->class(),
+            ProductVariant::class,
             'larasell_product_variant_product_attribute_value',
             'product_attribute_value_id',
             'product_variant_id',
         );
-    }
-
-    /** @return class-string<ProductAttribute> */
-    protected function productAttributeModel(): string
-    {
-        return app(ModelRegistry::class)->productAttribute->class();
-    }
-
-    /** @return class-string<Product> */
-    protected function productModel(): string
-    {
-        return app(ModelRegistry::class)->product->class();
     }
 
     private function assertValueMatchesAttributeType(): void

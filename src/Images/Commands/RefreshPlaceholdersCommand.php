@@ -4,7 +4,6 @@ namespace Larasell\Larasell\Images\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\ProductImage;
 
 class RefreshPlaceholdersCommand extends Command
@@ -14,7 +13,7 @@ class RefreshPlaceholdersCommand extends Command
 
     protected $description = 'Regenerate product image placeholders with the configured generator.';
 
-    public function handle(ModelRegistry $models): int
+    public function handle(): int
     {
         $batchSize = filter_var($this->option('batch-size'), FILTER_VALIDATE_INT, [
             'options' => ['min_range' => 1],
@@ -28,7 +27,7 @@ class RefreshPlaceholdersCommand extends Command
 
         $refreshed = 0;
 
-        $models->productImage->query()
+        ProductImage::query()
             ->chunkById($batchSize, function (Collection $images) use (&$refreshed): void {
                 /** @var ProductImage $image */
                 foreach ($images as $image) {

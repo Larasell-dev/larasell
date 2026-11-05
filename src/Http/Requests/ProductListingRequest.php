@@ -9,7 +9,6 @@ use Illuminate\Validation\Rule;
 use Larasell\Larasell\Database\TrustedSqlExpression;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Product;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -52,7 +51,7 @@ class ProductListingRequest extends FormRequest
     {
         $category = $this->category();
 
-        $products = app(ModelRegistry::class)->product->query()
+        $products = Product::query()
             ->visible()
             ->inCategoryTree($category);
 

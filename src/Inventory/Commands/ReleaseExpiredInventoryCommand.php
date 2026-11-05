@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Inventory\ReleaseExpiredInventoryForOrder;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 
 class ReleaseExpiredInventoryCommand extends Command
@@ -19,7 +18,6 @@ class ReleaseExpiredInventoryCommand extends Command
     protected $description = 'Release expired inventory reservations and cancel their unpaid orders.';
 
     public function handle(
-        ModelRegistry $models,
         ReleaseExpiredInventoryForOrder $releaseExpiredInventory,
     ): int {
         $batchSize = filter_var($this->option('batch-size'), FILTER_VALIDATE_INT, [
@@ -34,7 +32,7 @@ class ReleaseExpiredInventoryCommand extends Command
 
         $released = 0;
 
-        $models->order->query()
+        Order::query()
             ->where('status', OrderStatus::PendingPayment->value)
             ->whereHas('inventoryReservations', function (Builder $query): void {
                 $query

@@ -42,24 +42,24 @@ class InventoryReservation extends Model
     /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->order->class());
+        return $this->belongsTo(Order::class);
     }
 
     /** @return BelongsTo<OrderItem, $this> */
     public function orderItem(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->orderItem->class());
+        return $this->belongsTo(OrderItem::class);
     }
 
     /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->product->class());
+        return $this->belongsTo(Product::class);
     }
 
     /** @return BelongsTo<ProductVariant, $this> */
     public function variant(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->productVariant->class(), 'product_variant_id');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

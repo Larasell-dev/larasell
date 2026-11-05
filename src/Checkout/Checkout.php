@@ -27,7 +27,6 @@ use Larasell\Larasell\Exceptions\Cart\EmptyCartException;
 use Larasell\Larasell\Exceptions\Cart\InvalidCartItemException;
 use Larasell\Larasell\Exceptions\Cart\MissingRequiredShippingAddressException;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
 use Larasell\Larasell\Models\ProductVariant;
@@ -46,7 +45,6 @@ class Checkout
 {
     public function __construct(
         private readonly ConnectionInterface $database,
-        private readonly ModelRegistry $models,
         private readonly OrderNumberGenerator $orderNumbers,
         private readonly PaymentManager $payments,
         private readonly PromotionManager $promotions,
@@ -85,7 +83,7 @@ class Checkout
         $data['shipping_address'] = $this->address($data['shipping_address'] ?? null);
         $existingOrder = $idempotencyKey === null
             ? null
-            : $this->models->order->query()->where('idempotency_key', $idempotencyKey)->first();
+            : Order::query()->where('idempotency_key', $idempotencyKey)->first();
         $fingerprint = $idempotencyKey === null
             ? null
             : $this->fingerprint($cart, $data, $method->handle, $paymentOptions, $existingOrder);
@@ -128,7 +126,7 @@ class Checkout
 
                 $total = Price::of(0);
 
-                $variants = $this->models->productVariant->query()
+                $variants = ProductVariant::query()
                     ->with(['product', 'attributeValues.attribute'])
                     ->whereKey($items->pluck('product_variant_id'))
                     ->orderBy('id')
@@ -203,7 +201,7 @@ class Checkout
                     throw new TaxCalculationException('The tax calculation did not return the shipping line.');
                 }
 
-                $order = $this->models->order->query()->create([
+                $order = Order::query()->create([
                     'number' => $this->orderNumber(),
                     'idempotency_key' => $idempotencyKey,
                     'idempotency_fingerprint' => $fingerprint,
@@ -397,7 +395,7 @@ class Checkout
         }
 
         /** @var Order|null $order */
-        $order = $this->models->order->query()->where('idempotency_key', $key)->first();
+        $order = Order::query()->where('idempotency_key', $key)->first();
 
         if ($order === null) {
             return null;

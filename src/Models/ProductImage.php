@@ -68,7 +68,7 @@ class ProductImage extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productModel(),
+            Product::class,
             'larasell_product_product_image',
             'product_image_id',
             'product_id'
@@ -105,11 +105,5 @@ class ProductImage extends Model
         }
 
         return false;
-    }
-
-    /** @return class-string<Product> */
-    protected function productModel(): string
-    {
-        return app(ModelRegistry::class)->product->class();
     }
 }

@@ -51,7 +51,7 @@ class Refund extends Model
     /** @return BelongsTo<Payment, $this> */
     public function payment(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->payment->class());
+        return $this->belongsTo(Payment::class);
     }
 
     public static function findByProviderReference(string $provider, string $reference): static

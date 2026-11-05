@@ -2,9 +2,7 @@
 
 namespace Larasell\Larasell\Seo;
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
-use Larasell\Larasell\Models\ModelEntry;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
@@ -16,9 +14,6 @@ use Larasell\Larasell\Seo\Models\SeoUrl;
  */
 final class SeoPages
 {
-    /** @var ModelEntry<SeoUrl> */
-    private readonly ModelEntry $urls;
-
     /** @var array<string, string|null> Canonical paths loaded by preload(), by resource and context. */
     private array $preloaded = [];
 
@@ -27,15 +22,12 @@ final class SeoPages
         private readonly SeoUrlManager $manager,
         private readonly PathNormalizer $paths,
         private readonly HiddenPagePolicy $hidden,
-        Repository $config,
-    ) {
-        $this->urls = new ModelEntry($config, 'larasell.seo.models.seo_url', SeoUrl::class);
-    }
+    ) {}
 
     /** What the path below the context's entry point leads to. */
     public function resolve(string $path, SeoContext $context): Resolution
     {
-        $url = $this->urls->query()
+        $url = SeoUrl::query()
             ->where('channel', $context->channel)
             ->where('locale', $context->locale->value)
             ->where('path', $this->paths->normalize($path))
@@ -127,7 +119,7 @@ final class SeoPages
                     $this->preloaded[self::key($type, $id, $context)] = null;
                 }
 
-                $this->urls->query()
+                SeoUrl::query()
                     ->where('resource_type', $type)
                     ->whereIn('resource_id', $chunk)
                     ->where('channel', $context->channel)

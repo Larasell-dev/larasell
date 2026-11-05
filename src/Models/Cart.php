@@ -70,7 +70,7 @@ class Cart extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany($this->cartItemModel());
+        return $this->hasMany(CartItem::class);
     }
 
     /** @param array<string, mixed> $metadata */
@@ -78,7 +78,7 @@ class Cart extends Model
     {
         if (is_int($purchasable)) {
             /** @var Product $product */
-            $product = app(ModelRegistry::class)->product->query()->findOrFail($purchasable);
+            $product = Product::query()->findOrFail($purchasable);
 
             return $this->add($product, $quantity, $metadata);
         }
@@ -409,12 +409,6 @@ class Cart extends Model
         $shippingOption = $this->shippingOption();
 
         return $shippingOption === null ? $subtotal : $subtotal->add($shippingOption->price);
-    }
-
-    /** @return class-string<CartItem> */
-    protected function cartItemModel(): string
-    {
-        return app(ModelRegistry::class)->cartItem->class();
     }
 
     private function assertValidQuantity(int $quantity): void

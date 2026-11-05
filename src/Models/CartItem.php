@@ -48,7 +48,7 @@ class CartItem extends Model
      */
     public function cart(): BelongsTo
     {
-        return $this->belongsTo($this->cartModel());
+        return $this->belongsTo(Cart::class);
     }
 
     /**
@@ -56,13 +56,13 @@ class CartItem extends Model
      */
     public function product(): BelongsTo
     {
-        return $this->belongsTo($this->productModel());
+        return $this->belongsTo(Product::class);
     }
 
     /** @return BelongsTo<ProductVariant, $this> */
     public function variant(): BelongsTo
     {
-        return $this->belongsTo($this->productVariantModel(), 'product_variant_id');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function unitPrice(): Price
@@ -128,23 +128,5 @@ class CartItem extends Model
             ->map(fn (DiscountResult $discount): ?AppliedDiscount => $discount->appliedFor($this))
             ->filter()
             ->values();
-    }
-
-    /** @return class-string<Cart> */
-    protected function cartModel(): string
-    {
-        return app(ModelRegistry::class)->cart->class();
-    }
-
-    /** @return class-string<Product> */
-    protected function productModel(): string
-    {
-        return app(ModelRegistry::class)->product->class();
-    }
-
-    /** @return class-string<ProductVariant> */
-    protected function productVariantModel(): string
-    {
-        return app(ModelRegistry::class)->productVariant->class();
     }
 }

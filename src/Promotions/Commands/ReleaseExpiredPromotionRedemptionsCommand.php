@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Promotions\ReleaseExpiredPromotionRedemptionsForOrder;
 
@@ -19,7 +18,6 @@ class ReleaseExpiredPromotionRedemptionsCommand extends Command
     protected $description = 'Release expired promotion redemptions and cancel their unpaid orders.';
 
     public function handle(
-        ModelRegistry $models,
         ReleaseExpiredPromotionRedemptionsForOrder $releaseExpiredPromotions,
     ): int {
         $batchSize = filter_var($this->option('batch-size'), FILTER_VALIDATE_INT, [
@@ -34,7 +32,7 @@ class ReleaseExpiredPromotionRedemptionsCommand extends Command
 
         $released = 0;
 
-        $models->order->query()
+        Order::query()
             ->where('status', OrderStatus::PendingPayment->value)
             ->whereHas('promotionRedemptions', function (Builder $query): void {
                 $query

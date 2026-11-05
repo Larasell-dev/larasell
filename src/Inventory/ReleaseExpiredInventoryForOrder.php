@@ -8,20 +8,17 @@ use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Events\InventoryReservationExpired;
 use Larasell\Larasell\Models\InventoryReservation;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Order;
 
 final readonly class ReleaseExpiredInventoryForOrder
 {
-    public function __construct(private ModelRegistry $models) {}
-
     public function handle(int $orderId): bool
     {
-        $orderModel = $this->models->order->new();
+        $orderModel = (new Order);
 
         return $orderModel->getConnection()->transaction(function () use ($orderId): bool {
             /** @var Order|null $order */
-            $order = $this->models->order->query()
+            $order = Order::query()
                 ->lockForUpdate()
                 ->find($orderId);
 

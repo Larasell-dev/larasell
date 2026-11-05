@@ -219,7 +219,7 @@ class Product extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->categoryModel(),
+            Category::class,
             'larasell_category_product',
             'product_id',
             'category_id'
@@ -232,7 +232,7 @@ class Product extends Model
     public function images(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productImageModel(),
+            ProductImage::class,
             'larasell_product_product_image',
             'product_id',
             'product_image_id'
@@ -255,7 +255,7 @@ class Product extends Model
     public function attributeValues(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productAttributeValueModel(),
+            ProductAttributeValue::class,
             'larasell_product_product_attribute_value',
             'product_id',
             'product_attribute_value_id'
@@ -268,7 +268,7 @@ class Product extends Model
     public function variantDimensions(): BelongsToMany
     {
         return $this->belongsToMany(
-            $this->productAttributeModel(),
+            ProductAttribute::class,
             'larasell_product_variant_dimensions',
             'product_id',
             'product_attribute_id',
@@ -280,7 +280,7 @@ class Product extends Model
      */
     public function variants(): HasMany
     {
-        return $this->hasMany($this->productVariantModel());
+        return $this->hasMany(ProductVariant::class);
     }
 
     /**
@@ -509,35 +509,5 @@ class Product extends Model
             'position' => 0,
             'combination_key' => 'default',
         ];
-    }
-
-    /** @return class-string<Category> */
-    protected function categoryModel(): string
-    {
-        return app(ModelRegistry::class)->category->class();
-    }
-
-    /** @return class-string<ProductImage> */
-    protected function productImageModel(): string
-    {
-        return app(ModelRegistry::class)->productImage->class();
-    }
-
-    /** @return class-string<ProductAttributeValue> */
-    protected function productAttributeValueModel(): string
-    {
-        return app(ModelRegistry::class)->productAttributeValue->class();
-    }
-
-    /** @return class-string<ProductAttribute> */
-    protected function productAttributeModel(): string
-    {
-        return app(ModelRegistry::class)->productAttribute->class();
-    }
-
-    /** @return class-string<ProductVariant> */
-    protected function productVariantModel(): string
-    {
-        return app(ModelRegistry::class)->productVariant->class();
     }
 }
