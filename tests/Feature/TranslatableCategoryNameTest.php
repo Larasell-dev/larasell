@@ -7,7 +7,6 @@ use Larasell\Larasell\Translatable;
 
 it('casts a category name from translations', function () {
     $category = Category::query()->create([
-        'slug' => ['en' => 'lighting'],
         'name' => ['en' => 'Lighting', 'de' => 'Beleuchtung'],
     ]);
 
@@ -27,7 +26,6 @@ it('accepts a string category name for the current locale', function () {
     App::setLocale('de');
 
     $category = Category::query()->create([
-        'slug' => ['en' => 'lighting'],
         'name' => 'Beleuchtung',
     ]);
 

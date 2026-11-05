@@ -18,7 +18,6 @@ use Larasell\Larasell\Translatable;
 /**
  * @property int $id
  * @property int|null $parent_id
- * @property Translatable $slug
  * @property Translatable $name
  * @property Visibility $status
  * @property int $position
@@ -39,7 +38,6 @@ class Category extends Model
     ];
 
     protected $casts = [
-        'slug' => TranslatableCast::class,
         'name' => TranslatableCast::class,
         'status' => Visibility::class,
         'position' => 'integer',

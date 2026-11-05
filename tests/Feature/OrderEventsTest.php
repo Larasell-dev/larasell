@@ -25,7 +25,6 @@ function orderEventData(): array
 function orderEventCart(string $slug): Cart
 {
     $product = Product::query()->create([
-        'slug' => $slug,
         'name' => 'Order event product',
         'price' => Price::of(1000),
         'stock' => 5,

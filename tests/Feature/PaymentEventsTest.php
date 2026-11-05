@@ -35,7 +35,6 @@ function paymentEventData(): array
 function paymentEventCart(string $slug): Cart
 {
     $product = Product::query()->create([
-        'slug' => $slug,
         'name' => 'Payment event product',
         'price' => Price::of(1000),
         'stock' => 5,

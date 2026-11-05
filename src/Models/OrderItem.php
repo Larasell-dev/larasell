@@ -21,7 +21,7 @@ use Larasell\Larasell\Translatable;
  * @property int|null $product_id
  * @property int|null $product_variant_id
  * @property Translatable $product_name
- * @property string|null $product_slug
+ * @property string|null $product_slug Only set on orders placed before slugs were removed.
  * @property string|null $product_sku
  * @property string|null $product_barcode
  * @property string|null $variant_name

@@ -41,7 +41,6 @@ function categoryForProductScope(string $slug, ?Category $parent = null): Catego
 {
     return Category::create([
         'parent_id' => $parent?->getKey(),
-        'slug' => $slug,
         'name' => str($slug)->headline()->toString(),
     ]);
 }
@@ -49,7 +48,6 @@ function categoryForProductScope(string $slug, ?Category $parent = null): Catego
 function productForCategoryScope(string $slug, Category $category): Product
 {
     $product = Product::create([
-        'slug' => $slug,
         'name' => str($slug)->headline()->toString(),
         'price' => Price::of(1000),
     ]);

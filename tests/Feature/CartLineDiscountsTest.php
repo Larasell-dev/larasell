@@ -35,7 +35,7 @@ final class LineDiscountReadApiEligiblePromotion implements Promotion
             name: 'Eligible lines only',
             allocations: $context->fixedAmountOff(
                 Price::of(500),
-                fn (CartItem $item): bool => str_starts_with($item->product->slug->get(), 'eligible-'),
+                fn (CartItem $item): bool => str_starts_with($item->product->name->get(), 'eligible-'),
             ),
         );
     }
@@ -193,7 +193,6 @@ function lineDiscountReadApiCart(array $products): Cart
 
     foreach ($products as [$slug, $price]) {
         $product = Product::query()->create([
-            'slug' => $slug,
             'name' => $slug,
             'price' => Price::of($price),
             'allow_backorders' => true,

@@ -23,7 +23,6 @@ function inventoryReservationCheckoutData(): array
 function inventoryReservationCart(?int $stock = 5, int $quantity = 2): array
 {
     $product = Product::query()->create([
-        'slug' => 'reservation-product-'.Product::query()->count(),
         'name' => 'Reservation product',
         'price' => Price::of(1000),
         'stock' => $stock,

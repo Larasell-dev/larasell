@@ -21,7 +21,6 @@ function cancellationCheckoutData(): array
 function cancellableOrder(int $stock = 5, int $quantity = 2): array
 {
     $product = Product::query()->create([
-        'slug' => 'cancel-product',
         'name' => 'Cancel product',
         'price' => Price::of(1000),
         'stock' => $stock,

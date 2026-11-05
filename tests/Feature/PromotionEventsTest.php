@@ -141,7 +141,6 @@ function promotionEventOrder(): Order
 function promotionEventCart(): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'promotion-event-'.fake()->unique()->uuid(),
         'name' => 'Promotion event product',
         'price' => Price::of(1000),
         'allow_backorders' => true,

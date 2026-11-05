@@ -28,7 +28,6 @@ use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
- * @property Translatable $slug
  * @property string|null $sku
  * @property string|null $barcode
  * @property Translatable $name
@@ -66,7 +65,6 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'slug' => TranslatableCast::class,
         'name' => TranslatableCast::class,
         'description' => NullableTranslatableCast::class,
         'price' => PriceCast::class,

@@ -12,7 +12,6 @@ use Larasell\Larasell\Price;
 function commandReservationOrder(string $slug, string $expiresAt): Order
 {
     $product = Product::query()->create([
-        'slug' => $slug,
         'name' => 'Command reservation product',
         'price' => Price::of(1000),
         'stock' => 5,

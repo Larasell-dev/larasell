@@ -163,7 +163,6 @@ it('inherits nullable variant commerce values from the product', function () {
 function cartVariantProduct(array $attributes = []): Product
 {
     return Product::create(array_merge([
-        'slug' => fake()->unique()->slug(),
         'name' => fake()->words(3, true),
         'sku' => fake()->unique()->bothify('PRODUCT-####'),
         'barcode' => fake()->unique()->numerify('#############'),

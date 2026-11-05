@@ -81,7 +81,6 @@ it('includes the selected variant in checkout idempotency fingerprints', functio
 function variantInventoryCart(): array
 {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => 'Variant inventory product',
         'price' => Price::of(1000),
         'stock' => 20,

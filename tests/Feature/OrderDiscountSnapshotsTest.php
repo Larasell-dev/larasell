@@ -101,7 +101,6 @@ it('stores zero-value discount snapshots when no promotion applies', function ()
 function orderDiscountSnapshotCart(): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'order-discount-snapshot-'.fake()->unique()->uuid(),
         'name' => 'Snapshot product',
         'price' => Price::of(1000),
         'allow_backorders' => true,

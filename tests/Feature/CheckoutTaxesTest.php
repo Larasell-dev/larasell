@@ -162,7 +162,6 @@ function configureCheckoutTaxes(TaxPriceMode $mode): void
 function checkoutTaxProduct(int $price): Product
 {
     return Product::query()->create([
-        'slug' => 'checkout-tax-product-'.fake()->unique()->numerify('######'),
         'name' => 'Checkout tax product',
         'price' => Price::of($price),
         'allow_backorders' => true,

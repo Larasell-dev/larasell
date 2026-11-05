@@ -312,7 +312,6 @@ it('drops promotion codes that no longer apply after merging', function () {
 function cartMergeProduct(array $attributes = []): Product
 {
     return Product::query()->create(array_merge([
-        'slug' => fake()->unique()->slug(),
         'name' => fake()->words(3, true),
         'price' => Price::of(1000),
         'allow_backorders' => true,

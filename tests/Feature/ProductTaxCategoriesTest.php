@@ -5,7 +5,6 @@ use Larasell\Larasell\Price;
 
 it('defaults products to the standard tax category', function () {
     $product = Product::create([
-        'slug' => 'standard-product',
         'name' => 'Standard product',
         'price' => Price::of(1000),
     ]);
@@ -16,7 +15,6 @@ it('defaults products to the standard tax category', function () {
 
 it('allows a variant to override its product tax category', function () {
     $product = Product::create([
-        'slug' => 'book',
         'name' => 'Book',
         'price' => Price::of(1000),
         'tax_category' => 'reduced',

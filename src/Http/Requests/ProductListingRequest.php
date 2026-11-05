@@ -37,17 +37,14 @@ class ProductListingRequest extends FormRequest
             return $this->resolvedCategory;
         }
 
-        $slug = collect(explode('/', trim((string) $this->route('category'), '/')))
-            ->filter()
-            ->last();
-
-        if (! $slug) {
-            throw new NotFoundHttpException;
+        // The route binds the category, e.g. with Route::seo([Category::class => ...]) in Route::storefront().
+        foreach ($this->route()?->parameters() ?? [] as $parameter) {
+            if ($parameter instanceof Category) {
+                return $this->resolvedCategory = $parameter;
+            }
         }
 
-        return $this->resolvedCategory = app(ModelRegistry::class)->category->query()
-            ->where('slug->'.Locale::canonicalize(App::currentLocale()), $slug)
-            ->firstOrFail();
+        throw new NotFoundHttpException;
     }
 
     /** @return Builder<Product> */

@@ -13,7 +13,6 @@ use Larasell\Larasell\Weight;
 
 it('defaults products to no weight or dimensions', function () {
     $product = Product::create([
-        'slug' => 'plain-tee',
         'name' => 'Plain tee',
         'price' => Price::of(1000),
     ]);
@@ -26,7 +25,6 @@ it('defaults products to no weight or dimensions', function () {
 
 it('persists product weight and dimensions and copies them to the default variant', function () {
     $product = Product::create([
-        'slug' => 'parcel-tee',
         'name' => 'Parcel tee',
         'price' => Price::of(1000),
         'weight' => Weight::of(450, WeightUnit::Gram),
@@ -41,7 +39,6 @@ it('persists product weight and dimensions and copies them to the default varian
 
 it('syncs the default variant measurements when the product measurements change', function () {
     $product = Product::create([
-        'slug' => 'synced-parcel',
         'name' => 'Synced parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(400, WeightUnit::Gram),
@@ -65,7 +62,6 @@ it('syncs the default variant measurements when the product measurements change'
 
 it('lets a variant inherit or override the product measurements', function () {
     $product = Product::create([
-        'slug' => 'variant-parcel',
         'name' => 'Variant parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(400, WeightUnit::Gram),
@@ -92,7 +88,6 @@ it('lets a variant inherit or override the product measurements', function () {
 it('sums cart weight from effective variant weights and quantities', function () {
     $cart = Cart::create(['currency' => Currency::EUR]);
     $light = Product::create([
-        'slug' => 'light-parcel',
         'name' => 'Light parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(500, WeightUnit::Gram),
@@ -100,7 +95,6 @@ it('sums cart weight from effective variant weights and quantities', function ()
         'status' => Visibility::Visible,
     ]);
     $heavy = Product::create([
-        'slug' => 'heavy-parcel',
         'name' => 'Heavy parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(1, WeightUnit::Kilogram),
@@ -119,13 +113,11 @@ it('sums cart weight from effective variant weights and quantities', function ()
 it('returns no cart weight when any line is missing a weight', function () {
     $cart = Cart::create(['currency' => Currency::EUR]);
     $weighed = Product::create([
-        'slug' => 'weighed-parcel',
         'name' => 'Weighed parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(500, WeightUnit::Gram),
     ]);
     $unknown = Product::create([
-        'slug' => 'unknown-parcel',
         'name' => 'Unknown parcel',
         'price' => Price::of(1000),
     ]);

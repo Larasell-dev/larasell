@@ -87,7 +87,6 @@ function cartWithDiscountTestProduct(int $price): Cart
 {
     $cart = Cart::query()->create(['currency' => Currency::EUR]);
     $product = Product::query()->create([
-        'slug' => 'cart-discount-product-'.$cart->getKey(),
         'name' => 'Cart discount product',
         'price' => Price::of($price),
         'allow_backorders' => true,

@@ -8,7 +8,6 @@ use Larasell\Larasell\Translatable;
 
 it('casts a product name from translations', function () {
     $product = Product::query()->create([
-        'slug' => 'desk-lamp',
         'name' => ['en' => 'Desk lamp', 'de' => 'Schreibtischlampe'],
         'price' => Price::of(4999),
     ]);
@@ -27,7 +26,6 @@ it('accepts a string product name for the current locale', function () {
     App::setLocale('de');
 
     $product = Product::query()->create([
-        'slug' => 'desk-lamp',
         'name' => 'Schreibtischlampe',
         'price' => Price::of(4999),
     ]);
@@ -37,7 +35,6 @@ it('accepts a string product name for the current locale', function () {
 
 it('casts a nullable product description from translations', function () {
     $product = Product::query()->create([
-        'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
         'description' => ['en' => 'A focused task light.', 'de' => 'Eine fokussierte Arbeitsleuchte.'],
         'price' => Price::of(4999),
@@ -57,7 +54,6 @@ it('casts a nullable product description from translations', function () {
 
 it('allows a product description to be null', function () {
     $product = Product::query()->create([
-        'slug' => 'desk-lamp',
         'name' => 'Desk lamp',
         'description' => null,
         'price' => Price::of(4999),

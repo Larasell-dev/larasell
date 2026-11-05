@@ -203,7 +203,6 @@ it('includes the applied code in the order discount snapshot', function () {
 function promotionCodeCart(int $price): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'promotion-code-'.fake()->unique()->uuid(),
         'name' => 'Promotion code product',
         'price' => Price::of($price),
         'allow_backorders' => true,

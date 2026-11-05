@@ -94,7 +94,6 @@ function checkoutData(?int $customerId = null): array
 
 it('checks out a guest cart with the default cash payment method', function () {
     $product = Product::query()->create([
-        'slug' => 'coffee',
         'name' => 'Coffee',
         'price' => Price::of(1299),
         'stock' => 5,
@@ -131,7 +130,6 @@ it('checks out a guest cart with the default cash payment method', function () {
 
 it('locks product variants in a deterministic order', function () {
     $firstProduct = Product::query()->create([
-        'slug' => 'first-product',
         'name' => 'First product',
         'price' => Price::of(500),
         'stock' => 5,
@@ -139,7 +137,6 @@ it('locks product variants in a deterministic order', function () {
         'status' => Visibility::Visible,
     ]);
     $secondProduct = Product::query()->create([
-        'slug' => 'second-product',
         'name' => 'Second product',
         'price' => Price::of(700),
         'stock' => 5,
@@ -169,7 +166,6 @@ it('locks product variants in a deterministic order', function () {
 
 it('keeps snapshots after the source product changes', function () {
     $product = Product::query()->create([
-        'slug' => 'tea',
         'name' => 'Tea',
         'sku' => 'TEA-001',
         'barcode' => '04012345678901',
@@ -204,7 +200,6 @@ it('keeps snapshots after the source product changes', function () {
 
 it('snapshots company and tax identifiers from address payloads', function () {
     $product = Product::query()->create([
-        'slug' => 'business-order',
         'name' => 'Business order',
         'price' => Price::of(1200),
         'allow_backorders' => true,
@@ -239,7 +234,6 @@ it('records declined payments and marks the order as failed', function () {
         'provider' => DecliningCheckoutPaymentProvider::class,
     ]);
     $product = Product::query()->create([
-        'slug' => 'mug',
         'name' => 'Mug',
         'price' => Price::of(1500),
         'allow_backorders' => true,
@@ -257,7 +251,6 @@ it('records declined payments and marks the order as failed', function () {
 
 it('supports the bank transfer payment method', function () {
     $product = Product::query()->create([
-        'slug' => 'cash-coffee',
         'name' => 'Cash coffee',
         'price' => Price::of(500),
         'allow_backorders' => true,
@@ -281,7 +274,6 @@ it('passes persisted models and options to a redirecting payment provider', func
         'provider' => RedirectingCheckoutPaymentProvider::class,
     ]);
     $product = Product::query()->create([
-        'slug' => 'redirect-product',
         'name' => 'Redirect product',
         'price' => Price::of(2000),
         'allow_backorders' => true,
@@ -316,7 +308,6 @@ it('returns the original checkout when an idempotency key is retried', function 
         'provider' => RedirectingCheckoutPaymentProvider::class,
     ]);
     $product = Product::query()->create([
-        'slug' => 'idempotent-product',
         'name' => 'Idempotent product',
         'price' => Price::of(2000),
         'stock' => 2,
@@ -355,7 +346,6 @@ it('returns the original checkout when an idempotency key is retried', function 
 
 it('rejects an idempotency key reused with different checkout input', function () {
     $product = Product::query()->create([
-        'slug' => 'idempotency-conflict',
         'name' => 'Idempotency conflict',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -381,7 +371,6 @@ it('rejects an idempotency key reused with different checkout input', function (
 
 it('treats equivalent payment option ordering as the same idempotent input', function () {
     $product = Product::query()->create([
-        'slug' => 'canonical-idempotency',
         'name' => 'Canonical idempotency',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -424,7 +413,6 @@ it('keeps an unknown provider outcome pending and recovers it on retry', functio
         'provider' => RecoveringCheckoutPaymentProvider::class,
     ]);
     $product = Product::query()->create([
-        'slug' => 'provider-timeout',
         'name' => 'Provider timeout',
         'price' => Price::of(1000),
         'allow_backorders' => true,
@@ -463,7 +451,6 @@ it('keeps an unknown provider outcome pending and recovers it on retry', functio
 
 it('rejects an unknown payment method before modifying the cart', function () {
     $product = Product::query()->create([
-        'slug' => 'unknown-method',
         'name' => 'Unknown method product',
         'price' => Price::of(500),
         'stock' => 2,
@@ -483,7 +470,6 @@ it('rejects an unknown payment method before modifying the cart', function () {
 
 it('rejects invalid order status transitions', function () {
     $product = Product::query()->create([
-        'slug' => 'plate',
         'name' => 'Plate',
         'price' => Price::of(1000),
         'allow_backorders' => true,

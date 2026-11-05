@@ -19,7 +19,6 @@ beforeEach(function () {
 function linkedProduct(array $name, Visibility $status = Visibility::Visible): Product
 {
     return Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => $name,
         'price' => Price::of(1000),
         'status' => $status,
@@ -64,7 +63,7 @@ it('has no URL where the page has none, and no available URL for hidden pages', 
 
 it('loads the URLs of a listing in one query per kind of page', function () {
     $products = collect(range(1, 5))->map(fn (int $i) => linkedProduct(['en' => "Boots {$i}"]));
-    $category = Category::create(['slug' => 'shoes', 'name' => ['en' => 'Shoes']]);
+    $category = Category::create(['name' => ['en' => 'Shoes']]);
     $unsaved = new Product(['name' => ['en' => 'Unsaved']]);
     $unsaved->id = 999;
 

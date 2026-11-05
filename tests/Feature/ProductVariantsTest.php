@@ -148,7 +148,6 @@ it('exposes visible variants with the parent product already set', function () {
 function variantProduct(?string $slug = null): array
 {
     $product = Product::create([
-        'slug' => $slug ?? fake()->unique()->slug(),
         'name' => fake()->words(3, true),
         'price' => Price::of(1000),
     ]);
@@ -240,7 +239,6 @@ it('does not silently change dimensions after variants exist', function () {
 function variantGenerationProduct(): Product
 {
     $product = Product::create([
-        'slug' => fake()->unique()->slug(),
         'name' => fake()->words(3, true),
         'price' => Price::of(1000),
     ]);

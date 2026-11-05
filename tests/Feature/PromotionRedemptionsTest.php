@@ -58,7 +58,6 @@ final class TestPromotionCustomerResolver implements PromotionCustomerResolver
 function promotionRedemptionCart(): Cart
 {
     $product = Product::query()->create([
-        'slug' => 'promotion-redemption-product-'.Product::query()->count(),
         'name' => 'Promotion redemption product',
         'price' => Price::of(1000),
         'stock' => null,

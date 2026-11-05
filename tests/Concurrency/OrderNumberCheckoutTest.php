@@ -21,7 +21,6 @@ it('gives concurrent checkouts different order numbers', function () {
     $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
 
     $product = Product::query()->create([
-        'slug' => 'concurrent-order-number',
         'name' => 'Concurrent order number',
         'price' => Price::of(1000),
         'stock' => 2,
