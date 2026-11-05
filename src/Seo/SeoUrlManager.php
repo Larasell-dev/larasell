@@ -155,6 +155,17 @@ final class SeoUrlManager
         $this->gone($type, $id, $snapshot, null);
     }
 
+    /**
+     * Leads the URLs of a deleted page to its replacement, e.g. after DeleteProduct. Use markGone()
+     * to delete and replace in one go when the page is still in memory.
+     *
+     * @param  SeoResourceType<Model>  $type
+     */
+    public function setReplacement(SeoResourceType $type, int|string $id, Model $replacement): void
+    {
+        $this->gone($type, $id, fn (): never => throw new LogicException("[{$type->key()} {$id}] still has live URLs: mark it gone first."), $replacement);
+    }
+
     /** Frees an old or gone URL, so the path is unknown again or can be used by another page. */
     public function remove(SeoUrl $url): void
     {
