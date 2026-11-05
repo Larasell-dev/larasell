@@ -1,9 +1,12 @@
 <?php
 
+use Larasell\Larasell\Carts\CartItemId;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityBelowMinimumException;
@@ -50,11 +53,41 @@ it('adds a product by its id', function () {
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = cartVariantProduct();
 
-    $item = $cart->add($product->getKey(), 2);
+    $item = $cart->add(ProductId::of($product), 2);
 
     expect($item->product->is($product))->toBeTrue()
         ->and($item->quantity)->toBe(2);
 });
+
+it('adds a variant by its id', function () {
+    [, , $medium] = cartVariantCatalog();
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
+
+    $item = $cart->add(VariantId::of($medium), 2);
+
+    expect($item->variant->is($medium))->toBeTrue()
+        ->and($item->quantity)->toBe(2);
+});
+
+it('does not take a bare number, which could be a product or a cart line', function (string $method) {
+    [, $variant] = cartVariantCatalog();
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
+    $item = $cart->add($variant);
+
+    match ($method) {
+        'add' => $cart->add($item->getKey()),
+        'set' => $cart->set($item->getKey(), 1),
+        'remove' => $cart->remove($item->getKey()),
+    };
+})->with(['add', 'set', 'remove'])->throws(TypeError::class);
+
+it('does not add a cart line id as if it were a product', function () {
+    [, $variant] = cartVariantCatalog();
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
+    $item = $cart->add($variant);
+
+    $cart->add(CartItemId::of($item));
+})->throws(TypeError::class);
 
 it('stores two variants of one product as separate cart lines', function () {
     [$product, $small, $medium] = cartVariantCatalog();
@@ -101,8 +134,8 @@ it('removes a cart line by its id', function () {
     $item = $cart->add($variant);
     $otherItem = $otherCart->add($variant);
 
-    $cart->remove($item->getKey());
-    $cart->remove($otherItem->getKey());
+    $cart->remove(CartItemId::of($item));
+    $cart->remove(CartItemId::of($otherItem));
 
     expect($cart->items()->count())->toBe(0)
         ->and($otherCart->items()->count())->toBe(1);
@@ -113,7 +146,7 @@ it('sets a cart line quantity by its id', function () {
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $item = $cart->add($variant, metadata: ['engraving' => 'Hello']);
 
-    $updatedItem = $cart->set($item->getKey(), 3);
+    $updatedItem = $cart->set(CartItemId::of($item), 3);
 
     expect($updatedItem->is($item))->toBeTrue()
         ->and($updatedItem->quantity)->toBe(3)
