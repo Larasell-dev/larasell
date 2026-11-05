@@ -232,7 +232,7 @@ final class SeoUrlManager
             }
 
             $row = (new SeoUrl)->fill([
-                'channel' => $context->channel,
+                'sales_channel_id' => $context->channelId,
                 'locale' => $context->locale->value,
                 'path' => $path,
                 'resource_type' => $type->key(),
@@ -257,7 +257,7 @@ final class SeoUrlManager
      */
     private function freePath(SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom): string
     {
-        $inContext = fn () => SeoUrl::query()->where('channel', $context->channel)->where('locale', $context->locale->value);
+        $inContext = fn () => SeoUrl::query()->where('sales_channel_id', $context->channelId)->where('locale', $context->locale->value);
         $numbered = null;
         $tried = [];
 
@@ -448,7 +448,7 @@ final class SeoUrlManager
         return SeoUrl::query()
             ->where('resource_type', $type)
             ->where('resource_id', $id)
-            ->where('channel', $context->channel)
+            ->where('sales_channel_id', $context->channelId)
             ->where('locale', $context->locale->value);
     }
 

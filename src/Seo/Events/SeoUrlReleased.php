@@ -16,7 +16,7 @@ final readonly class SeoUrlReleased implements ShouldDispatchAfterCommit
     use Dispatchable;
 
     public function __construct(
-        public string $channel,
+        public int $salesChannelId,
         public string $locale,
         public string $path,
         /** The resource type key of the page it belonged to, e.g. "product" */
@@ -27,6 +27,6 @@ final readonly class SeoUrlReleased implements ShouldDispatchAfterCommit
 
     public static function of(SeoUrl $url): self
     {
-        return new self($url->channel, $url->locale, $url->path, $url->resource_type, $url->resource_id, $url->status);
+        return new self($url->sales_channel_id, $url->locale, $url->path, $url->resource_type, $url->resource_id, $url->status);
     }
 }
