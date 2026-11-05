@@ -38,7 +38,7 @@ class PaymentsOnlyProvider implements PaymentProvider
 /** @return array{Order, Payment} */
 function refundablePayment(string $number = 'REFUND', string $method = 'cash'): array
 {
-    $order = Order::query()->create([
+    $order = Order::createIn(shopContext(), [
         'number' => $number,
         'currency' => Currency::EUR,
         'customer_email' => 'refund@example.com',

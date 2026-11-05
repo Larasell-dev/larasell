@@ -22,7 +22,7 @@ function orderedProduct(): array
         'stock' => 5,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, 2);
     $order = app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A'])->order;
 

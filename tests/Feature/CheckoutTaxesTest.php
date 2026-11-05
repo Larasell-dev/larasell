@@ -172,7 +172,7 @@ function checkoutTaxProduct(int $price): Product
 
 function checkoutTaxCart(Product $product): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     return $cart;

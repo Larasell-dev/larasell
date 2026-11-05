@@ -163,7 +163,7 @@ it('preserves explicit no-tax behavior without requiring an address', function (
 });
 
 it('keeps empty cart estimates nullable', function () {
-    $estimate = Cart::query()->create(['currency' => Currency::EUR])->taxEstimate();
+    $estimate = Cart::createIn(shopContext(), ['currency' => Currency::EUR])->taxEstimate();
 
     expect($estimate->subtotal)->toBeNull()
         ->and($estimate->amountBeforeTax())->toBeNull()
@@ -179,7 +179,7 @@ function useConfiguredCartTaxes(TaxPriceMode $mode): void
 
 function cartForTaxEstimate(int $price): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $product = Product::query()->create([
         'name' => 'Tax estimate product',
         'price' => Price::of($price),

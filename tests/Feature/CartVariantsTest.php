@@ -36,7 +36,7 @@ it('creates an authoritative default variant for a simple product', function () 
 });
 
 it('keeps the simple product cart api through its default variant', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = cartVariantProduct();
 
     $item = $cart->add($product, 2);
@@ -47,7 +47,7 @@ it('keeps the simple product cart api through its default variant', function () 
 });
 
 it('adds a product by its id', function () {
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $product = cartVariantProduct();
 
     $item = $cart->add($product->getKey(), 2);
@@ -58,7 +58,7 @@ it('adds a product by its id', function () {
 
 it('stores two variants of one product as separate cart lines', function () {
     [$product, $small, $medium] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
 
     $smallItem = $cart->add($small);
     $mediumItem = $cart->add($medium, 2);
@@ -71,7 +71,7 @@ it('stores two variants of one product as separate cart lines', function () {
 
 it('merges repeated additions of the same variant', function () {
     [, $small] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
 
     $cart->add($small, 2);
     $item = $cart->add($small, 3);
@@ -82,7 +82,7 @@ it('merges repeated additions of the same variant', function () {
 
 it('sets and removes cart lines by variant identity', function () {
     [, $small, $medium] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $cart->add($small);
     $cart->add($medium);
 
@@ -96,8 +96,8 @@ it('sets and removes cart lines by variant identity', function () {
 
 it('removes a cart line by its id', function () {
     [, $variant] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
-    $otherCart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
+    $otherCart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $item = $cart->add($variant);
     $otherItem = $otherCart->add($variant);
 
@@ -110,7 +110,7 @@ it('removes a cart line by its id', function () {
 
 it('sets a cart line quantity by its id', function () {
     [, $variant] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $item = $cart->add($variant, metadata: ['engraving' => 'Hello']);
 
     $updatedItem = $cart->set($item->getKey(), 3);
@@ -130,7 +130,7 @@ it('resolves commerce values from the selected variant', function () {
         'min_quantity' => 2,
         'max_quantity' => 3,
     ]);
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
 
     expect(fn () => $cart->add($variant, 1))
         ->toThrow(CartQuantityBelowMinimumException::class, 'Cart item quantity is below the variant minimum quantity.');
@@ -150,7 +150,7 @@ it('resolves commerce values from the selected variant', function () {
 
 it('inherits nullable variant commerce values from the product', function () {
     [$product, $variant] = cartVariantCatalog();
-    $cart = Cart::create(['currency' => Currency::USD]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $item = $cart->add($variant);
 
     expect($item->unitPrice()->amount())->toBe($product->price->amount())

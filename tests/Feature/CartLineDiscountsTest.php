@@ -178,7 +178,7 @@ it('includes the promotion code on line-level applied discounts', function () {
 });
 
 it('returns zero line discounts for an empty cart', function () {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     expect($cart->merchandiseDiscountTotal()->amount())->toBe('0')
         ->and($cart->shippingDiscountTotal()->amount())->toBe('0')
@@ -189,7 +189,7 @@ it('returns zero line discounts for an empty cart', function () {
 /** @param array<int, array{string, int}> $products */
 function lineDiscountReadApiCart(array $products): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     foreach ($products as [$slug, $price]) {
         $product = Product::query()->create([

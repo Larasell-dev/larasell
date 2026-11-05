@@ -9,7 +9,7 @@ use Larasell\Larasell\Price;
 
 function offlinePaymentOrder(): Order
 {
-    return Order::query()->create([
+    return Order::createIn(shopContext(), [
         'number' => 'OFFLINE-TEST',
         'currency' => Currency::EUR,
         'customer_email' => 'buyer@example.com',

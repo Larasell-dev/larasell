@@ -40,7 +40,7 @@ beforeEach(function () {
 });
 
 it('gets multiple shipping options with access to the cart', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct(), 2);
 
     $options = $cart->shippingOptions();
@@ -53,7 +53,7 @@ it('gets multiple shipping options with access to the cart', function () {
 });
 
 it('exposes whether a shipping option requires an address', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     app(ShippingManager::class)->register(TestPickupMethod::class);
 
     $options = $cart->shippingOptions()->keyBy('handle');
@@ -65,7 +65,7 @@ it('exposes whether a shipping option requires an address', function () {
 });
 
 it('requires a shipping address when the selected option requires one', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct());
     $cart->selectShippingOption('standard');
     $data = shippingCheckoutData();
@@ -77,7 +77,7 @@ it('requires a shipping address when the selected option requires one', function
 
 it('checks out without addresses when the selected option does not require one', function () {
     app(ShippingManager::class)->register(TestPickupMethod::class);
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct());
     $cart->selectShippingOption('pickup');
 
@@ -91,7 +91,7 @@ it('checks out without addresses when the selected option does not require one',
 });
 
 it('persists a selected shipping option and includes it in the cart total', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct(['price' => Price::of(1000)]), 2);
 
     $cart->selectShippingOption('express');
@@ -104,7 +104,7 @@ it('persists a selected shipping option and includes it in the cart total', func
 });
 
 it('rejects unavailable shipping options', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct());
 
     expect(fn () => $cart->selectShippingOption('express'))
@@ -112,7 +112,7 @@ it('rejects unavailable shipping options', function () {
 });
 
 it('rejects a selected option that becomes unavailable', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $firstProduct = shippingProduct();
     $secondProduct = shippingProduct();
     $cart->add($firstProduct);
@@ -125,7 +125,7 @@ it('rejects a selected option that becomes unavailable', function () {
 });
 
 it('snapshots selected shipping details and charges them at checkout', function () {
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add(shippingProduct(['price' => Price::of(1000)]));
     $cart->selectShippingOption('standard');
 

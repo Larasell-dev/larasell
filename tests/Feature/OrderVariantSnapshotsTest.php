@@ -95,7 +95,7 @@ it('snapshots simple products without variant options', function () {
         'price' => Price::of(1000),
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     $item = orderSnapshotCheckout($cart)->items->sole();
@@ -133,7 +133,7 @@ function orderSnapshotVariantCart(): array
         'barcode' => '4012345678901',
     ]);
 
-    return [Cart::create(['currency' => Currency::EUR]), $variant->refresh(), $size, $small, $color, $black];
+    return [Cart::createIn(shopContext(), ['currency' => Currency::EUR]), $variant->refresh(), $size, $small, $color, $black];
 }
 
 function orderSnapshotCheckout(Cart $cart): mixed

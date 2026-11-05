@@ -9,7 +9,7 @@ use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Storefront\StorefrontContext;
-use Larasell\Larasell\Storefront\Storefronts;
+use LogicException;
 
 /**
  * Reads SEO URLs: what a path leads to, and where a page lives. It never writes, and it knows
@@ -25,7 +25,6 @@ final class SeoPages
         private readonly SeoUrlManager $manager,
         private readonly PathNormalizer $paths,
         private readonly HiddenPagePolicy $hidden,
-        private readonly Storefronts $storefronts,
     ) {}
 
     /** What the path below the context's entry point leads to. */
@@ -147,10 +146,11 @@ final class SeoPages
         unset($this->preloaded[self::key($type, $id, $context)]);
     }
 
-    /** The current request's or job's context, otherwise the first channel's first locale. */
+    /** The current storefront request's or job's context; anywhere else the caller must pass one. */
     private function currentContext(): StorefrontContext
     {
-        return StorefrontContext::current() ?? $this->storefronts->contexts()[0];
+        return StorefrontContext::current()
+            ?? throw new LogicException('Seo needs a StorefrontContext outside a storefront request: pass one, e.g. StorefrontContext::for(\'default\', \'en\').');
     }
 
     private static function key(string $type, mixed $id, SalesContext $context): string

@@ -64,7 +64,7 @@ function promotionRedemptionCart(): Cart
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product);
 
     return $cart;

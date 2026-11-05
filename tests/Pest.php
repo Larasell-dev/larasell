@@ -89,6 +89,7 @@ function deleteFromCatalog(Product|Category $model): void
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
 use Larasell\Larasell\Storefront\Actions\DeleteEntryPoint;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
@@ -131,4 +132,10 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
     app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
 
     StorefrontContext::for('default', $entryPoints[0]['locale'])->activate();
+}
+
+/** The sales context the test runs in: the default channel's, or the one shopLocales() set. */
+function shopContext(): SalesContext
+{
+    return SalesContext::current() ?? SalesContext::for('default', Locale::ENGLISH);
 }

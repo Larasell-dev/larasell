@@ -9,7 +9,7 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
 
 it('stores and manages cart metadata', function () {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     expect($cart->metadata)->toBeEmpty()
         ->and($cart->metadata->get('missing', 'fallback'))->toBe('fallback');
@@ -44,7 +44,7 @@ it('snapshots cart metadata on the order', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create([
+    $cart = Cart::createIn(shopContext(), [
         'currency' => Currency::EUR,
         'metadata' => ['delivery_instructions' => 'Ring the bell'],
     ]);
@@ -66,7 +66,7 @@ it('stores metadata on cart items and uses it as part of line identity', functio
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     $alice = $cart->add($product, 1, [
         'belongs_to' => 'Alice',
@@ -96,7 +96,7 @@ it('snapshots cart item metadata on the order item', function () {
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $item = $cart->add($product, metadata: ['belongs_to' => 'Alice']);
 
     $order = app(Checkout::class)->create($cart, cartMetadataCheckoutData())->order;
@@ -114,7 +114,7 @@ it('enforces variant stock across customized lines', function () {
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, 2, ['belongs_to' => 'Alice']);
 
     try {

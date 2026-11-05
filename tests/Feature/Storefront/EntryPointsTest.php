@@ -133,8 +133,7 @@ it('keeps a channel from dropping a locale or currency its entry points still se
 
 it('links a cart or order back through the primary entry point of its channel and locale', function () {
     swissStorefront();
-    SalesContext::for('ch', 'fr-CH')->activate();
-    $cart = Cart::query()->create();
+    $cart = Cart::createIn(SalesContext::for('ch', 'fr-CH'));
 
     expect(StorefrontContext::for($cart->sales_context)->url('panier'))->toBe('https://shop.ch/fr/panier');
 });

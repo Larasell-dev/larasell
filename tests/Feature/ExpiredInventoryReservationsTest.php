@@ -25,7 +25,7 @@ function orderWithExpiringInventory(?Carbon $expiresAt): array
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, 2);
 
     $order = app(Checkout::class)->create($cart, [

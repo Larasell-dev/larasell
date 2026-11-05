@@ -76,7 +76,7 @@ it('does not allow promotion results to make the cart total negative', function 
 });
 
 it('keeps an empty cart total nullable and has no discount amount', function () {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
 
     expect($cart->discounts())->toBeEmpty()
         ->and($cart->discountTotal()->amount())->toBe('0')
@@ -85,7 +85,7 @@ it('keeps an empty cart total nullable and has no discount amount', function () 
 
 function cartWithDiscountTestProduct(int $price): Cart
 {
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $product = Product::query()->create([
         'name' => 'Cart discount product',
         'price' => Price::of($price),

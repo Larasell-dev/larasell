@@ -29,7 +29,7 @@ function inventoryReservationCart(?int $stock = 5, int $quantity = 2): array
         'allow_backorders' => $stock === null,
         'status' => Visibility::Visible,
     ]);
-    $cart = Cart::query()->create(['currency' => Currency::EUR]);
+    $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, $quantity);
 
     return [$cart, $product];
