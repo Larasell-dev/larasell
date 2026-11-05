@@ -13,6 +13,7 @@ use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
+use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 
 /**
@@ -27,6 +28,8 @@ class SeoServiceProvider extends ServiceProvider
 
         $this->app->singleton(SeoResources::class);
         $this->app->singleton(SeoModelListener::class);
+        // Scoped: preloaded paths must not outlive a request or job, e.g. under Octane or in queue workers.
+        $this->app->scoped(SeoPages::class);
         $this->app->bind(SeoContextResolver::class, fn ($app) => $app->make(
             $app['config']->get('larasell.seo.context_resolver', EntryPointResolver::class)
         ));
@@ -49,6 +52,10 @@ class SeoServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations/seo');
 
         SeoRoutes::register();
+
+        Event::listen(SeoUrlChanged::class, function (SeoUrlChanged $event): void {
+            $this->app->make(SeoPages::class)->forget($event->resource, $event->context);
+        });
 
         // Pages must be bound before implicit binding looks up {product} by its ID.
         $this->callAfterResolving(Kernel::class, function (Kernel $kernel): void {
