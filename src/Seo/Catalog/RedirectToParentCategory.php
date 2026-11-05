@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Seo\Catalog;
 
-use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Category;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\SeoContext;
@@ -20,7 +20,7 @@ final class RedirectToParentCategory implements GoneStrategy
     public function redirect(SeoUrl $url, SeoContext $context): ?SeoRedirect
     {
         $parentId = $url->gone_snapshot['parent_id'] ?? null;
-        $parent = ! is_int($parentId) ? null : app(ModelRegistry::class)->category->query()->find($parentId);
+        $parent = ! is_int($parentId) ? null : Category::query()->find($parentId);
         $location = $parent === null ? null : $this->pages->availableUrl($parent, $context);
 
         return $location === null ? null : new SeoRedirect($location, 302);

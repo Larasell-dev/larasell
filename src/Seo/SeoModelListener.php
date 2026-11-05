@@ -9,7 +9,6 @@ use WeakMap;
 
 /**
  * Keeps URLs in step with saved and deleted resources, for every registered resource type.
- * Listening to all Eloquent models covers models swapped through the ModelRegistry too.
  */
 final class SeoModelListener
 {

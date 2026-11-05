@@ -4,22 +4,6 @@ use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Images\NullPlaceholderGenerator;
-use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\CartItem;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Customer;
-use Larasell\Larasell\Models\InventoryReservation;
-use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\OrderItem;
-use Larasell\Larasell\Models\Payment;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
-use Larasell\Larasell\Models\ProductAttributeValue;
-use Larasell\Larasell\Models\ProductImage;
-use Larasell\Larasell\Models\ProductVariant;
-use Larasell\Larasell\Models\PromotionRedemption;
-use Larasell\Larasell\Models\Refund;
-use Larasell\Larasell\Models\Setting;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\OfflinePaymentProvider;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
@@ -30,25 +14,6 @@ use Larasell\Larasell\Taxes\NoTaxCalculator;
 return [
     'carts' => [
         'merge_strategy' => CombineQuantities::class,
-    ],
-
-    'models' => [
-        'cart' => Cart::class,
-        'cart_item' => CartItem::class,
-        'category' => Category::class,
-        'customer' => Customer::class,
-        'inventory_reservation' => InventoryReservation::class,
-        'order' => Order::class,
-        'order_item' => OrderItem::class,
-        'payment' => Payment::class,
-        'refund' => Refund::class,
-        'product' => Product::class,
-        'product_image' => ProductImage::class,
-        'product_attribute' => ProductAttribute::class,
-        'product_attribute_value' => ProductAttributeValue::class,
-        'product_variant' => ProductVariant::class,
-        'promotion_redemption' => PromotionRedemption::class,
-        'setting' => Setting::class,
     ],
 
     'images' => [

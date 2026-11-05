@@ -121,31 +121,31 @@ class Order extends Model
     /** @return BelongsTo<Customer, $this> */
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->customer->class());
+        return $this->belongsTo(Customer::class);
     }
 
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->orderItem->class());
+        return $this->hasMany(OrderItem::class);
     }
 
     /** @return HasMany<InventoryReservation, $this> */
     public function inventoryReservations(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->inventoryReservation->class());
+        return $this->hasMany(InventoryReservation::class);
     }
 
     /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->payment->class());
+        return $this->hasMany(Payment::class);
     }
 
     /** @return HasMany<PromotionRedemption, $this> */
     public function promotionRedemptions(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->promotionRedemption->class());
+        return $this->hasMany(PromotionRedemption::class);
     }
 
     public function transitionTo(OrderStatus $status): void
@@ -210,7 +210,7 @@ class Order extends Model
                 foreach ($reservations as $reservation) {
                     $variant = $reservation->product_variant_id === null
                         ? null
-                        : app(ModelRegistry::class)->productVariant->query()
+                        : ProductVariant::query()
                             ->with('product')
                             ->lockForUpdate()
                             ->find($reservation->product_variant_id);
@@ -226,7 +226,7 @@ class Order extends Model
                         continue;
                     }
 
-                    $product = app(ModelRegistry::class)->product->query()
+                    $product = Product::query()
                         ->lockForUpdate()
                         ->find($reservation->product_id);
 
@@ -244,7 +244,7 @@ class Order extends Model
                 foreach ($items->sortBy('product_variant_id') as $item) {
                     $variant = $item->product_variant_id === null
                         ? null
-                        : app(ModelRegistry::class)->productVariant->query()
+                        : ProductVariant::query()
                             ->with('product')
                             ->lockForUpdate()
                             ->find($item->product_variant_id);
@@ -260,7 +260,7 @@ class Order extends Model
                         continue;
                     }
 
-                    $product = app(ModelRegistry::class)->product->query()
+                    $product = Product::query()
                         ->lockForUpdate()
                         ->find($item->product_id);
 

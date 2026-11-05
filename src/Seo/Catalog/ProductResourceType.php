@@ -5,7 +5,6 @@ namespace Larasell\Larasell\Seo\Catalog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
@@ -27,7 +26,7 @@ class ProductResourceType implements SeoResourceType
 
     public function model(): string
     {
-        return app(ModelRegistry::class)->product->class();
+        return Product::class;
     }
 
     public function reservedPrefixes(): array

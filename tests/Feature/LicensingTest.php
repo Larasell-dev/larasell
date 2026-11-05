@@ -8,7 +8,6 @@ use Larasell\Larasell\Exceptions\Licensing\UnknownEntitlement;
 use Larasell\Larasell\Facades\Entitlement;
 use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
 use Larasell\Larasell\Licensing\License;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Models\Setting;
 
 /** Signs a lease the way larasell.dev does (LicenseSigningService in the website). */
@@ -50,7 +49,6 @@ beforeEach(function () {
 
     config(['app.url' => 'https://shop.example.com']);
     $this->app->singleton(License::class, fn ($app) => new License(
-        $app->make(ModelRegistry::class),
         base64_encode(sodium_crypto_sign_publickey($keyPair)),
     ));
     $this->app['env'] = 'production';

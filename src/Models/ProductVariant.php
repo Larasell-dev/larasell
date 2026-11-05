@@ -81,14 +81,14 @@ class ProductVariant extends Model
     /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->product->class());
+        return $this->belongsTo(Product::class);
     }
 
     /** @return BelongsToMany<ProductAttributeValue, $this> */
     public function attributeValues(): BelongsToMany
     {
         return $this->belongsToMany(
-            app(ModelRegistry::class)->productAttributeValue->class(),
+            ProductAttributeValue::class,
             'larasell_product_variant_product_attribute_value',
             'product_variant_id',
             'product_attribute_value_id',

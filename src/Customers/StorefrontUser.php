@@ -9,7 +9,6 @@ use Larasell\Larasell\Contracts\StorefrontUser as StorefrontUserContract;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Customer;
 use Larasell\Larasell\Models\CustomerUser;
-use Larasell\Larasell\Models\ModelRegistry;
 use LogicException;
 
 /**
@@ -21,7 +20,7 @@ trait StorefrontUser
     public function customer(): HasOneThrough
     {
         return $this->hasOneThrough(
-            app(ModelRegistry::class)->customer->class(),
+            Customer::class,
             CustomerUser::class,
             'user_id',
             'id',
@@ -40,7 +39,7 @@ trait StorefrontUser
         $attributes = $this->customerAttributesFromUser($attributes);
 
         /** @var Customer $customer */
-        $customer = app(ModelRegistry::class)->customer->query()->create($attributes);
+        $customer = Customer::query()->create($attributes);
         $customer->users()->attach($this->getKey());
 
         return $customer;
@@ -49,7 +48,7 @@ trait StorefrontUser
     /** @return HasMany<Cart, $this> */
     public function carts(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->cart->class(), 'user_id');
+        return $this->hasMany(Cart::class, 'user_id');
     }
 
     /**

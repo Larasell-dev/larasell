@@ -3,11 +3,9 @@
 namespace Larasell\Larasell\Seo;
 
 use Closure;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Larasell\Larasell\Models\ModelEntry;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
@@ -31,18 +29,12 @@ final class SeoUrlManager
 {
     private const MAX_ATTEMPTS = 100;
 
-    /** @var ModelEntry<SeoUrl> */
-    private readonly ModelEntry $urls;
-
     public function __construct(
         private readonly SeoResources $resources,
         private readonly SeoContextResolver $contextResolver,
         private readonly CollisionPolicy $collisions,
         private readonly PathNormalizer $paths,
-        Repository $config,
-    ) {
-        $this->urls = new ModelEntry($config, 'larasell.seo.models.seo_url', SeoUrl::class);
-    }
+    ) {}
 
     /**
      * One context per channel and locale. When several entry points serve the same pair, the first one wins.
@@ -260,7 +252,7 @@ final class SeoUrlManager
                 $this->retire($current);
             }
 
-            $row = $this->urls->new()->fill([
+            $row = (new SeoUrl)->fill([
                 'channel' => $context->channel,
                 'locale' => $context->locale->value,
                 'path' => $path,
@@ -299,7 +291,7 @@ final class SeoUrlManager
                 continue;
             }
 
-            $row = $this->urls->query()
+            $row = SeoUrl::query()
                 ->where('channel', $context->channel)
                 ->where('locale', $context->locale->value)
                 ->where('path', $candidate)
@@ -362,7 +354,7 @@ final class SeoUrlManager
     /** @return Builder<SeoUrl> */
     private function rows(string $type, int|string $id, SeoContext $context): Builder
     {
-        return $this->urls->query()
+        return SeoUrl::query()
             ->where('resource_type', $type)
             ->where('resource_id', $id)
             ->where('channel', $context->channel)
@@ -380,7 +372,7 @@ final class SeoUrlManager
      */
     private function transaction(Closure $callback): mixed
     {
-        $connection = $this->urls->new()->getConnection();
+        $connection = (new SeoUrl)->getConnection();
 
         try {
             return $connection->transaction($callback);

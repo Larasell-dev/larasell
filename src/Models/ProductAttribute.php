@@ -36,14 +36,8 @@ class ProductAttribute extends Model
     public function values(): HasMany
     {
         return $this->hasMany(
-            $this->productAttributeValueModel(),
+            ProductAttributeValue::class,
             'product_attribute_id'
         );
-    }
-
-    /** @return class-string<ProductAttributeValue> */
-    protected function productAttributeValueModel(): string
-    {
-        return app(ModelRegistry::class)->productAttributeValue->class();
     }
 }

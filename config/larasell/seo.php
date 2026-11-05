@@ -6,7 +6,6 @@ use Larasell\Larasell\Seo\Catalog\RedirectToParentCategory;
 use Larasell\Larasell\Seo\DefaultPathNormalizer;
 use Larasell\Larasell\Seo\DefaultSlugifier;
 use Larasell\Larasell\Seo\EntryPointResolver;
-use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\NotFoundForHiddenPages;
 use Larasell\Larasell\Seo\RedirectToReplacement;
 use Larasell\Larasell\Seo\SuffixCollisionPolicy;
@@ -79,8 +78,4 @@ return [
      * the request with SeoPageHidden (404) and keeps the URLs for when the page is published again.
      */
     'hidden_policy' => NotFoundForHiddenPages::class,
-
-    'models' => [
-        'seo_url' => SeoUrl::class,
-    ],
 ];

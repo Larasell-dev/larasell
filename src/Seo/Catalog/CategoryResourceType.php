@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\ModelRegistry;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\SeoContext;
@@ -29,7 +28,7 @@ class CategoryResourceType implements SeoResourceType
 
     public function model(): string
     {
-        return app(ModelRegistry::class)->category->class();
+        return Category::class;
     }
 
     public function reservedPrefixes(): array

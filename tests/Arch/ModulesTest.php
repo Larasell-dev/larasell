@@ -45,6 +45,7 @@ const BASELINE = [
         'Checkout' => [
             'Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand',
             'Larasell\Larasell\Inventory\ReleaseExpiredInventoryForOrder',
+            'Larasell\Larasell\Models\InventoryReservation',
         ],
     ],
     'Taxes' => [
@@ -62,6 +63,7 @@ const BASELINE = [
         'Checkout' => [
             'Larasell\Larasell\Promotions\ReleaseExpiredPromotionRedemptionsForOrder',
             'Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand',
+            'Larasell\Larasell\Models\PromotionRedemption',
         ],
         'Carts' => [
             'Larasell\Larasell\Discounts\PromotionContext',
@@ -72,6 +74,9 @@ const BASELINE = [
     'Customers' => [
         'Carts' => [
             'Larasell\Larasell\Customers\StorefrontUser',
+        ],
+        'Checkout' => [
+            'Larasell\Larasell\Models\Customer',
         ],
     ],
     'Checkout' => [

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Larasell\Larasell\Exceptions\Licensing\LicenseException;
-use Larasell\Larasell\Models\ModelRegistry;
+use Larasell\Larasell\Models\Setting;
 
 /**
  * This installation's Larasell license: activates a license key with larasell.dev, renews
@@ -33,7 +33,6 @@ final class License
      * @param  string  $publicKey  only for tests, which sign leases with a key of their own
      */
     public function __construct(
-        private readonly ModelRegistry $models,
         private readonly string $publicKey = self::PUBLIC_KEY,
     ) {}
 
@@ -159,12 +158,12 @@ final class License
     private function stored(): array
     {
         /** @var array{installation_id?: string, activation_id?: string, activation_secret?: string, lease?: string|null} */
-        return $this->models->setting->query()->where('key', self::SETTING)->first()?->getAttribute('value') ?? [];
+        return Setting::query()->where('key', self::SETTING)->first()?->getAttribute('value') ?? [];
     }
 
     /** @param array<string, mixed> $value */
     private function store(array $value): void
     {
-        $this->models->setting->query()->updateOrCreate(['key' => self::SETTING], ['value' => $value]);
+        Setting::query()->updateOrCreate(['key' => self::SETTING], ['value' => $value]);
     }
 }

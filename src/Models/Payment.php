@@ -62,13 +62,13 @@ class Payment extends Model
     /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(app(ModelRegistry::class)->order->class());
+        return $this->belongsTo(Order::class);
     }
 
     /** @return HasMany<Refund, $this> */
     public function refunds(): HasMany
     {
-        return $this->hasMany(app(ModelRegistry::class)->refund->class());
+        return $this->hasMany(Refund::class);
     }
 
     /** @param array<string, mixed> $options */
