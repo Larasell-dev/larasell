@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Larasell\Larasell\Models\ModelEntry;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
+use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoResourceGone;
@@ -37,6 +38,7 @@ final class SeoUrlManager
         private readonly SeoResources $resources,
         private readonly SeoContextResolver $contextResolver,
         private readonly CollisionPolicy $collisions,
+        private readonly PathNormalizer $paths,
         Repository $config,
     ) {
         $this->urls = new ModelEntry($config, 'larasell.seo.models.seo_url', SeoUrl::class);
@@ -98,7 +100,7 @@ final class SeoUrlManager
     public function setCustom(Model $resource, SeoContext $context, string $path): SeoUrl
     {
         $type = $this->resources->for($resource);
-        $path = self::normalize($path);
+        $path = $this->normalize($path);
 
         [$row, $changed] = $this->transaction(function () use ($type, $resource, $context, $path): array {
             $current = $this->canonical($resource, $context);
@@ -358,9 +360,9 @@ final class SeoUrlManager
         }
     }
 
-    private static function normalize(string $path): string
+    private function normalize(string $path): string
     {
-        $path = trim(mb_strtolower(trim($path)), '/');
+        $path = $this->paths->normalize(trim($path));
         $segment = '[\p{L}\p{N}][\p{L}\p{N}._-]*';
 
         if (mb_strlen($path) > 512 || preg_match("~^{$segment}(?:/{$segment})*$~u", $path) !== 1) {

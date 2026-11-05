@@ -2,12 +2,18 @@
 
 namespace Larasell\Larasell\Seo;
 
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Seo\Commands\RegenerateSeoUrlsCommand;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
+use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
+use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
+use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 
 /**
  * The SEO module: public storefront URLs, their history, and what search engines see.
@@ -27,6 +33,12 @@ class SeoServiceProvider extends ServiceProvider
         $this->app->bind(Slugifier::class, fn ($app) => $app->make(
             $app['config']->get('larasell.seo.slugifier', DefaultSlugifier::class)
         ));
+        $this->app->bind(PathNormalizer::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.seo.path_normalizer', DefaultPathNormalizer::class)
+        ));
+        $this->app->bind(HiddenPagePolicy::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.seo.hidden_policy', NotFoundForHiddenPages::class)
+        ));
         $this->app->bind(CollisionPolicy::class, fn ($app) => $app->make(
             $app['config']->get('larasell.seo.collision_policy', SuffixCollisionPolicy::class)
         ));
@@ -35,6 +47,15 @@ class SeoServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations/seo');
+
+        SeoRoutes::register();
+
+        // Pages must be bound before implicit binding looks up {product} by its ID.
+        $this->callAfterResolving(Kernel::class, function (Kernel $kernel): void {
+            if ($kernel instanceof HttpKernel) {
+                $kernel->addToMiddlewarePriorityBefore(SubstituteBindings::class, ResolveStorefront::class);
+            }
+        });
 
         foreach (['saved', 'deleting', 'deleted'] as $event) {
             Event::listen("eloquent.{$event}: *", function (string $name, array $payload) use ($event): void {
