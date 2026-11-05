@@ -19,6 +19,9 @@ final class SeoPages
     /** @var ModelEntry<SeoUrl> */
     private readonly ModelEntry $urls;
 
+    /** @var array<string, string|null> Canonical paths loaded by preload(), by resource and context. */
+    private array $preloaded = [];
+
     public function __construct(
         private readonly SeoResources $resources,
         private readonly SeoUrlManager $manager,
@@ -76,18 +79,82 @@ final class SeoPages
         return Resolution::found($resource, $url);
     }
 
-    /** The absolute canonical URL of the page, or null when it has none or is not available in the context. */
-    public function availableUrl(Model $resource, SeoContext $context): ?string
+    /**
+     * The absolute canonical URL of the page in the context (the current request's by default), or
+     * null when it has no URL there. Hidden pages keep their URL; use availableUrl() to link only to
+     * pages a visitor can open.
+     */
+    public function url(Model $resource, ?SeoContext $context = null): ?string
     {
+        $context ??= $this->currentContext();
+        $key = self::key($resource->getMorphClass(), $resource->getKey(), $context);
+
+        $path = array_key_exists($key, $this->preloaded)
+            ? $this->preloaded[$key]
+            : $this->manager->canonicalPath($resource->getMorphClass(), $resource->getKey(), $context);
+
+        return $path === null ? null : $context->url($path);
+    }
+
+    /** The URL of the page, or null when it has none or is not available in the context. */
+    public function availableUrl(Model $resource, ?SeoContext $context = null): ?string
+    {
+        $context ??= $this->currentContext();
         $type = $this->resources->find($resource);
 
-        if ($type === null || ! $type->isAvailable($resource, $context)) {
-            return null;
+        return $type !== null && $type->isAvailable($resource, $context) ? $this->url($resource, $context) : null;
+    }
+
+    /**
+     * Loads the URLs of many pages with one query per kind of page, so a listing does not query once
+     * per link. Later url() calls for them use the loaded paths until the paths change.
+     *
+     * @param  iterable<Model>  $resources
+     */
+    public function preload(iterable $resources, ?SeoContext $context = null): void
+    {
+        $context ??= $this->currentContext();
+        $ids = [];
+
+        foreach ($resources as $resource) {
+            $ids[$resource->getMorphClass()][] = $resource->getKey();
         }
 
-        $canonical = $this->manager->canonical($resource, $context);
+        foreach ($ids as $type => $keys) {
+            foreach (array_chunk(array_unique($keys), 500) as $chunk) {
+                foreach ($chunk as $id) {
+                    $this->preloaded[self::key($type, $id, $context)] = null;
+                }
 
-        return $canonical === null ? null : $context->url($canonical->path);
+                $this->urls->query()
+                    ->where('resource_type', $type)
+                    ->whereIn('resource_id', $chunk)
+                    ->where('channel', $context->channel)
+                    ->where('locale', $context->locale->value)
+                    ->where('status', SeoUrlStatus::Canonical->value)
+                    ->get(['resource_id', 'path'])
+                    ->each(function (SeoUrl $url) use ($type, $context): void {
+                        $this->preloaded[self::key($type, $url->resource_id, $context)] = $url->path;
+                    });
+            }
+        }
+    }
+
+    /** Drops a preloaded path, e.g. after it changed. */
+    public function forget(Model $resource, SeoContext $context): void
+    {
+        unset($this->preloaded[self::key($resource->getMorphClass(), $resource->getKey(), $context)]);
+    }
+
+    /** The request's context inside Route::storefront(), otherwise the first configured one. */
+    private function currentContext(): SeoContext
+    {
+        return app()->bound(SeoContext::class) ? app(SeoContext::class) : $this->manager->contexts()[0];
+    }
+
+    private static function key(string $type, mixed $id, SeoContext $context): string
+    {
+        return $type.'|'.$id.'|'.$context->channel.'|'.$context->locale->value;
     }
 
     /** @return list<GoneStrategy> */
