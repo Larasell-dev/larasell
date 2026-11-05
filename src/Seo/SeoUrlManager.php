@@ -27,8 +27,6 @@ use LogicException;
  */
 final class SeoUrlManager
 {
-    private const MAX_ATTEMPTS = 100;
-
     public function __construct(
         private readonly SeoResources $resources,
         private readonly SeoContextResolver $contextResolver,
@@ -213,7 +211,7 @@ final class SeoUrlManager
 
         if ($current?->path === $path) {
             $row = $current->fill(['is_custom' => $custom]);
-        } elseif ($own = $this->rows($type->key(), $resource->getKey(), $context)->where('path', $path)->first()) {
+        } elseif ($own = $this->rows($type->key(), $resource->getKey(), $context)->where('path_hash', SeoUrl::hash($path))->first()) {
             // Renamed back: the old URL becomes canonical again instead of a duplicate being created.
             if ($current !== null) {
                 $this->retire($current);
@@ -244,18 +242,30 @@ final class SeoUrlManager
     }
 
     /**
-     * The first candidate that is not reserved for another type or used by another page's canonical URL.
+     * The path, or the first alternative the collision policy offers, that is not reserved for another
+     * type or used by another page's canonical URL. There is no limit to the number of alternatives:
+     * one query loads every taken "{path}-N", and the first number not among them is free.
      *
      * @param  SeoResourceType<Model>  $type
      */
     private function freePath(SeoResourceType $type, Model $resource, SeoContext $context, string $path, bool $custom): string
     {
-        for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {
+        $inContext = fn () => SeoUrl::query()->where('channel', $context->channel)->where('locale', $context->locale->value);
+        $numbered = null;
+        $tried = [];
+
+        for ($attempt = 0; ; $attempt++) {
             $candidate = $attempt === 0 ? $path : $this->collisions->alternative($path, $attempt, $custom);
 
             if ($candidate === null) {
                 throw InvalidSeoPath::taken($path);
             }
+
+            if (isset($tried[$candidate])) {
+                throw new LogicException('The collision policy ['.$this->collisions::class."] offered [{$candidate}] twice for [{$path}].");
+            }
+
+            $tried[$candidate] = true;
 
             if ($this->resources->isReservedFor($candidate, $type, $context)) {
                 if ($custom) {
@@ -265,11 +275,13 @@ final class SeoUrlManager
                 continue;
             }
 
-            $row = SeoUrl::query()
-                ->where('channel', $context->channel)
-                ->where('locale', $context->locale->value)
-                ->where('path', $candidate)
-                ->first();
+            if ($attempt > 0 && SeoUrl::withoutNumber($candidate) === $path) {
+                // The numbered variants of the path, loaded once, e.g. "p/boots-2" to "p/boots-101".
+                $numbered ??= $inContext()->where('base_path_hash', SeoUrl::hash($path))->get()->keyBy('path');
+                $row = $numbered->get($candidate);
+            } else {
+                $row = $inContext()->where('path_hash', SeoUrl::hash($candidate))->first();
+            }
 
             if ($row === null || ($row->resource_type === $type->key() && $row->resource_id === (int) $resource->getKey())) {
                 return $candidate;
@@ -283,8 +295,6 @@ final class SeoUrlManager
                 return $candidate;
             }
         }
-
-        throw InvalidSeoPath::taken($path);
     }
 
     private function retire(SeoUrl $row): void
@@ -460,7 +470,7 @@ final class SeoUrlManager
         $path = $this->paths->normalize(trim($path));
         $segment = '[\p{L}\p{N}][\p{L}\p{N}._-]*';
 
-        if (mb_strlen($path) > SeoUrl::MAX_PATH_LENGTH || preg_match("~^{$segment}(?:/{$segment})*$~u", $path) !== 1) {
+        if (preg_match("~^{$segment}(?:/{$segment})*$~u", $path) !== 1) {
             throw InvalidSeoPath::malformed($path);
         }
 

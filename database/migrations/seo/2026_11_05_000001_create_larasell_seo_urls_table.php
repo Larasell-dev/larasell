@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Larasell\Larasell\Seo\Models\SeoUrl;
 
 return new class extends Migration
 {
@@ -18,7 +17,11 @@ return new class extends Migration
             $table->id();
             $table->string('channel', 64);
             $table->string('locale', 35);
-            $table->string('path', SeoUrl::MAX_PATH_LENGTH);
+            // Paths have no length limit, so lookups and the unique index use their SHA-256 (SeoUrl::hash()).
+            $table->text('path');
+            $table->char('path_hash', 64);
+            // The hash of the path without a trailing "-N": finds every numbered variant of a path in one query.
+            $table->char('base_path_hash', 64);
             $table->string('resource_type');
             $table->unsignedBigInteger('resource_id');
             $table->string('status', 16);
@@ -31,7 +34,8 @@ return new class extends Migration
             $table->nullableMorphs('replacement');
             $table->timestamps();
 
-            $table->unique(['channel', 'locale', 'path']);
+            $table->unique(['channel', 'locale', 'path_hash']);
+            $table->index(['channel', 'locale', 'base_path_hash']);
             $table->unique(['resource_type', 'resource_id', 'channel', 'locale', 'is_canonical'], 'larasell_seo_urls_one_canonical_unique');
             $table->index(['resource_type', 'resource_id', 'channel', 'locale', 'status'], 'larasell_seo_urls_resource_index');
         });

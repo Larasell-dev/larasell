@@ -30,7 +30,7 @@ final class SeoPages
         $url = SeoUrl::query()
             ->where('channel', $context->channel)
             ->where('locale', $context->locale->value)
-            ->where('path', $this->paths->normalize($path))
+            ->where('path_hash', SeoUrl::hash($this->paths->normalize($path)))
             ->first();
 
         if ($url === null) {

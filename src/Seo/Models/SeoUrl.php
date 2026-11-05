@@ -16,6 +16,8 @@ use Larasell\Larasell\Seo\SeoUrlStatus;
  * @property string $channel
  * @property string $locale
  * @property string $path
+ * @property string $path_hash
+ * @property string $base_path_hash
  * @property string $resource_type
  * @property int $resource_id
  * @property SeoUrlStatus $status
@@ -27,9 +29,6 @@ use Larasell\Larasell\Seo\SeoUrlStatus;
  */
 class SeoUrl extends Model
 {
-    /** The longest path the path column holds, in characters. */
-    public const MAX_PATH_LENGTH = 512;
-
     protected $table = 'larasell_seo_urls';
 
     protected $guarded = [];
@@ -42,4 +41,24 @@ class SeoUrl extends Model
         'gone_snapshot' => 'array',
         'replacement_id' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $url): void {
+            $url->path_hash = self::hash($url->path);
+            $url->base_path_hash = self::hash(self::withoutNumber($url->path));
+        });
+    }
+
+    /** What lookups compare instead of the path itself, which may be of any length. */
+    public static function hash(string $path): string
+    {
+        return hash('sha256', $path);
+    }
+
+    /** The path without a trailing "-N", e.g. "p/boots" for "p/boots-12". */
+    public static function withoutNumber(string $path): string
+    {
+        return (string) preg_replace('/-\d+$/', '', $path);
+    }
 }
