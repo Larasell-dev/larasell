@@ -5,7 +5,6 @@ namespace Larasell\Larasell\Seo;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
-use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 
 /** The resource types in larasell.seo.resources, and the paths reserved for them. */
 final class SeoResources
@@ -65,14 +64,15 @@ final class SeoResources
     }
 
     /**
-     * Whether the path is reserved for everyone (larasell.seo.reserved_paths and the static routes in
-     * Route::storefront(), such as "cart") or for a type other than this one.
+     * Whether the path is reserved in the context: by larasell.seo.reserved_paths, by a static route of
+     * Route::storefront() in that context ("cart", or its translation "warenkorb" in German), or by a
+     * resource type other than this one.
      *
      * @param  SeoResourceType<Model>  $type
      */
-    public function isReservedFor(string $path, SeoResourceType $type): bool
+    public function isReservedFor(string $path, SeoResourceType $type, SeoContext $context): bool
     {
-        $prefixes = [...(array) config('larasell.seo.reserved_paths', []), ...$this->staticStorefrontPaths()];
+        $prefixes = [...(array) config('larasell.seo.reserved_paths', []), ...$this->staticStorefrontPaths($context)];
 
         foreach ($this->all() as $other) {
             if ($other::class !== $type::class) {
@@ -92,16 +92,18 @@ final class SeoResources
     }
 
     /** @return list<string> */
-    private function staticStorefrontPaths(): array
+    private function staticStorefrontPaths(SeoContext $context): array
     {
         $paths = [];
+        $key = SeoRoutes::entryPointKey($context);
 
         foreach (app('router')->getRoutes()->getRoutes() as $route) {
-            if (! in_array(ResolveStorefront::class, $route->middleware(), true)) {
+            if ($route->getAction(SeoRoutes::ENTRY_POINT) !== $key) {
                 continue;
             }
 
-            $uri = (string) preg_replace('#^\{'.ResolveStorefront::PREFIX.'\}/?#', '', $route->uri());
+            $prefix = trim($route->getPrefix() ?? '', '/');
+            $uri = trim($prefix === '' ? $route->uri() : substr($route->uri(), strlen($prefix)), '/');
 
             if ($uri !== '' && ! str_contains($uri, '{')) {
                 $paths[] = $uri;

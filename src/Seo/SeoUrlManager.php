@@ -263,7 +263,7 @@ final class SeoUrlManager
                 throw InvalidSeoPath::taken($path);
             }
 
-            if ($this->resources->isReservedFor($candidate, $type)) {
+            if ($this->resources->isReservedFor($candidate, $type, $context)) {
                 if ($custom) {
                     throw InvalidSeoPath::reserved($candidate);
                 }
