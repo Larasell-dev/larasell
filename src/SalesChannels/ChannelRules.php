@@ -5,7 +5,6 @@ namespace Larasell\Larasell\SalesChannels;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\SalesChannels\Models\SalesChannelEntryPoint;
 use Larasell\Larasell\Settings\CurrencySettings;
 use Larasell\Larasell\Settings\LocaleSettings;
 
@@ -15,7 +14,17 @@ final readonly class ChannelRules
     public function __construct(
         private LocaleSettings $locales,
         private CurrencySettings $currencies,
+        private SalesChannelTypes $types,
     ) {}
+
+    public function type(string $type): string
+    {
+        if (! $this->types->has($type)) {
+            throw new InvalidSalesChannel("There is no sales channel type [{$type}]; known are: ".implode(', ', $this->types->all()).'.');
+        }
+
+        return $type;
+    }
 
     public function locale(mixed $tag): Locale
     {
@@ -56,42 +65,5 @@ final readonly class ChannelRules
         if (! in_array($currency, $currencies, true)) {
             throw new InvalidSalesChannel("The default currency [{$currency->value}] must be one of the channel's currencies.");
         }
-    }
-
-    /**
-     * The scheme, host, port and prefix of an entry point URL, checked against the channel and every other entry point.
-     *
-     * @param  list<Locale>  $locales
-     * @param  list<Currency>  $currencies
-     * @return array{scheme: string, host: string, port: int|null, prefix: string}
-     */
-    public function entryPoint(string $url, Locale $locale, Currency $currency, array $locales, array $currencies): array
-    {
-        $parts = parse_url($url);
-
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            throw new InvalidSalesChannel("The entry point URL [{$url}] needs a scheme and a host.");
-        }
-
-        if (! in_array($locale, $locales, true)) {
-            throw new InvalidSalesChannel("The entry point [{$url}] serves the locale [{$locale->value}], which its channel does not have.");
-        }
-
-        if (! in_array($currency, $currencies, true)) {
-            throw new InvalidSalesChannel("The entry point [{$url}] uses the currency [{$currency->value}], which its channel does not have.");
-        }
-
-        $entryPoint = [
-            'scheme' => strtolower($parts['scheme']),
-            'host' => strtolower($parts['host']),
-            'port' => $parts['port'] ?? null,
-            'prefix' => trim($parts['path'] ?? '', '/'),
-        ];
-
-        if (SalesChannelEntryPoint::query()->where('host', $entryPoint['host'])->where('prefix', $entryPoint['prefix'])->exists()) {
-            throw new InvalidSalesChannel("The entry point [{$url}] is already used by a sales channel.");
-        }
-
-        return $entryPoint;
     }
 }

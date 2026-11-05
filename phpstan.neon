@@ -14,6 +14,7 @@ parameters:
     larasell:
         modules:
             SalesChannels: ['Larasell\Larasell\SalesChannels\']
+            Storefront: ['Larasell\Larasell\Storefront\']
             Catalog: ['Larasell\Larasell\Catalog\', 'Larasell\Larasell\Images\']
             Inventory: ['Larasell\Larasell\Inventory\', 'Larasell\Larasell\Models\InventoryReservation']
             Taxes: ['Larasell\Larasell\Taxes\']

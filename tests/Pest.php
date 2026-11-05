@@ -87,14 +87,15 @@ function deleteFromCatalog(Product|Category $model): void
 */
 
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\SalesChannels\Actions\AddEntryPoint;
-use Larasell\Larasell\SalesChannels\Actions\DeleteEntryPoint;
 use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
-use Larasell\Larasell\SalesChannels\SalesContext;
+use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
+use Larasell\Larasell\Storefront\Actions\DeleteEntryPoint;
+use Larasell\Larasell\Storefront\Models\EntryPoint;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 uses()->beforeEach(function () {
-    SalesContext::for('default', Locale::ENGLISH)->activate();
+    StorefrontContext::for('default', Locale::ENGLISH)->activate();
 })->in('Feature');
 
 /**
@@ -118,7 +119,7 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
     config()->set('larasell.locale.supported', $all);
     app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $all]);
 
-    foreach ($channel->entryPoints()->pluck('id') as $id) {
+    foreach (EntryPoint::query()->where('sales_channel_id', $channel->id)->pluck('id') as $id) {
         app(DeleteEntryPoint::class)->handle((int) $id);
     }
 
@@ -129,5 +130,5 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
     config()->set('larasell.locale.supported', $locales);
     app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
 
-    SalesContext::for('default', $entryPoints[0]['locale'])->activate();
+    StorefrontContext::for('default', $entryPoints[0]['locale'])->activate();
 }

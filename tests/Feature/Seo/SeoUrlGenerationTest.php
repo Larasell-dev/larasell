@@ -8,11 +8,11 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Facades\Seo;
 use Larasell\Larasell\Seo\Models\SeoUrl;
-use Larasell\Larasell\Seo\SeoUrlManager;
 use Larasell\Larasell\Settings\CurrencySettings;
+use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -28,23 +28,23 @@ function linkedProduct(array $name, Visibility $status = Visibility::Visible): P
     ]);
 }
 
-function linkContext(string $locale): SalesContext
+function linkContext(string $locale): StorefrontContext
 {
-    return collect(app(SeoUrlManager::class)->contexts())->first(fn (SalesContext $context): bool => $context->locale->value === $locale);
+    return StorefrontContext::for('default', $locale);
 }
 
 it('links to a page with the host and prefix of each context', function () {
     shopLocales(['en', 'de']);
     foreach (['uk' => ['https://shop.co.uk', 'en'], 'ch' => ['https://shop.ch:8443/de', 'de']] as $key => [$url, $locale]) {
-        app(CreateSalesChannel::class)->handle([
-            'key' => $key, 'name' => $key, 'locales' => [$locale], 'currencies' => app(CurrencySettings::class)->enabled(),
-            'entry_points' => [['url' => $url, 'locale' => $locale]],
+        $channel = app(CreateSalesChannel::class)->handle([
+            'key' => $key, 'name' => $key, 'type' => 'storefront', 'locales' => [$locale], 'currencies' => app(CurrencySettings::class)->enabled(),
         ]);
+        app(AddEntryPoint::class)->handle($channel->id, ['url' => $url, 'locale' => $locale]);
     }
     $product = linkedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 
-    expect(Seo::url($product, SalesContext::for('uk', 'en')))->toBe('https://shop.co.uk/p/boots')
-        ->and(Seo::url($product, SalesContext::for('ch', 'de')))->toBe('https://shop.ch:8443/de/p/stiefel');
+    expect(Seo::url($product, StorefrontContext::for('uk', 'en')))->toBe('https://shop.co.uk/p/boots')
+        ->and(Seo::url($product, StorefrontContext::for('ch', 'de')))->toBe('https://shop.ch:8443/de/p/stiefel');
 });
 
 it('links in the context of the current storefront request', function () {

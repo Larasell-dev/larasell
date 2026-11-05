@@ -7,14 +7,12 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 
 /**
- * Where something is sold: a sales channel, a locale and a currency, reached through an entry point.
- * It is the only thing passed around for that. It comes from, in this order: the storefront request
- * (set by SetSalesContext), Laravel's Context, which carries it into queued jobs, or the record itself,
- * such as $cart->sales_context. Anything else passes one explicitly.
+ * Where something is sold: a sales channel, a locale and a currency. It knows nothing about how the
+ * channel is reached; a storefront wraps it in a Larasell\Larasell\Storefront\StorefrontContext.
  */
 final readonly class SalesContext
 {
-    /** The hidden Context key that carries the current context, into queued jobs too. */
+    /** The hidden Context key that carries the current context into the jobs a request queues. */
     public const KEY = 'larasell.sales_context';
 
     public function __construct(
@@ -23,12 +21,11 @@ final readonly class SalesContext
         public int $channelId,
         public Locale $locale,
         public Currency $currency,
-        public EntryPoint $entryPoint,
     ) {}
 
     /**
-     * The context of a channel (key or ID) in a locale, through its primary entry point for the
-     * currency, by default the channel's default currency when an entry point uses it.
+     * The context of a channel (key or ID) in one of its locales and currencies, by default its
+     * default currency. Throws InvalidSalesChannel for anything the channel does not sell in.
      */
     public static function for(string|int $channel, Locale|string $locale, ?Currency $currency = null): self
     {
@@ -47,11 +44,5 @@ final readonly class SalesContext
     public function activate(): void
     {
         Context::addHidden(self::KEY, $this);
-    }
-
-    /** The absolute URL of a path below the entry point. */
-    public function url(string $path = ''): string
-    {
-        return $this->entryPoint->url($path);
     }
 }

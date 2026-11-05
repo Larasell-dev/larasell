@@ -2,8 +2,8 @@
 
 namespace Larasell\Larasell\Seo\Exceptions;
 
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Storefront\StorefrontContext;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -15,7 +15,7 @@ class SeoPageGone extends HttpException
     /** @var array<string, mixed> */
     public readonly array $snapshot;
 
-    public function __construct(public readonly SeoUrl $url, public readonly SalesContext $context)
+    public function __construct(public readonly SeoUrl $url, public readonly StorefrontContext $context)
     {
         $this->snapshot = $url->gone_snapshot ?? [];
 

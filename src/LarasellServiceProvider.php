@@ -3,10 +3,6 @@
 namespace Larasell\Larasell;
 
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Foundation\Http\Kernel as HttpKernel;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -40,11 +36,9 @@ use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
-use Larasell\Larasell\SalesChannels\Http\Middleware\RestoreStorefrontPath;
-use Larasell\Larasell\SalesChannels\Http\Middleware\SetSalesContext;
 use Larasell\Larasell\SalesChannels\SalesChannels;
+use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
-use Larasell\Larasell\SalesChannels\StorefrontRoutes;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Taxes\CartTaxEstimator;
 use Larasell\Larasell\Taxes\TaxRounding;
@@ -64,9 +58,10 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->singleton(CartMerger::class);
         $this->app->singleton(License::class);
         $this->app->singleton(SalesChannels::class);
+        $this->app->singleton(SalesChannelTypes::class);
         // Only a storefront request or a job it queued has a current context; elsewhere, pass one.
         $this->app->bind(SalesContext::class, fn (): SalesContext => SalesContext::current()
-            ?? throw new LogicException('There is no current SalesContext outside a storefront request or a job it queued; pass one, e.g. SalesContext::for(\'default\', \'en\').'));
+            ?? throw new LogicException('There is no current SalesContext outside a request or job that set one; pass one, e.g. SalesContext::for(\'default\', \'en\').'));
         $this->app->singleton(Entitlements::class);
         $this->app->singleton(TaxRounding::class, fn ($app) => new TaxRounding(
             TaxRoundingMode::from($app['config']->get('larasell.taxes.rounding', TaxRoundingMode::HalfUp->value))
@@ -106,20 +101,6 @@ class LarasellServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-
-        StorefrontRoutes::register();
-
-        // Finds the entry point before routing, so one route copy per language serves every entry point.
-        $this->callAfterResolving(Kernel::class, function (Kernel $kernel): void {
-            if ($kernel instanceof HttpKernel) {
-                $kernel->prependMiddleware(SetSalesContext::class);
-                $kernel->addToMiddlewarePriorityBefore(SubstituteBindings::class, RestoreStorefrontPath::class);
-            }
-        });
-        $this->callAfterResolving('router', function (Router $router): void {
-            // First in the group, so the routes after it see the path the client sent.
-            $router->pushMiddlewareToGroup(StorefrontRoutes::MIDDLEWARE_GROUP, RestoreStorefrontPath::class);
-        });
 
         // Rules other modules set for the catalog; they throw inside the catalog action's transaction.
         Event::listen(ProductDeleted::class, KeepProductsOfOpenOrders::class);

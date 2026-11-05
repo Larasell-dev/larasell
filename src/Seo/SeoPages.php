@@ -8,6 +8,8 @@ use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Models\SeoUrl;
+use Larasell\Larasell\Storefront\StorefrontContext;
+use Larasell\Larasell\Storefront\Storefronts;
 
 /**
  * Reads SEO URLs: what a path leads to, and where a page lives. It never writes, and it knows
@@ -23,14 +25,15 @@ final class SeoPages
         private readonly SeoUrlManager $manager,
         private readonly PathNormalizer $paths,
         private readonly HiddenPagePolicy $hidden,
+        private readonly Storefronts $storefronts,
     ) {}
 
     /** What the path below the context's entry point leads to. */
-    public function resolve(string $path, SalesContext $context): Resolution
+    public function resolve(string $path, StorefrontContext $context): Resolution
     {
         $url = SeoUrl::query()
-            ->where('channel', $context->channel)
-            ->where('locale', $context->locale->value)
+            ->where('channel', $context->sales->channel)
+            ->where('locale', $context->sales->locale->value)
             ->where('path_hash', SeoUrl::hash($this->paths->normalize($path)))
             ->first();
 
@@ -55,14 +58,14 @@ final class SeoPages
             return Resolution::notFound();
         }
 
-        if (! $type->isAvailable($resource, $context)) {
+        if (! $type->isAvailable($resource, $context->sales)) {
             $redirect = $this->hidden->redirect($resource, $context);
 
             return $redirect ? Resolution::redirect($redirect) : Resolution::hidden($resource, $url);
         }
 
         if ($url->status === SeoUrlStatus::Historic) {
-            $canonical = $this->manager->canonical($resource, $context);
+            $canonical = $this->manager->canonical($resource, $context->sales);
 
             return $canonical
                 ? Resolution::redirect(new SeoRedirect($context->url($canonical->path), 301))
@@ -77,26 +80,26 @@ final class SeoPages
      * null when it has no URL there. Hidden pages keep their URL; use availableUrl() to link only to
      * pages a visitor can open.
      */
-    public function url(Model $resource, ?SalesContext $context = null): ?string
+    public function url(Model $resource, ?StorefrontContext $context = null): ?string
     {
         $context ??= $this->currentContext();
         $type = $this->resources->for($resource)->key();
-        $key = self::key($type, $resource->getKey(), $context);
+        $key = self::key($type, $resource->getKey(), $context->sales);
 
         $path = array_key_exists($key, $this->preloaded)
             ? $this->preloaded[$key]
-            : $this->manager->canonicalPath($type, $resource->getKey(), $context);
+            : $this->manager->canonicalPath($type, $resource->getKey(), $context->sales);
 
         return $path === null ? null : $context->url($path);
     }
 
     /** The URL of the page, or null when it has none or is not available in the context. */
-    public function availableUrl(Model $resource, ?SalesContext $context = null): ?string
+    public function availableUrl(Model $resource, ?StorefrontContext $context = null): ?string
     {
         $context ??= $this->currentContext();
         $type = $this->resources->find($resource);
 
-        return $type !== null && $type->isAvailable($resource, $context) ? $this->url($resource, $context) : null;
+        return $type !== null && $type->isAvailable($resource, $context->sales) ? $this->url($resource, $context) : null;
     }
 
     /**
@@ -105,9 +108,9 @@ final class SeoPages
      *
      * @param  iterable<Model>  $resources
      */
-    public function preload(iterable $resources, ?SalesContext $context = null): void
+    public function preload(iterable $resources, ?StorefrontContext $context = null): void
     {
-        $context ??= $this->currentContext();
+        $context = ($context ?? $this->currentContext())->sales;
         $ids = [];
 
         foreach ($resources as $resource) {
@@ -145,9 +148,9 @@ final class SeoPages
     }
 
     /** The current request's or job's context, otherwise the first channel's first locale. */
-    private function currentContext(): SalesContext
+    private function currentContext(): StorefrontContext
     {
-        return SalesContext::current() ?? $this->manager->contexts()[0];
+        return StorefrontContext::current() ?? $this->storefronts->contexts()[0];
     }
 
     private static function key(string $type, mixed $id, SalesContext $context): string

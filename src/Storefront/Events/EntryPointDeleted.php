@@ -1,10 +1,10 @@
 <?php
 
-namespace Larasell\Larasell\SalesChannels\Events;
+namespace Larasell\Larasell\Storefront\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-/** An entry point was deleted. Records that stored it fall back to their channel's primary one. Dispatched inside the action's transaction. */
+/** An entry point was deleted. Dispatched inside the action's transaction. */
 final readonly class EntryPointDeleted
 {
     use Dispatchable;

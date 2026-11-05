@@ -3,8 +3,8 @@
 namespace Larasell\Larasell\Seo\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\SeoRedirect;
+use Larasell\Larasell\Storefront\StorefrontContext;
 
 /**
  * Decides where a URL of an existing but unavailable page leads, e.g. an unpublished product.
@@ -12,5 +12,5 @@ use Larasell\Larasell\Seo\SeoRedirect;
  */
 interface HiddenPagePolicy
 {
-    public function redirect(Model $resource, SalesContext $context): ?SeoRedirect;
+    public function redirect(Model $resource, StorefrontContext $context): ?SeoRedirect;
 }

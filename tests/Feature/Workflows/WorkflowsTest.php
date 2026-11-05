@@ -11,11 +11,11 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
-use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;
+use Larasell\Larasell\Storefront\StorefrontContext;
 use Larasell\Larasell\Workflows\CreateCategoryWithUrls;
 use Larasell\Larasell\Workflows\CreateProductWithUrls;
 use Larasell\Larasell\Workflows\DiscontinueProduct;
@@ -34,7 +34,7 @@ function workflowProduct(string $name, int $stock = 0): Product
 
 function resolveUrl(string $path, string $locale = 'en'): mixed
 {
-    return app(SeoPages::class)->resolve($path, SalesContext::for('default', $locale));
+    return app(SeoPages::class)->resolve($path, StorefrontContext::for('default', $locale));
 }
 
 it('discontinues a product and sends its URLs to the replacement', function () {
