@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Seo;
 
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 
@@ -13,7 +14,7 @@ final class RedirectToReplacement implements GoneStrategy
         private readonly SeoResources $resources,
     ) {}
 
-    public function redirect(SeoUrl $url, SeoContext $context): ?SeoRedirect
+    public function redirect(SeoUrl $url, SalesContext $context): ?SeoRedirect
     {
         $replacement = $this->resources->page($url->replacement_type, $url->replacement_id);
         $location = $replacement === null ? null : $this->pages->availableUrl($replacement, $context);

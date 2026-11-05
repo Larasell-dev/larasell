@@ -3,10 +3,10 @@
 namespace Larasell\Larasell\Seo\Commands;
 
 use Illuminate\Console\Command;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Models\SeoUrl;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
 
@@ -32,7 +32,7 @@ class RegenerateSeoUrlsCommand extends Command
         ));
         $contexts = array_values(array_filter(
             $manager->contexts(),
-            fn (SeoContext $context): bool => (! is_string($channel) || $context->channel === $channel)
+            fn (SalesContext $context): bool => (! is_string($channel) || $context->channel === $channel)
                 && (! is_string($locale) || strcasecmp($context->locale->value, $locale) === 0),
         ));
 

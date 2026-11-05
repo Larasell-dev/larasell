@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Seo;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\Catalog\Events\CategoryCreated;
@@ -14,15 +15,17 @@ use Larasell\Larasell\Catalog\Events\CategoryUpdated;
 use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Events\ProductUpdated;
+use Larasell\Larasell\SalesChannels\Events\EntryPointCreated;
+use Larasell\Larasell\SalesChannels\StorefrontRoutes;
 use Larasell\Larasell\Seo\Catalog\CatalogUrls;
 use Larasell\Larasell\Seo\Commands\RegenerateSeoUrlsCommand;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
-use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
+use Larasell\Larasell\Seo\Jobs\BackfillSeoUrls;
 
 /**
  * The SEO module: public storefront URLs, their history, and what search engines see.
@@ -37,9 +40,6 @@ class SeoServiceProvider extends ServiceProvider
         $this->app->singleton(SeoResources::class);
         // Scoped: preloaded paths must not outlive a request or job, e.g. under Octane or in queue workers.
         $this->app->scoped(SeoPages::class);
-        $this->app->bind(SeoContextResolver::class, fn ($app) => $app->make(
-            $app['config']->get('larasell.seo.context_resolver', EntryPointResolver::class)
-        ));
         $this->app->bind(Slugifier::class, fn ($app) => $app->make(
             $app['config']->get('larasell.seo.slugifier', DefaultSlugifier::class)
         ));
@@ -70,6 +70,12 @@ class SeoServiceProvider extends ServiceProvider
                 $kernel->addToMiddlewarePriorityBefore(SubstituteBindings::class, ResolveStorefront::class);
             }
         });
+        $this->callAfterResolving('router', function (Router $router): void {
+            $router->pushMiddlewareToGroup(StorefrontRoutes::MIDDLEWARE_GROUP, ResolveStorefront::class);
+        });
+
+        // A new channel or language gets its URLs from a queued backfill; its pages answer 404 meanwhile.
+        Event::listen(EntryPointCreated::class, fn (EntryPointCreated $event) => BackfillSeoUrls::dispatch($event->channelId, $event->locale->value));
 
         // Sync listeners, so the URLs are written inside the catalog action's transaction.
         Event::listen([ProductCreated::class, ProductUpdated::class], [CatalogUrls::class, 'productChanged']);

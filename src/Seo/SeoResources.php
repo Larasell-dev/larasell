@@ -4,6 +4,8 @@ namespace Larasell\Larasell\Seo;
 
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Larasell\Larasell\SalesChannels\SalesContext;
+use Larasell\Larasell\SalesChannels\StorefrontRoutes;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use LogicException;
 
@@ -104,7 +106,7 @@ final class SeoResources
      *
      * @param  SeoResourceType<Model>  $type
      */
-    public function isReservedFor(string $path, SeoResourceType $type, SeoContext $context): bool
+    public function isReservedFor(string $path, SeoResourceType $type, SalesContext $context): bool
     {
         $prefixes = [...(array) config('larasell.seo.reserved_paths', []), ...$this->staticStorefrontPaths($context)];
 
@@ -126,18 +128,16 @@ final class SeoResources
     }
 
     /** @return list<string> */
-    private function staticStorefrontPaths(SeoContext $context): array
+    private function staticStorefrontPaths(SalesContext $context): array
     {
         $paths = [];
-        $key = SeoRoutes::entryPointKey($context);
 
         foreach (app('router')->getRoutes()->getRoutes() as $route) {
-            if ($route->getAction(SeoRoutes::ENTRY_POINT) !== $key) {
+            if (StorefrontRoutes::localeOf($route) !== $context->locale) {
                 continue;
             }
 
-            $prefix = trim($route->getPrefix() ?? '', '/');
-            $uri = trim($prefix === '' ? $route->uri() : substr($route->uri(), strlen($prefix)), '/');
+            $uri = StorefrontRoutes::pathOf($route);
 
             if ($uri !== '' && ! str_contains($uri, '{')) {
                 $paths[] = $uri;

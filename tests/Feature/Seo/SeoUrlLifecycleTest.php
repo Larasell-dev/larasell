@@ -15,6 +15,7 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\DefaultSlugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
@@ -22,7 +23,6 @@ use Larasell\Larasell\Seo\Events\SeoUrlReleased;
 use Larasell\Larasell\Seo\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
@@ -69,9 +69,9 @@ function seoPaths(Model $resource, string $locale = 'en'): array
         ->all();
 }
 
-function seoContext(string $locale = 'en'): SeoContext
+function seoContext(string $locale = 'en'): SalesContext
 {
-    return collect(app(SeoUrlManager::class)->contexts())->first(fn (SeoContext $context): bool => $context->locale->value === $locale);
+    return collect(app(SeoUrlManager::class)->contexts())->first(fn (SalesContext $context): bool => $context->locale->value === $locale);
 }
 
 it('gives a new product a canonical URL', function () {
@@ -235,7 +235,7 @@ it('keeps the public URLs of a deleted category and moves its children up', func
 });
 
 it('gives a product a URL only in the locales it has a name in', function () {
-    config()->set('larasell.locale.supported', ['en', 'de-DE']);
+    shopLocales(['en', 'de-DE']);
 
     $product = seoProduct(['en' => 'Size Chart']);
     expect(seoPaths($product, 'de-DE'))->toBe([]);
@@ -304,8 +304,8 @@ it('refuses to remove a canonical URL', function () {
 })->throws(LogicException::class);
 
 it('uses German transliteration for German paths', function () {
-    config()->set('larasell.locale.supported', [Locale::GERMAN]);
     config()->set('larasell.locale.default', Locale::GERMAN);
+    shopLocales(['de']);
 
     expect(seoPaths(seoProduct(['de' => 'Schöne Grüße']), 'de'))->toBe(['p/schoene-gruesse' => 'canonical']);
 });
@@ -437,7 +437,7 @@ it('keeps a product and its URLs as they were when its delete fails', function (
 });
 
 it('saves a product and its URLs in every locale together, or none of them', function () {
-    config()->set('larasell.locale.supported', ['en', 'de-DE']);
+    shopLocales(['en', 'de-DE']);
     config()->set('larasell.seo.slugifier', FailingSeoSlugifier::class);
     $product = seoProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 
@@ -539,4 +539,19 @@ it('gives a page the lowest free number', function () {
 
     expect(seoPaths(seoProduct('Boots')))->toBe(['p/boots-2' => 'canonical'])
         ->and(seoPaths(seoProduct('Boots')))->toBe(['p/boots-4' => 'canonical']);
+});
+
+it('gives existing pages their URLs in a locale a channel gains, in a queued job', function () {
+    config()->set('queue.default', 'sync');
+    config()->set('larasell.locale.supported', ['en', 'de']);
+    $product = seoProduct(['en' => 'Boots', 'de' => 'Stiefel']);
+    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes', 'de' => 'Schuhe']]);
+
+    expect(seoPaths($product, 'de'))->toBe([]);
+
+    shopLocales(['en', 'de']);
+
+    expect(seoPaths($product, 'de'))->toBe(['p/stiefel' => 'canonical'])
+        ->and(seoPaths($category, 'de'))->toBe(['schuhe' => 'canonical'])
+        ->and(seoPaths($product, 'en'))->toBe(['p/boots' => 'canonical']);
 });

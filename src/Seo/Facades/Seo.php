@@ -4,15 +4,15 @@ namespace Larasell\Larasell\Seo\Facades;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Resolution;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoPages;
 
 /**
- * @method static Resolution resolve(string $path, SeoContext $context)
- * @method static string|null url(Model $resource, ?SeoContext $context = null)
- * @method static string|null availableUrl(Model $resource, ?SeoContext $context = null)
- * @method static void preload(iterable<Model> $resources, ?SeoContext $context = null)
+ * @method static Resolution resolve(string $path, SalesContext $context)
+ * @method static string|null url(Model $resource, ?SalesContext $context = null)
+ * @method static string|null availableUrl(Model $resource, ?SalesContext $context = null)
+ * @method static void preload(iterable<Model> $resources, ?SalesContext $context = null)
  *
  * @see SeoPages
  */

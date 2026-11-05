@@ -4,7 +4,7 @@ namespace Larasell\Larasell\Seo\Events;
 
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
-use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\SalesChannels\SalesContext;
 
 /**
  * A page's canonical path changed in one context. A null path means it has no page there.
@@ -18,7 +18,7 @@ final readonly class SeoUrlChanged implements ShouldDispatchAfterCommit
         /** The page's resource type key, e.g. "product" */
         public string $resourceType,
         public int $resourceId,
-        public SeoContext $context,
+        public SalesContext $context,
         public ?string $oldPath,
         public ?string $newPath,
     ) {}

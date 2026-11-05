@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Translatable;
 
 /** Products live at "p/{name}". The "p" prefix is reserved, so no other page can use it. *
@@ -36,7 +36,7 @@ class ProductResourceType implements SeoResourceType
     }
 
     /** @param  Product  $resource */
-    public function path(Model $resource, SeoContext $context): ?string
+    public function path(Model $resource, SalesContext $context): ?string
     {
         $slug = $this->slugs->slug($resource->name, $context->locale);
 
@@ -44,7 +44,7 @@ class ProductResourceType implements SeoResourceType
     }
 
     /** @param  Product  $resource */
-    public function isAvailable(Model $resource, SeoContext $context): bool
+    public function isAvailable(Model $resource, SalesContext $context): bool
     {
         return $resource->status === Visibility::Visible;
     }
@@ -56,7 +56,7 @@ class ProductResourceType implements SeoResourceType
     }
 
     /** @param  Product  $resource */
-    public function snapshot(Model $resource, SeoContext $context): array
+    public function snapshot(Model $resource, SalesContext $context): array
     {
         return self::snapshotOf($resource->name, array_values($resource->categories()->pluck('larasell_categories.id')->map(fn (mixed $id): int => (int) $id)->sort()->all()), $context);
     }
@@ -67,7 +67,7 @@ class ProductResourceType implements SeoResourceType
      * @param  list<int>  $categoryIds
      * @return array{name: string, category_ids: list<int>}
      */
-    public static function snapshotOf(Translatable $name, array $categoryIds, SeoContext $context): array
+    public static function snapshotOf(Translatable $name, array $categoryIds, SalesContext $context): array
     {
         return ['name' => $name->get($context->locale->value), 'category_ids' => $categoryIds];
     }

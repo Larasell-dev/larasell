@@ -34,6 +34,7 @@ use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\PromotionRedemptionCounters;
+use Larasell\Larasell\SalesChannels\HasSalesContext;
 
 /**
  * @property int $id
@@ -76,6 +77,7 @@ class Order extends Model
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
+    use HasSalesContext;
     use HasUuids;
 
     protected $table = 'larasell_orders';

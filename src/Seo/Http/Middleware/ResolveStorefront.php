@@ -7,34 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Reflector;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
-use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
 use Larasell\Larasell\Seo\Exceptions\SeoPageHidden;
 use Larasell\Larasell\Seo\Exceptions\SeoPageNotFound;
 use Larasell\Larasell\Seo\Http\Controllers\SeoPageController;
 use Larasell\Larasell\Seo\ResolutionKind;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoRedirect;
 use Larasell\Larasell\Seo\SeoResources;
-use Larasell\Larasell\Seo\SeoRoutes;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Runs on every route in Route::storefront(), before implicit route model binding:
  *
- * 1. resolves the channel and locale and makes them the request's SeoContext and app locale;
- * 2. on routes with a parameter typed as an SEO model (or the Route::seo() catch-all), redirects
+ * on routes with a parameter typed as an SEO model (or the Route::seo() catch-all), redirects
  *    paths that are not in normalized form, then looks up the whole request path and binds the page,
  *    redirects, or fails with SeoPageNotFound, SeoPageHidden, or SeoPageGone. Implicit binding then skips the parameter, because it is already a model.
  */
 final class ResolveStorefront
 {
     public function __construct(
-        private readonly SeoContextResolver $contexts,
         private readonly SeoPages $pages,
         private readonly PathNormalizer $paths,
         private readonly SeoResources $resources,
@@ -44,18 +39,8 @@ final class ResolveStorefront
     {
         /** @var Route $route */
         $route = $request->route();
-        $context = $this->contexts->resolve($request);
-
-        $routeContext = SeoRoutes::contextOf($route);
-
-        // Each route copy serves one entry point, e.g. the German /warenkorb never answers below /en.
-        if ($context === null || $routeContext === null
-            || SeoRoutes::entryPointKey($routeContext) !== SeoRoutes::entryPointKey($context)) {
-            throw new SeoPageNotFound($request->path());
-        }
-
-        app()->instance(SeoContext::class, $context);
-        App::setLocale($context->locale->value);
+        // SetSalesContext set it, and RestoreStorefrontPath let only the route copy of its locale through.
+        $context = SalesContext::current() ?? throw new SeoPageNotFound($request->path());
 
         $parameter = $this->pageParameter($route);
 
@@ -121,15 +106,15 @@ final class ResolveStorefront
     }
 
     /** The decoded request path below the entry point's prefix, as the client sent it. */
-    private function pathBelow(Request $request, SeoContext $context): string
+    private function pathBelow(Request $request, SalesContext $context): string
     {
         $path = rawurldecode(substr($request->getPathInfo(), 1));
 
-        if ($context->prefix === '') {
+        if ($context->entryPoint->prefix === '') {
             return $path;
         }
 
-        $rest = substr($path, strlen($context->prefix));
+        $rest = substr($path, strlen($context->entryPoint->prefix));
 
         return str_starts_with($rest, '/') ? substr($rest, 1) : $rest;
     }

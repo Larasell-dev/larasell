@@ -7,10 +7,12 @@ use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Facades\Seo;
 use Larasell\Larasell\Seo\Models\SeoUrl;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoUrlManager;
+use Larasell\Larasell\Settings\CurrencySettings;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -26,25 +28,27 @@ function linkedProduct(array $name, Visibility $status = Visibility::Visible): P
     ]);
 }
 
-function linkContext(string $locale): SeoContext
+function linkContext(string $locale): SalesContext
 {
-    return collect(app(SeoUrlManager::class)->contexts())->first(fn (SeoContext $context): bool => $context->locale->value === $locale);
+    return collect(app(SeoUrlManager::class)->contexts())->first(fn (SalesContext $context): bool => $context->locale->value === $locale);
 }
 
 it('links to a page with the host and prefix of each context', function () {
-    config()->set('larasell.locale.supported', ['en', 'de']);
-    config()->set('larasell.seo.channels', [
-        'uk' => ['entry_points' => [['url' => 'https://shop.co.uk', 'locale' => 'en']]],
-        'ch' => ['entry_points' => [['url' => 'https://shop.ch:8443/de', 'locale' => 'de']]],
-    ]);
+    shopLocales(['en', 'de']);
+    foreach (['uk' => ['https://shop.co.uk', 'en'], 'ch' => ['https://shop.ch:8443/de', 'de']] as $key => [$url, $locale]) {
+        app(CreateSalesChannel::class)->handle([
+            'key' => $key, 'name' => $key, 'locales' => [$locale], 'currencies' => app(CurrencySettings::class)->enabled(),
+            'entry_points' => [['url' => $url, 'locale' => $locale]],
+        ]);
+    }
     $product = linkedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 
-    expect(Seo::url($product, linkContext('en')))->toBe('https://shop.co.uk/p/boots')
-        ->and(Seo::url($product, linkContext('de')))->toBe('https://shop.ch:8443/de/p/stiefel');
+    expect(Seo::url($product, SalesContext::for('uk', 'en')))->toBe('https://shop.co.uk/p/boots')
+        ->and(Seo::url($product, SalesContext::for('ch', 'de')))->toBe('https://shop.ch:8443/de/p/stiefel');
 });
 
 it('links in the context of the current storefront request', function () {
-    config()->set('larasell.locale.supported', ['en', 'de']);
+    shopLocales(['en', 'de']);
     $product = linkedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
     Route::storefront(fn () => Route::get('/', fn () => Seo::url($product)));
 
@@ -53,7 +57,7 @@ it('links in the context of the current storefront request', function () {
 });
 
 it('has no URL where the page has none, and no available URL for hidden pages', function () {
-    config()->set('larasell.locale.supported', ['en', 'de']);
+    shopLocales(['en', 'de']);
     $english = linkedProduct(['en' => 'Size Chart']);
     $hidden = linkedProduct(['en' => 'Secret'], Visibility::Hidden);
 
