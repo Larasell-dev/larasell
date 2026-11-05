@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\Visibility;
@@ -95,7 +96,7 @@ it('dispatches released and expired events when a reservation expires', function
     [$order] = inventoryEventOrder();
     $order->inventoryReservations()->update(['expires_at' => now()->subMinute()]);
 
-    app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     Event::assertDispatchedTimes(InventoryReservationReleased::class, 1);
     Event::assertDispatchedTimes(InventoryReservationExpired::class, 1);

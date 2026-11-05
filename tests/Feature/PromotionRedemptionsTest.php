@@ -5,6 +5,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
@@ -369,8 +370,8 @@ it('releases an expired promotion redemption and cancels its unpaid order', func
     $order = promotionRedemptionOrder();
     $order->promotionRedemptions()->update(['expires_at' => now()->subMinute()]);
 
-    $released = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id);
-    $releasedAgain = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id);
+    $released = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle(OrderId::of($order));
+    $releasedAgain = app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle(OrderId::of($order));
 
     expect($released)->toBeTrue()
         ->and($releasedAgain)->toBeFalse()
@@ -385,7 +386,7 @@ it('does not release a promotion redemption before it expires', function () {
     $order = promotionRedemptionOrder();
     $order->promotionRedemptions()->update(['expires_at' => now()->addMinute()]);
 
-    expect(app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle($order->id))->toBeFalse()
+    expect(app(ReleaseExpiredPromotionRedemptionsForOrder::class)->handle(OrderId::of($order)))->toBeFalse()
         ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
         ->and($order->promotionRedemptions()->sole()->status)->toBe(PromotionRedemptionStatus::Reserved);
 });

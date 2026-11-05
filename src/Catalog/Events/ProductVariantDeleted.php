@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
 
 /**
  * A variant was deleted, e.g. the default variant once real variants exist.
@@ -14,7 +16,7 @@ final readonly class ProductVariantDeleted
     use Dispatchable;
 
     public function __construct(
-        public int $variantId,
-        public int $productId,
+        public VariantId $variantId,
+        public ProductId $productId,
     ) {}
 }

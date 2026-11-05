@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Carts\Strategies\CallbackCartMergeStrategy;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
+use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\CartMerged;
@@ -95,7 +96,7 @@ final readonly class CartMerger
             }
 
             $droppedPromotionCodes = $this->applyAttributes($lockedDestination, $attributePlan);
-            $sourceCartId = (int) $lockedSource->getKey();
+            $sourceCartId = CartId::of($lockedSource);
 
             $lockedSource->delete();
 
@@ -259,7 +260,7 @@ final readonly class CartMerger
     private function adjustment(CartMergeLineIntent $intent, int $acceptedQuantity, string $reason): CartMergeLineAdjustment
     {
         return new CartMergeLineAdjustment(
-            variantId: (int) $intent->variant->getKey(),
+            variantId: VariantId::of($intent->variant),
             metadata: CartMergeContext::normalizeMetadata($intent->metadata),
             requestedQuantity: $intent->quantity,
             acceptedQuantity: $acceptedQuantity,

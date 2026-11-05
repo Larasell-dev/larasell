@@ -13,7 +13,7 @@ final class KeepReservedProducts
     public function handle(ProductDeleted $event): void
     {
         $reserved = (int) InventoryReservation::query()
-            ->where('product_id', $event->productId)
+            ->where('product_id', $event->productId->value)
             ->where('status', InventoryReservationStatus::Active->value)
             ->sum('quantity');
 

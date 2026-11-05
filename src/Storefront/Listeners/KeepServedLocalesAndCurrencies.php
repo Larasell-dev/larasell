@@ -16,7 +16,7 @@ final class KeepServedLocalesAndCurrencies
             return;
         }
 
-        $channel = SalesChannel::query()->findOrFail($event->channelId);
+        $channel = SalesChannel::query()->findOrFail($event->channelId->value);
         $locales = $channel->locales();
         $currencies = $channel->currencies();
         $orphan = EntryPoint::query()->where('sales_channel_id', $channel->id)->orderBy('id')->get()->first(

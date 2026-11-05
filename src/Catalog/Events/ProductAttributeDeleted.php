@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\AttributeId;
+use Larasell\Larasell\Catalog\AttributeValueId;
 
 /**
  * A product attribute was deleted together with its values.
@@ -14,10 +16,10 @@ final readonly class ProductAttributeDeleted
     use Dispatchable;
 
     /**
-     * @param  list<int>  $valueIds
+     * @param  list<AttributeValueId>  $valueIds
      */
     public function __construct(
-        public int $attributeId,
+        public AttributeId $attributeId,
         public array $valueIds,
     ) {}
 }

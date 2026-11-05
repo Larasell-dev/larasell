@@ -4,13 +4,14 @@ namespace Larasell\Larasell\Storefront;
 
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 
 /** A host plus an optional path prefix that serves one locale and currency of a sales channel. */
 final readonly class EntryPoint
 {
     public function __construct(
-        public int $id,
-        public int $channelId,
+        public EntryPointId $id,
+        public SalesChannelId $channelId,
         public string $scheme,
         public string $host,
         public ?int $port,

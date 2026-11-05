@@ -8,6 +8,7 @@ use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 
 final readonly class CreateSalesChannel
@@ -57,7 +58,7 @@ final readonly class CreateSalesChannel
                 fn (Currency $currency): array => ['sales_channel_id' => $channel->id, 'currency' => $currency->value], $currencies,
             ));
 
-            SalesChannelCreated::dispatch($channel->id, $channel->key, $type);
+            SalesChannelCreated::dispatch(SalesChannelId::of($channel), $channel->key, $type);
 
             return $channel;
         });

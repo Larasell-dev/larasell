@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Promotions;
 
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PaymentStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
@@ -10,7 +11,7 @@ use Larasell\Larasell\Models\PromotionRedemption;
 
 final readonly class ReleaseExpiredPromotionRedemptionsForOrder
 {
-    public function handle(int $orderId): bool
+    public function handle(OrderId $orderId): bool
     {
         $orderModel = (new Order);
 
@@ -18,7 +19,7 @@ final readonly class ReleaseExpiredPromotionRedemptionsForOrder
             /** @var Order|null $order */
             $order = Order::query()
                 ->lockForUpdate()
-                ->find($orderId);
+                ->find($orderId->value);
 
             if ($order === null || $order->status !== OrderStatus::PendingPayment) {
                 return false;

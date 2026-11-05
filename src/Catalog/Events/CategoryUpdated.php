@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\CategoryId;
 
 /**
  * A category changed, other than its place in the tree; $changed names its changed attributes.
@@ -17,7 +18,7 @@ final readonly class CategoryUpdated
      * @param  list<string>  $changed
      */
     public function __construct(
-        public int $categoryId,
+        public CategoryId $categoryId,
         public array $changed,
     ) {}
 }

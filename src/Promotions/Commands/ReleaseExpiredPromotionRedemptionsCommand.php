@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Promotions\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\PromotionRedemptionStatus;
 use Larasell\Larasell\Models\Order;
@@ -43,7 +44,7 @@ class ReleaseExpiredPromotionRedemptionsCommand extends Command
             ->chunkById($batchSize, function (Collection $orders) use ($releaseExpiredPromotions, &$released): void {
                 /** @var Order $order */
                 foreach ($orders as $order) {
-                    if ($releaseExpiredPromotions->handle($order->getKey())) {
+                    if ($releaseExpiredPromotions->handle(OrderId::of($order))) {
                         $released++;
                     }
                 }

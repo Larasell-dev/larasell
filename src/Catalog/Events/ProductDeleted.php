@@ -3,6 +3,9 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\CategoryId;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Translatable;
 
 /**
@@ -15,11 +18,11 @@ final readonly class ProductDeleted
     use Dispatchable;
 
     /**
-     * @param  list<int>  $categoryIds
-     * @param  list<int>  $variantIds
+     * @param  list<CategoryId>  $categoryIds
+     * @param  list<VariantId>  $variantIds
      */
     public function __construct(
-        public int $productId,
+        public ProductId $productId,
         public Translatable $name,
         public array $categoryIds,
         public array $variantIds,

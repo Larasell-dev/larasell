@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\ImageId;
+use Larasell\Larasell\Catalog\ProductId;
 
 /**
  * A product image was deleted and removed from its products.
@@ -14,10 +16,10 @@ final readonly class ProductImageDeleted
     use Dispatchable;
 
     /**
-     * @param  list<int>  $productIds
+     * @param  list<ProductId>  $productIds
      */
     public function __construct(
-        public int $imageId,
+        public ImageId $imageId,
         public array $productIds,
     ) {}
 }

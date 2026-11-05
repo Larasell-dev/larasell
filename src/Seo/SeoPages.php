@@ -31,7 +31,7 @@ final class SeoPages
     public function resolve(string $path, StorefrontContext $context): Resolution
     {
         $url = SeoUrl::query()
-            ->where('sales_channel_id', $context->sales->channelId)
+            ->where('sales_channel_id', $context->sales->channelId->value)
             ->where('locale', $context->sales->locale->value)
             ->where('path_hash', SeoUrl::hash($this->paths->normalize($path)))
             ->first();
@@ -125,7 +125,7 @@ final class SeoPages
                 SeoUrl::query()
                     ->where('resource_type', $type)
                     ->whereIn('resource_id', $chunk)
-                    ->where('sales_channel_id', $context->channelId)
+                    ->where('sales_channel_id', $context->channelId->value)
                     ->where('locale', $context->locale->value)
                     ->where('status', SeoUrlStatus::Canonical->value)
                     ->get(['resource_id', 'path'])
@@ -155,7 +155,7 @@ final class SeoPages
 
     private static function key(string $type, mixed $id, SalesContext $context): string
     {
-        return $type.'|'.$id.'|'.$context->channelId.'|'.$context->locale->value;
+        return $type.'|'.$id.'|'.$context->channelId->value.'|'.$context->locale->value;
     }
 
     /** @return list<GoneStrategy> */

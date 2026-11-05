@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Seo\Catalog;
 
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryCreated;
 use Larasell\Larasell\Catalog\Events\CategoryDeleted;
 use Larasell\Larasell\Catalog\Events\CategoryMoved;
@@ -29,22 +30,22 @@ final readonly class CatalogUrls
 
     public function productChanged(ProductCreated|ProductUpdated $event): void
     {
-        $this->urls->refreshPage($this->resources->forClass(Product::class), $event->productId);
+        $this->urls->refreshPage($this->resources->forClass(Product::class), $event->productId->value);
     }
 
     public function productDeleted(ProductDeleted $event): void
     {
         $this->urls->markGoneById(
             $this->resources->forClass(Product::class),
-            $event->productId,
-            fn (SalesContext $context): array => ProductResourceType::snapshotOf($event->name, $event->categoryIds, $context),
+            $event->productId->value,
+            fn (SalesContext $context): array => ProductResourceType::snapshotOf($event->name, CategoryId::values($event->categoryIds), $context),
         );
     }
 
     /** Its subcategories follow in the same transaction. */
     public function categoryChanged(CategoryCreated|CategoryUpdated|CategoryMoved $event): void
     {
-        $this->urls->refreshPage($this->resources->forClass(Category::class), $event->categoryId);
+        $this->urls->refreshPage($this->resources->forClass(Category::class), $event->categoryId->value);
     }
 
     /** Its children are top-level categories now, so their paths lose the deleted category. */
@@ -54,12 +55,12 @@ final readonly class CatalogUrls
 
         $this->urls->markGoneById(
             $type,
-            $event->categoryId,
-            fn (SalesContext $context): array => CategoryResourceType::snapshotOf($event->name, $event->parentId, $context),
+            $event->categoryId->value,
+            fn (SalesContext $context): array => CategoryResourceType::snapshotOf($event->name, $event->parentId?->value, $context),
         );
 
         foreach ($event->childIds as $childId) {
-            $this->urls->refreshPage($type, $childId);
+            $this->urls->refreshPage($type, $childId->value);
         }
     }
 }

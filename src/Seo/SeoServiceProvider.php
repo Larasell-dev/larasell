@@ -75,7 +75,7 @@ class SeoServiceProvider extends ServiceProvider
         });
 
         // A new channel or language gets its URLs from a queued backfill; its pages answer 404 meanwhile.
-        Event::listen(EntryPointCreated::class, fn (EntryPointCreated $event) => BackfillSeoUrls::dispatch($event->channelId, $event->locale->value));
+        Event::listen(EntryPointCreated::class, fn (EntryPointCreated $event) => BackfillSeoUrls::dispatch($event->channelId, $event->locale));
 
         // Sync listeners, so the URLs are written inside the catalog action's transaction.
         Event::listen([ProductCreated::class, ProductUpdated::class], [CatalogUrls::class, 'productChanged']);

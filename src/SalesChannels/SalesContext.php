@@ -18,7 +18,7 @@ final readonly class SalesContext
     public function __construct(
         /** The channel's key, e.g. "default" */
         public string $channel,
-        public int $channelId,
+        public SalesChannelId $channelId,
         public Locale $locale,
         public Currency $currency,
     ) {}
@@ -27,7 +27,7 @@ final readonly class SalesContext
      * The context of a channel (key or ID) in one of its locales and currencies, by default its
      * default currency. Throws InvalidSalesChannel for anything the channel does not sell in.
      */
-    public static function for(string|int $channel, Locale|string $locale, ?Currency $currency = null): self
+    public static function for(string|SalesChannelId $channel, Locale|string $locale, ?Currency $currency = null): self
     {
         return app(SalesChannels::class)->for($channel, $locale, $currency);
     }

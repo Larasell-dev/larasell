@@ -7,6 +7,8 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
@@ -22,14 +24,14 @@ final class BackfillSeoUrls implements ShouldBeUnique, ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
-    public function __construct(public int $channelId, public string $locale)
+    public function __construct(public SalesChannelId $channelId, public Locale $locale)
     {
         $this->afterCommit();
     }
 
     public function uniqueId(): string
     {
-        return $this->channelId.'|'.$this->locale;
+        return $this->channelId->value.'|'.$this->locale->value;
     }
 
     public function handle(SeoUrlManager $urls, SeoResources $resources, SalesChannels $channels): void

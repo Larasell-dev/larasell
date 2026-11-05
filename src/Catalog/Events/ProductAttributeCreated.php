@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\AttributeId;
 
 /**
  * A product attribute was created.
@@ -14,6 +15,6 @@ final readonly class ProductAttributeCreated
     use Dispatchable;
 
     public function __construct(
-        public int $attributeId,
+        public AttributeId $attributeId,
     ) {}
 }

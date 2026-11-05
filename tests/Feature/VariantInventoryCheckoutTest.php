@@ -4,6 +4,7 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Exceptions\Cart\InsufficientCartStockException;
@@ -60,7 +61,7 @@ it('restores stock to the selected variant when a reservation expires', function
     $order = variantCheckout($cart)->order;
     $order->inventoryReservations()->update(['expires_at' => now()->subMinute()]);
 
-    app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     expect($small->fresh()->stock)->toBe(5)
         ->and($medium->fresh()->stock)->toBe(5);

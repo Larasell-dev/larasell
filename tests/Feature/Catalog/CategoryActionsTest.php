@@ -5,6 +5,7 @@ use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\DeleteCategory;
 use Larasell\Larasell\Catalog\Actions\MoveCategory;
 use Larasell\Larasell\Catalog\Actions\UpdateCategory;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryCreated;
 use Larasell\Larasell\Catalog\Events\CategoryDeleted;
 use Larasell\Larasell\Catalog\Events\CategoryMoved;
@@ -24,8 +25,8 @@ it('creates a category after its siblings and announces it', function () {
     $sandals = createCategory('Sandals', $shoes);
 
     expect([$boots->position, $sandals->position])->toBe([0, 1]);
-    Event::assertDispatched(CategoryCreated::class, fn (CategoryCreated $event): bool => $event->categoryId === $sandals->id
-        && $event->parentId === $shoes->id);
+    Event::assertDispatched(CategoryCreated::class, fn (CategoryCreated $event): bool => $event->categoryId->value === $sandals->id
+        && $event->parentId?->value === $shoes->id);
 });
 
 it('updates a category but leaves moving it to MoveCategory', function () {
@@ -33,12 +34,12 @@ it('updates a category but leaves moving it to MoveCategory', function () {
     $sale = createCategory('Sale');
     Event::fake([CategoryUpdated::class]);
 
-    app(UpdateCategory::class)->handle($shoes->id, ['name' => ['en' => 'Footwear']]);
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), ['name' => ['en' => 'Footwear']]);
 
     expect(Category::query()->findOrFail($shoes->id)->name->get('en'))->toBe('Footwear');
     Event::assertDispatched(CategoryUpdated::class, fn (CategoryUpdated $event): bool => $event->changed === ['name']);
 
-    app(UpdateCategory::class)->handle($shoes->id, ['parent_id' => $sale->id]);
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), ['parent_id' => $sale->id]);
 })->throws(InvalidArgumentException::class, 'MoveCategory');
 
 it('moves a category below another one and announces both parents', function () {
@@ -48,13 +49,13 @@ it('moves a category below another one and announces both parents', function () 
     $boots = createCategory('Boots', $shoes);
     Event::fake([CategoryMoved::class]);
 
-    app(MoveCategory::class)->handle($boots->id, $sale->id);
+    app(MoveCategory::class)->handle(CategoryId::of($boots), CategoryId::of($sale));
 
     $boots = Category::query()->findOrFail($boots->id);
     expect($boots->parent_id)->toBe($sale->id)
         ->and($boots->position)->toBe(1);
-    Event::assertDispatched(CategoryMoved::class, fn (CategoryMoved $event): bool => $event->categoryId === $boots->id
-        && $event->oldParentId === $shoes->id && $event->newParentId === $sale->id);
+    Event::assertDispatched(CategoryMoved::class, fn (CategoryMoved $event): bool => $event->categoryId->equals(CategoryId::of($boots))
+        && $event->oldParentId?->equals(CategoryId::of($shoes)) && $event->newParentId?->equals(CategoryId::of($sale)));
 });
 
 it('refuses to move a category below itself or one of its descendants', function (string $target) {
@@ -63,7 +64,7 @@ it('refuses to move a category below itself or one of its descendants', function
     $winter = createCategory('Winter boots', $boots);
     $targets = ['itself' => $shoes, 'its child' => $boots, 'its grandchild' => $winter];
 
-    expect(fn () => app(MoveCategory::class)->handle($shoes->id, $targets[$target]->id))->toThrow(CategoryCycle::class)
+    expect(fn () => app(MoveCategory::class)->handle(CategoryId::of($shoes), CategoryId::of($targets[$target])))->toThrow(CategoryCycle::class)
         ->and(Category::query()->findOrFail($shoes->id)->parent_id)->toBeNull();
 })->with(['itself', 'its child', 'its grandchild']);
 
@@ -72,10 +73,10 @@ it('deletes a category, moves its children to the top, and announces them', func
     $boots = createCategory('Boots', $shoes);
     Event::fake([CategoryDeleted::class]);
 
-    app(DeleteCategory::class)->handle($shoes->id);
+    app(DeleteCategory::class)->handle(CategoryId::of($shoes));
 
     expect(Category::query()->whereKey($shoes->id)->exists())->toBeFalse()
         ->and(Category::query()->findOrFail($boots->id)->parent_id)->toBeNull();
-    Event::assertDispatched(CategoryDeleted::class, fn (CategoryDeleted $event): bool => $event->categoryId === $shoes->id
-        && $event->parentId === null && $event->name->get('en') === 'Shoes' && $event->childIds === [$boots->id]);
+    Event::assertDispatched(CategoryDeleted::class, fn (CategoryDeleted $event): bool => $event->categoryId->value === $shoes->id
+        && $event->parentId === null && $event->name->get('en') === 'Shoes' && CategoryId::values($event->childIds) === [$boots->id]);
 });

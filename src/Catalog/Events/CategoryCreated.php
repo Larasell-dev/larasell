@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\CategoryId;
 
 /**
  * A category was created.
@@ -14,7 +15,7 @@ final readonly class CategoryCreated
     use Dispatchable;
 
     public function __construct(
-        public int $categoryId,
-        public ?int $parentId,
+        public CategoryId $categoryId,
+        public ?CategoryId $parentId,
     ) {}
 }

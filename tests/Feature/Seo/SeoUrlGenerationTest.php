@@ -9,6 +9,7 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Seo\Facades\Seo;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Settings\CurrencySettings;
@@ -40,7 +41,7 @@ it('links to a page with the host and prefix of each context', function () {
         $channel = app(CreateSalesChannel::class)->handle([
             'key' => $key, 'name' => $key, 'type' => 'storefront', 'locales' => [$locale], 'currencies' => app(CurrencySettings::class)->enabled(),
         ]);
-        app(AddEntryPoint::class)->handle($channel->id, ['url' => $url, 'locale' => $locale]);
+        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => $url, 'locale' => $locale]);
     }
     $product = linkedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 

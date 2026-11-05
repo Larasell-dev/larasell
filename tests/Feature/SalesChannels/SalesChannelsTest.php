@@ -12,6 +12,7 @@ use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
 use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Settings\CurrencySettings;
 
@@ -39,7 +40,7 @@ it('installs a default storefront channel from the supported locales and the ena
     expect($channel->type)->toBe('storefront')
         ->and($channel->default_locale)->toBe(Locale::ENGLISH)
         ->and($channel->default_currency)->toBe(Currency::USD)
-        ->and($context->channelId)->toBe($channel->id)
+        ->and($context->channelId)->toEqual(SalesChannelId::of($channel))
         ->and($context->currency)->toBe(Currency::USD);
 });
 
@@ -50,8 +51,8 @@ it('creates a channel with its locales and currencies, and announces it', functi
 
     expect($channel->default_locale)->toBe(Locale::GERMAN)
         ->and($channel->default_currency)->toBe(Currency::CHF)
-        ->and(SalesContext::for('ch', 'fr-CH', Currency::EUR))->toEqual(new SalesContext('ch', $channel->id, Locale::FRENCH_SWITZERLAND, Currency::EUR));
-    Event::assertDispatched(SalesChannelCreated::class, fn (SalesChannelCreated $event): bool => $event->channelId === $channel->id);
+        ->and(SalesContext::for('ch', 'fr-CH', Currency::EUR))->toEqual(new SalesContext('ch', SalesChannelId::of($channel), Locale::FRENCH_SWITZERLAND, Currency::EUR));
+    Event::assertDispatched(SalesChannelCreated::class, fn (SalesChannelCreated $event): bool => $event->channelId->value === $channel->id);
 });
 
 it('checks a channel before saving it', function (array $input, string $message) {

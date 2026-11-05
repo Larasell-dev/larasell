@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Catalog\AttributeId;
 use Larasell\Larasell\Catalog\Events\ProductAttributeCreated;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 
@@ -16,7 +17,7 @@ final readonly class CreateProductAttribute
         return $this->db->transaction(function () use ($attributes): ProductAttribute {
             $attribute = ProductAttribute::query()->create($attributes);
 
-            ProductAttributeCreated::dispatch($attribute->id);
+            ProductAttributeCreated::dispatch(AttributeId::of($attribute));
 
             return $attribute;
         });

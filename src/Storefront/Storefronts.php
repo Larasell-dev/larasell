@@ -43,7 +43,7 @@ final readonly class Storefronts
     public function for(SalesContext $sales): StorefrontContext
     {
         $entryPoint = array_find($this->entryPoints(), fn (EntryPoint $entryPoint): bool => $entryPoint->primary
-            && $entryPoint->channelId === $sales->channelId && $entryPoint->locale === $sales->locale && $entryPoint->currency === $sales->currency);
+            && $entryPoint->channelId->equals($sales->channelId) && $entryPoint->locale === $sales->locale && $entryPoint->currency === $sales->currency);
 
         if (($this->channels->channel($sales->channelId)['type'] ?? null) !== StorefrontContext::TYPE) {
             throw new LogicException("The sales channel [{$sales->channel}] is not a storefront, so it has no entry points.");
@@ -73,7 +73,7 @@ final readonly class Storefronts
                 continue;
             }
 
-            $key = $entryPoint->channelId.'|'.$entryPoint->locale->value;
+            $key = $entryPoint->channelId->value.'|'.$entryPoint->locale->value;
 
             if (! isset($contexts[$key]) || $entryPoint->currency === $channel['default_currency']) {
                 $contexts[$key] = $this->context($entryPoint);

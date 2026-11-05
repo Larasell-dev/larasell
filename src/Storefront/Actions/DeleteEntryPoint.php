@@ -4,6 +4,8 @@ namespace Larasell\Larasell\Storefront\Actions;
 
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
+use Larasell\Larasell\Storefront\EntryPointId;
 use Larasell\Larasell\Storefront\Events\EntryPointDeleted;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
 use Larasell\Larasell\Storefront\Storefronts;
@@ -16,12 +18,12 @@ final readonly class DeleteEntryPoint
         private Storefronts $storefronts,
     ) {}
 
-    public function handle(int $entryPointId): void
+    public function handle(EntryPointId $entryPointId): void
     {
         $this->db->transaction(function () use ($entryPointId): void {
-            $channelId = EntryPoint::query()->findOrFail($entryPointId)->sales_channel_id;
+            $channelId = EntryPoint::query()->findOrFail($entryPointId->value)->sales_channel_id;
             SalesChannel::query()->lockForUpdate()->findOrFail($channelId);
-            $entryPoint = EntryPoint::query()->lockForUpdate()->findOrFail($entryPointId);
+            $entryPoint = EntryPoint::query()->lockForUpdate()->findOrFail($entryPointId->value);
 
             $entryPoint->delete();
 
@@ -31,7 +33,7 @@ final readonly class DeleteEntryPoint
                     ->orderBy('id')->first()?->update(['is_primary' => true]);
             }
 
-            EntryPointDeleted::dispatch($entryPoint->id, $channelId);
+            EntryPointDeleted::dispatch($entryPointId, new SalesChannelId($channelId));
         });
 
         $this->storefronts->forget();

@@ -13,7 +13,7 @@ final class KeepProductsOfOpenOrders
     public function handle(ProductDeleted $event): void
     {
         $orderIds = array_values(OrderItem::query()
-            ->where('product_id', $event->productId)
+            ->where('product_id', $event->productId->value)
             ->whereHas('order', fn ($query) => $query->whereIn('status', [
                 OrderStatus::PendingPayment->value,
                 OrderStatus::PaymentFailed->value,

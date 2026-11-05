@@ -3,6 +3,7 @@
 use Illuminate\Support\Carbon;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
@@ -41,7 +42,7 @@ it('releases expired inventory and cancels its unpaid order', function () {
     $this->travelTo('2026-08-29 12:00:00');
     [$order, $product] = orderWithExpiringInventory(now()->subMinute());
 
-    $released = app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    $released = app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     $order->refresh();
     $reservation = $order->inventoryReservations->sole();
@@ -60,7 +61,7 @@ it('does not release inventory before its expiration', function (?Carbon $expire
     $this->travelTo('2026-08-29 12:00:00');
     [$order, $product] = orderWithExpiringInventory($expiresAt);
 
-    $released = app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    $released = app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     expect($released)->toBeFalse()
         ->and($order->fresh()->status)->toBe(OrderStatus::PendingPayment)
@@ -76,7 +77,7 @@ it('does not release inventory after payment succeeds', function () {
     [$order, $product] = orderWithExpiringInventory(now()->subMinute());
     $order->payments->sole()->markAsPaid();
 
-    $released = app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    $released = app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     expect($released)->toBeFalse()
         ->and($order->fresh()->status)->toBe(OrderStatus::Paid)
@@ -87,8 +88,8 @@ it('does not release inventory after payment succeeds', function () {
 it('releases expired inventory idempotently', function () {
     [$order, $product] = orderWithExpiringInventory(now()->subMinute());
 
-    $first = app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
-    $second = app(ReleaseExpiredInventoryForOrder::class)->handle($order->id);
+    $first = app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
+    $second = app(ReleaseExpiredInventoryForOrder::class)->handle(OrderId::of($order));
 
     expect($first)->toBeTrue()
         ->and($second)->toBeFalse()

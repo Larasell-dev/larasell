@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Storefront;
 use Illuminate\Support\Facades\Context;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use LogicException;
@@ -32,7 +33,7 @@ final readonly class StorefrontContext
             throw new LogicException("The sales channel [{$sales->channel}] is not a storefront, so it has no entry points.");
         }
 
-        if ($entryPoint->channelId !== $sales->channelId) {
+        if (! $entryPoint->channelId->equals($sales->channelId)) {
             throw new LogicException("The entry point [{$entryPoint->url()}] belongs to another sales channel than [{$sales->channel}].");
         }
 
@@ -45,7 +46,7 @@ final readonly class StorefrontContext
      * The storefront context of a sales context, or of a channel (key or ID) in a locale, through the
      * channel's primary entry point for that locale and currency.
      */
-    public static function for(SalesContext|string|int $channel, Locale|string|null $locale = null, ?Currency $currency = null): self
+    public static function for(SalesContext|string|SalesChannelId $channel, Locale|string|null $locale = null, ?Currency $currency = null): self
     {
         $sales = $channel instanceof SalesContext ? $channel : SalesContext::for($channel, $locale ?? throw new LogicException('Pass a locale with the channel.'), $currency);
 

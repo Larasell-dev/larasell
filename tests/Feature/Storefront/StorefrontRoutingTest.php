@@ -10,6 +10,7 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Settings\CurrencySettings;
 use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
@@ -26,8 +27,8 @@ beforeEach(function () {
         'locales' => ['de', 'en'],
         'currencies' => ['EUR'],
     ]);
-    app(AddEntryPoint::class)->handle($shop->id, ['url' => 'https://shop.de', 'locale' => 'de']);
-    app(AddEntryPoint::class)->handle($shop->id, ['url' => 'https://shop.de/en', 'locale' => 'en']);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de', 'locale' => 'de']);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de/en', 'locale' => 'en']);
 });
 
 function shopRoutes(): void
@@ -76,7 +77,7 @@ it('serves a new entry point without registering routes again, also from cached 
     }
     $router->setCompiledRoutes(eval('return '.var_export($routes->compile(), true).';'));
 
-    app(AddEntryPoint::class)->handle(SalesChannel::query()->where('key', 'shop')->value('id'), [
+    app(AddEntryPoint::class)->handle(SalesChannelId::of(SalesChannel::query()->where('key', 'shop')->sole()), [
         'url' => 'https://shop.at/de', 'locale' => 'de',
     ]);
 

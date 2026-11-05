@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Catalog\Events\ProductImageCreated;
+use Larasell\Larasell\Catalog\ImageId;
 use Larasell\Larasell\Catalog\Models\ProductImage;
 
 final readonly class CreateProductImage
@@ -16,7 +17,7 @@ final readonly class CreateProductImage
         return $this->db->transaction(function () use ($attributes): ProductImage {
             $image = ProductImage::query()->create($attributes);
 
-            ProductImageCreated::dispatch($image->id);
+            ProductImageCreated::dispatch(ImageId::of($image));
 
             return $image;
         });

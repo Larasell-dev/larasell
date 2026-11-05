@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryMoved;
 use Larasell\Larasell\Catalog\Exceptions\CategoryCycle;
 use Larasell\Larasell\Catalog\Models\Category;
@@ -14,22 +15,24 @@ final readonly class MoveCategory
     public function __construct(private ConnectionInterface $db) {}
 
     /** @param  int|null  $position  null puts it after its new siblings */
-    public function handle(int $categoryId, ?int $parentId, ?int $position = null): Category
+    public function handle(CategoryId $categoryId, ?CategoryId $parentId, ?int $position = null): Category
     {
         return $this->db->transaction(function () use ($categoryId, $parentId, $position): Category {
-            $category = Category::query()->lockForUpdate()->findOrFail($categoryId);
-            $this->assertNoCycle($category, $parentId);
+            $category = Category::query()->lockForUpdate()->findOrFail($categoryId->value);
+            if ($parentId !== null) {
+                $this->assertNoCycle($category, $parentId);
+            }
 
             $oldParentId = $category->parent_id;
-            $category->parent_id = $parentId;
-            $category->position = $position ?? ($oldParentId === $parentId ? $category->position : $this->nextPosition($parentId));
+            $category->parent_id = $parentId?->value;
+            $category->position = $position ?? ($oldParentId === $parentId?->value ? $category->position : $this->nextPosition($parentId?->value));
 
             if (! $category->isDirty()) {
                 return $category;
             }
 
             $category->save();
-            CategoryMoved::dispatch($category->id, $oldParentId, $parentId);
+            CategoryMoved::dispatch($categoryId, $oldParentId === null ? null : new CategoryId($oldParentId), $parentId);
 
             return $category;
         });
@@ -39,13 +42,13 @@ final readonly class MoveCategory
      * Walks up from the new parent, locking each ancestor: a concurrent move of one of them waits,
      * and its result is read before deciding, so two moves cannot close a cycle together.
      */
-    private function assertNoCycle(Category $category, ?int $parentId): void
+    private function assertNoCycle(Category $category, CategoryId $parentId): void
     {
         $seen = [];
 
-        for ($id = $parentId; $id !== null; $id = Category::query()->lockForUpdate()->findOrFail($id)->parent_id) {
+        for ($id = $parentId->value; $id !== null; $id = Category::query()->lockForUpdate()->findOrFail($id)->parent_id) {
             if ($id === $category->id) {
-                throw new CategoryCycle($category->id, (int) $parentId);
+                throw new CategoryCycle(CategoryId::of($category), $parentId);
             }
 
             // The tree was acyclic before this move, so walking up must end; a repeat means it was not.
