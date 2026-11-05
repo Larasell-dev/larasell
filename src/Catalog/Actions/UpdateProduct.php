@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Catalog\Actions;
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Catalog\Events\ProductUpdated;
 use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\ProductId;
 
 final readonly class UpdateProduct
 {
@@ -15,15 +16,15 @@ final readonly class UpdateProduct
      *
      * @param  array<string, mixed>  $attributes
      */
-    public function handle(int $productId, array $attributes): Product
+    public function handle(ProductId $productId, array $attributes): Product
     {
         return $this->db->transaction(function () use ($productId, $attributes): Product {
-            $product = Product::query()->lockForUpdate()->findOrFail($productId);
+            $product = Product::query()->lockForUpdate()->findOrFail($productId->value);
             $changed = array_keys($product->fill($attributes)->getDirty());
 
             if ($changed !== []) {
                 $product->save();
-                ProductUpdated::dispatch($product->id, $changed);
+                ProductUpdated::dispatch($productId, $changed);
             }
 
             return $product;

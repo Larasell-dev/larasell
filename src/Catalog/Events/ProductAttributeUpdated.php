@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\AttributeId;
 
 /**
  * A product attribute changed; $changed names its changed attributes.
@@ -17,7 +18,7 @@ final readonly class ProductAttributeUpdated
      * @param  list<string>  $changed
      */
     public function __construct(
-        public int $attributeId,
+        public AttributeId $attributeId,
         public array $changed,
     ) {}
 }

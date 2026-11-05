@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
 
 /**
  * A variant was added to a product.
@@ -14,7 +16,7 @@ final readonly class ProductVariantCreated
     use Dispatchable;
 
     public function __construct(
-        public int $variantId,
-        public int $productId,
+        public VariantId $variantId,
+        public ProductId $productId,
     ) {}
 }

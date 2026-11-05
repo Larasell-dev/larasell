@@ -1,4 +1,4 @@
-# Larasell module rules (L1, L4, L6), included from phpstan.neon. Each rule has a test with fixtures in tests/PHPStan.
+# Larasell module rules (L1, L4, L6, typed IDs), included from phpstan.neon. Each rule has a test with fixtures in tests/PHPStan.
 parametersSchema:
     larasell: structure([
         modules: arrayOf(listOf(string()))
@@ -17,4 +17,10 @@ services:
         tags: [phpstan.rules.rule]
     -
         class: Larasell\Larasell\PHPStan\Rules\DomainEventsCarryNoModelsRule
+        tags: [phpstan.rules.rule]
+    -
+        class: Larasell\Larasell\PHPStan\Rules\NoIdentityComparisonOfIdsRule
+        tags: [phpstan.rules.rule]
+    -
+        class: Larasell\Larasell\PHPStan\Rules\BoundaryIdsAreTypedRule
         tags: [phpstan.rules.rule]

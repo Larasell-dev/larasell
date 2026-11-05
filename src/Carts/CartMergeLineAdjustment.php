@@ -2,13 +2,15 @@
 
 namespace Larasell\Larasell\Carts;
 
+use Larasell\Larasell\Catalog\VariantId;
+
 final readonly class CartMergeLineAdjustment
 {
     /**
      * @param  array<array-key, mixed>  $metadata
      */
     public function __construct(
-        public int $variantId,
+        public VariantId $variantId,
         public array $metadata,
         public int $requestedQuantity,
         public int $acceptedQuantity,

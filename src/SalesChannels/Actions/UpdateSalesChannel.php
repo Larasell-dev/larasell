@@ -8,6 +8,7 @@ use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 
 final readonly class UpdateSalesChannel
@@ -23,10 +24,10 @@ final readonly class UpdateSalesChannel
      *
      * @param  array{name?: string, locales?: list<Locale|string>, currencies?: list<Currency|string>, default_locale?: Locale|string, default_currency?: Currency|string, active?: bool}  $input
      */
-    public function handle(int $channelId, array $input): SalesChannel
+    public function handle(SalesChannelId $channelId, array $input): SalesChannel
     {
         $channel = $this->db->transaction(function () use ($channelId, $input): SalesChannel {
-            $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId);
+            $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId->value);
             $locales = isset($input['locales']) ? array_values(array_unique(array_map($this->rules->locale(...), $input['locales']), SORT_REGULAR)) : $channel->locales();
             $currencies = isset($input['currencies']) ? array_values(array_unique(array_map($this->rules->currency(...), $input['currencies']), SORT_REGULAR)) : $channel->currencies();
             $channel->fill(array_intersect_key($input, array_flip(['name', 'active'])));
@@ -48,7 +49,7 @@ final readonly class UpdateSalesChannel
             }
 
             if ($changed !== []) {
-                SalesChannelUpdated::dispatch($channel->id, $changed);
+                SalesChannelUpdated::dispatch($channelId, $changed);
             }
 
             return $channel;

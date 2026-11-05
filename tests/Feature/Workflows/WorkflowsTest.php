@@ -3,9 +3,11 @@
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Exceptions\ProductInUse;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -41,7 +43,7 @@ it('discontinues a product and sends its URLs to the replacement', function () {
     $old = workflowProduct('Boots 2026');
     $new = workflowProduct('Boots 2027');
 
-    app(DiscontinueProduct::class)->handle($old->id, $new->id);
+    app(DiscontinueProduct::class)->handle(ProductId::of($old), ProductId::of($new));
 
     expect(Product::query()->whereKey($old->id)->exists())->toBeFalse()
         ->and(resolveUrl('p/boots-2026')->redirect?->url)->toBe('http://localhost/p/boots-2027')
@@ -51,7 +53,7 @@ it('discontinues a product and sends its URLs to the replacement', function () {
 it('discontinues a product without a replacement, so its URLs answer 410', function () {
     $old = workflowProduct('Boots');
 
-    app(DiscontinueProduct::class)->handle($old->id);
+    app(DiscontinueProduct::class)->handle(ProductId::of($old));
 
     expect(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Gone);
 });
@@ -59,12 +61,12 @@ it('discontinues a product without a replacement, so its URLs answer 410', funct
 it('refuses a replacement that is the product itself or does not exist, and keeps the product', function (Closure $replacement, string $exception) {
     $product = workflowProduct('Boots');
 
-    expect(fn () => app(DiscontinueProduct::class)->handle($product->id, $replacement($product)))->toThrow($exception)
+    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), $replacement($product)))->toThrow($exception)
         ->and(Product::query()->whereKey($product->id)->exists())->toBeTrue()
         ->and(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Found);
 })->with([
-    'itself' => [fn (Product $product) => $product->id, LogicException::class],
-    'missing' => [fn (Product $product) => $product->id + 100, ModelNotFoundException::class],
+    'itself' => [fn (Product $product) => ProductId::of($product), LogicException::class],
+    'missing' => [fn (Product $product) => new ProductId($product->id + 100), ModelNotFoundException::class],
 ]);
 
 it('keeps a product of an open order with its URL, and sets no replacement', function () {
@@ -74,7 +76,7 @@ it('keeps a product of an open order with its URL, and sets no replacement', fun
     $cart->add($product, 1);
     app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A']);
 
-    expect(fn () => app(DiscontinueProduct::class)->handle($product->id, $new->id))->toThrow(ProductInUse::class)
+    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), ProductId::of($new)))->toThrow(ProductInUse::class)
         ->and(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Found)
         ->and(SeoUrl::query()->whereNotNull('replacement_id')->exists())->toBeFalse();
 });
@@ -104,12 +106,12 @@ it('creates no product when its custom URL cannot be used', function () {
 it('updates a product and its custom URL together, and null goes back to the automatic URL', function () {
     $product = workflowProduct('Boots');
 
-    app(UpdateProductWithUrls::class)->handle($product->id, ['name' => ['en' => 'Leather Boots']], ['en' => 'boots-sale']);
+    app(UpdateProductWithUrls::class)->handle(ProductId::of($product), ['name' => ['en' => 'Leather Boots']], ['en' => 'boots-sale']);
 
     expect(resolveUrl('boots-sale')->resource?->name->get('en'))->toBe('Leather Boots')
         ->and(resolveUrl('p/boots')->redirect?->url)->toBe('http://localhost/boots-sale');
 
-    app(UpdateProductWithUrls::class)->handle($product->id, [], ['en' => null]);
+    app(UpdateProductWithUrls::class)->handle(ProductId::of($product), [], ['en' => null]);
 
     expect(resolveUrl('p/leather-boots')->kind)->toBe(ResolutionKind::Found)
         ->and(resolveUrl('boots-sale')->redirect?->url)->toBe('http://localhost/p/leather-boots');
@@ -121,7 +123,7 @@ it('creates and updates a category with a custom URL, and its subcategories foll
 
     expect(resolveUrl('footwear/boots')->resource?->is($boots))->toBeTrue();
 
-    app(UpdateCategoryWithUrls::class)->handle($shoes->id, ['name' => ['en' => 'All Shoes']], ['en' => 'all-shoes']);
+    app(UpdateCategoryWithUrls::class)->handle(CategoryId::of($shoes), ['name' => ['en' => 'All Shoes']], ['en' => 'all-shoes']);
 
     expect(resolveUrl('all-shoes/boots')->resource?->is($boots))->toBeTrue()
         ->and(resolveUrl('footwear/boots')->redirect?->url)->toBe('http://localhost/all-shoes/boots')

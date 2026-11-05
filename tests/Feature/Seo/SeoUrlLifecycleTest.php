@@ -560,7 +560,7 @@ it('gives existing pages their URLs in a locale a channel gains, in a queued job
 
 it('stores URLs by sales channel ID, and they go with their channel', function () {
     $product = seoProduct('Boots');
-    $channelId = SalesContext::for('default', 'en')->channelId;
+    $channelId = SalesContext::for('default', 'en')->channelId->value;
 
     expect(SeoUrl::query()->sole()->sales_channel_id)->toBe($channelId);
 

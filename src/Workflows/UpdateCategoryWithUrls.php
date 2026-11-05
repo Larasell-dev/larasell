@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Workflows;
 
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Catalog\Actions\UpdateCategory;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 
 /** Updates a category and its custom URLs: both are saved, or neither, e.g. when a path is taken. */
@@ -19,7 +20,7 @@ final readonly class UpdateCategoryWithUrls
      * @param  array<string, mixed>  $attributes  As for UpdateCategory
      * @param  array<string, string|null>  $urls  Custom paths by locale, e.g. ['de' => 'winter-angebot']
      */
-    public function handle(int $categoryId, array $attributes, array $urls): Category
+    public function handle(CategoryId $categoryId, array $attributes, array $urls): Category
     {
         $plan = $this->urls->plan($urls);
 

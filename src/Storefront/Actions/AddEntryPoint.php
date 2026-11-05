@@ -8,6 +8,8 @@ use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
 use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
+use Larasell\Larasell\Storefront\EntryPointId;
 use Larasell\Larasell\Storefront\Events\EntryPointCreated;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
 use Larasell\Larasell\Storefront\StorefrontContext;
@@ -29,10 +31,10 @@ final readonly class AddEntryPoint
      * @param  array{url: string, locale: Locale|string, currency?: Currency|string, primary?: bool}  $input  The first entry point of
      *                                                                                                        its locale and currency is the primary one; pass primary to make a later one primary
      */
-    public function handle(int $channelId, array $input): EntryPoint
+    public function handle(SalesChannelId $channelId, array $input): EntryPoint
     {
         $entryPoint = $this->db->transaction(function () use ($channelId, $input): EntryPoint {
-            $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId);
+            $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId->value);
 
             if ($channel->type !== StorefrontContext::TYPE) {
                 throw new InvalidSalesChannel("The sales channel [{$channel->key}] is not a storefront, so it has no entry points.");
@@ -57,7 +59,7 @@ final readonly class AddEntryPoint
                 'is_primary' => $primary ? true : null,
             ]);
 
-            EntryPointCreated::dispatch($entryPoint->id, $channel->id, $locale, $currency);
+            EntryPointCreated::dispatch(EntryPointId::of($entryPoint), $channelId, $locale, $currency);
 
             return $entryPoint;
         });

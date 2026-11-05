@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\ProductId;
 
 /**
  * A product was created, with its default variant.
@@ -14,6 +15,6 @@ final readonly class ProductCreated
     use Dispatchable;
 
     public function __construct(
-        public int $productId,
+        public ProductId $productId,
     ) {}
 }

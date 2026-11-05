@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\ImageId;
 
 /**
  * A product image was created.
@@ -14,6 +15,6 @@ final readonly class ProductImageCreated
     use Dispatchable;
 
     public function __construct(
-        public int $imageId,
+        public ImageId $imageId,
     ) {}
 }

@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Inventory\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Inventory\ReleaseExpiredInventoryForOrder;
@@ -43,7 +44,7 @@ class ReleaseExpiredInventoryCommand extends Command
             ->chunkById($batchSize, function (Collection $orders) use ($releaseExpiredInventory, &$released): void {
                 /** @var Order $order */
                 foreach ($orders as $order) {
-                    if ($releaseExpiredInventory->handle($order->getKey())) {
+                    if ($releaseExpiredInventory->handle(OrderId::of($order))) {
                         $released++;
                     }
                 }

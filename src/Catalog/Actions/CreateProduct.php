@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Catalog\Actions;
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\ProductId;
 
 final readonly class CreateProduct
 {
@@ -16,7 +17,7 @@ final readonly class CreateProduct
         return $this->db->transaction(function () use ($attributes): Product {
             $product = Product::query()->create($attributes);
 
-            ProductCreated::dispatch($product->id);
+            ProductCreated::dispatch(ProductId::of($product));
 
             return $product;
         });

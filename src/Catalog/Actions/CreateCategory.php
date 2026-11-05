@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryCreated;
 use Larasell\Larasell\Catalog\Models\Category;
 
@@ -21,7 +22,7 @@ final readonly class CreateCategory
 
             $category = Category::query()->create($attributes);
 
-            CategoryCreated::dispatch($category->id, $category->parent_id);
+            CategoryCreated::dispatch(CategoryId::of($category), $category->parent_id === null ? null : new CategoryId($category->parent_id));
 
             return $category;
         });

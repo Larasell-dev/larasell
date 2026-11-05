@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\CategoryId;
 
 /**
  * A category got another parent or position. Its descendants moved with it.
@@ -14,8 +15,8 @@ final readonly class CategoryMoved
     use Dispatchable;
 
     public function __construct(
-        public int $categoryId,
-        public ?int $oldParentId,
-        public ?int $newParentId,
+        public CategoryId $categoryId,
+        public ?CategoryId $oldParentId,
+        public ?CategoryId $newParentId,
     ) {}
 }

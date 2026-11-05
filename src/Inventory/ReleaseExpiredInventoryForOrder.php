@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Inventory;
 
+use Larasell\Larasell\Checkout\OrderId;
 use Larasell\Larasell\Enums\InventoryReservationReleaseReason;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\OrderStatus;
@@ -12,7 +13,7 @@ use Larasell\Larasell\Models\Order;
 
 final readonly class ReleaseExpiredInventoryForOrder
 {
-    public function handle(int $orderId): bool
+    public function handle(OrderId $orderId): bool
     {
         $orderModel = (new Order);
 
@@ -20,7 +21,7 @@ final readonly class ReleaseExpiredInventoryForOrder
             /** @var Order|null $order */
             $order = Order::query()
                 ->lockForUpdate()
-                ->find($orderId);
+                ->find($orderId->value);
 
             if ($order === null || $order->status !== OrderStatus::PendingPayment) {
                 return false;

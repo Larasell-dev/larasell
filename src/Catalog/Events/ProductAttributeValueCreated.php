@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Catalog\AttributeId;
+use Larasell\Larasell\Catalog\AttributeValueId;
 
 /**
  * A value was added to a product attribute.
@@ -14,7 +16,7 @@ final readonly class ProductAttributeValueCreated
     use Dispatchable;
 
     public function __construct(
-        public int $valueId,
-        public int $attributeId,
+        public AttributeValueId $valueId,
+        public AttributeId $attributeId,
     ) {}
 }

@@ -27,3 +27,12 @@ parameters:
             Refunds: ['Larasell\Larasell\Refunds\', 'Larasell\Larasell\Models\Refund']
             Seo: ['Larasell\Larasell\Seo\']
             Workflows: ['Larasell\Larasell\Workflows\']
+
+    ignoreErrors:
+        # Bare IDs by design: an SEO URL's page is any resource type, named by $resourceType next to the
+        # number; and the catalog cannot name OrderId, as orders come after it.
+        -
+            identifier: larasell.untypedId
+            paths:
+                - src/Seo/Events/*
+                - src/Catalog/Exceptions/ProductInUse.php

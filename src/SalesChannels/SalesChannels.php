@@ -20,7 +20,7 @@ final readonly class SalesChannels
     public function __construct(private Cache $cache) {}
 
     /** The context of a channel (key or ID) in one of its locales and currencies, by default its default currency. */
-    public function for(string|int $channel, Locale|string $locale, ?Currency $currency = null): SalesContext
+    public function for(string|SalesChannelId $channel, Locale|string $locale, ?Currency $currency = null): SalesContext
     {
         $found = $this->channel($channel) ?? throw new InvalidSalesChannel("There is no sales channel [{$channel}].");
         $locale = $locale instanceof Locale ? $locale : Locale::tryFrom(Locale::canonicalize($locale));
@@ -34,7 +34,7 @@ final readonly class SalesChannels
             throw new InvalidSalesChannel("The sales channel [{$found['key']}] does not sell in [{$currency->value}].");
         }
 
-        return new SalesContext($found['key'], $found['id'], $locale, $currency);
+        return new SalesContext($found['key'], new SalesChannelId($found['id']), $locale, $currency);
     }
 
     /**
@@ -42,11 +42,11 @@ final readonly class SalesChannels
      *
      * @return Channel|null
      */
-    public function channel(string|int $channel): ?array
+    public function channel(string|SalesChannelId $channel): ?array
     {
         $channels = $this->snapshot();
 
-        return is_int($channel) ? ($channels[$channel] ?? null) : array_find($channels, fn (array $found): bool => $found['key'] === $channel);
+        return $channel instanceof SalesChannelId ? ($channels[$channel->value] ?? null) : array_find($channels, fn (array $found): bool => $found['key'] === $channel);
     }
 
     /**

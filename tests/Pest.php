@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Larasell\Larasell\Catalog\CategoryId;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
+use Larasell\Larasell\Storefront\EntryPointId;
 use Larasell\Larasell\Tests\ConcurrencyTestCase;
 use Larasell\Larasell\Tests\TestCase;
 
@@ -60,26 +64,26 @@ use Larasell\Larasell\Catalog\Models\Product;
 function updateCatalog(Product|Category $model, array $attributes): void
 {
     if ($model instanceof Product) {
-        app(UpdateProduct::class)->handle($model->id, $attributes);
+        app(UpdateProduct::class)->handle(ProductId::of($model), $attributes);
 
         return;
     }
 
     if (array_key_exists('parent_id', $attributes)) {
-        app(MoveCategory::class)->handle($model->id, $attributes['parent_id']);
+        app(MoveCategory::class)->handle(CategoryId::of($model), $attributes['parent_id'] === null ? null : new CategoryId($attributes['parent_id']));
         unset($attributes['parent_id']);
     }
 
     if ($attributes !== []) {
-        app(UpdateCategory::class)->handle($model->id, $attributes);
+        app(UpdateCategory::class)->handle(CategoryId::of($model), $attributes);
     }
 }
 
 function deleteFromCatalog(Product|Category $model): void
 {
     $model instanceof Product
-        ? app(DeleteProduct::class)->handle($model->id)
-        : app(DeleteCategory::class)->handle($model->id);
+        ? app(DeleteProduct::class)->handle(ProductId::of($model))
+        : app(DeleteCategory::class)->handle(CategoryId::of($model));
 }
 
 /*
@@ -118,18 +122,18 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
     // Keeps the old locales until the new entry points exist, as every locale needs one.
     $all = array_values(array_unique([...$old, ...$locales]));
     config()->set('larasell.locale.supported', $all);
-    app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $all]);
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $all]);
 
     foreach (EntryPoint::query()->where('sales_channel_id', $channel->id)->pluck('id') as $id) {
-        app(DeleteEntryPoint::class)->handle((int) $id);
+        app(DeleteEntryPoint::class)->handle(new EntryPointId((int) $id));
     }
 
     foreach ($entryPoints as $entryPoint) {
-        app(AddEntryPoint::class)->handle($channel->id, $entryPoint);
+        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), $entryPoint);
     }
 
     config()->set('larasell.locale.supported', $locales);
-    app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
 
     StorefrontContext::for('default', $entryPoints[0]['locale'])->activate();
 }

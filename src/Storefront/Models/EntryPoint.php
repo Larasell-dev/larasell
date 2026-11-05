@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Storefront\EntryPoint as EntryPointValue;
+use Larasell\Larasell\Storefront\EntryPointId;
 
 /**
  * Write through AddEntryPoint and DeleteEntryPoint; they keep the cached entry points current.
@@ -43,6 +45,6 @@ class EntryPoint extends Model
 
     public function toEntryPoint(): EntryPointValue
     {
-        return new EntryPointValue($this->id, $this->sales_channel_id, $this->scheme, $this->host, $this->port, $this->prefix, $this->locale, $this->currency, $this->is_primary === true);
+        return new EntryPointValue(EntryPointId::of($this), new SalesChannelId($this->sales_channel_id), $this->scheme, $this->host, $this->port, $this->prefix, $this->locale, $this->currency, $this->is_primary === true);
     }
 }
