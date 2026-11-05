@@ -213,3 +213,9 @@ it('keeps static storefront routes free of pages', function () {
 it('refuses Route::seo() outside the storefront group', function () {
     Route::middleware('web')->group(fn () => Route::seo([Product::class => fn () => 'product']));
 })->throws(LogicException::class, 'inside Route::storefront()');
+
+it('leaves the path of other storefront routes as sent', function () {
+    Route::storefront(fn () => Route::get('orders/{order}', fn (string $order) => 'order '.$order));
+
+    $this->get('/orders/A-1001')->assertOk()->assertSee('order A-1001');
+});
