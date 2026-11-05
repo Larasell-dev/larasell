@@ -1,12 +1,12 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 function commandReservationOrder(string $slug, string $expiresAt): Order

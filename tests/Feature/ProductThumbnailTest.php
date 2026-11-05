@@ -2,8 +2,8 @@
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductImage;
 use Larasell\Larasell\Price;
 
 it('exposes the first ordered product image as the thumbnail', function () {

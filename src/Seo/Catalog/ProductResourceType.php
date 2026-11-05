@@ -4,8 +4,8 @@ namespace Larasell\Larasell\Seo\Catalog;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\SeoContext;

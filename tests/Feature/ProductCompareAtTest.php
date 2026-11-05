@@ -1,9 +1,9 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
 use Larasell\Larasell\Price;
 
 it('defaults products to no compare-at price', function () {

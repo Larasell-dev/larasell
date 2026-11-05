@@ -3,9 +3,9 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Database\Eloquent\Collection;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Translatable;
 
 final readonly class CarriesModels

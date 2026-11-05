@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Models\Relations;
+namespace Larasell\Larasell\Catalog\Models\Relations;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

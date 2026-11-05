@@ -2,9 +2,9 @@
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Larasell\Larasell\Catalog\Models\ProductImage;
 use Larasell\Larasell\Images\ColorPlaceholderGenerator;
 use Larasell\Larasell\Images\Placeholder;
-use Larasell\Larasell\Models\ProductImage;
 
 function refreshPlaceholderCommandPng(string $name, int $red, int $green, int $blue): UploadedFile
 {

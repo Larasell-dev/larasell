@@ -1,5 +1,6 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasAvailability;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
@@ -16,7 +17,6 @@ use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionException;
 use Larasell\Larasell\Exceptions\Promotions\UnavailablePromotionCodeException;
 use Larasell\Larasell\Exceptions\Promotions\UnknownPromotionCodeException;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 final class TenPercentPromotionCode implements HasCode, Promotion

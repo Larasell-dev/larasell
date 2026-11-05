@@ -1,6 +1,7 @@
 <?php
 
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
 use Larasell\Larasell\Discounts\DiscountResult;
@@ -12,7 +13,6 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingMethod;

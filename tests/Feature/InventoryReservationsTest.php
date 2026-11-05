@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Support\Carbon;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\InventoryReservationStatus;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\InventoryReservation;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 /** @return array<string, string> */

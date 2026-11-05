@@ -1,6 +1,6 @@
 <?php
 
-use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Catalog\Models\Category;
 
 function categoryWithPosition(string $slug, ?Category $parent = null, ?int $position = null): Category
 {

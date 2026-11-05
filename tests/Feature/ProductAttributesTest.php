@@ -1,9 +1,9 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
+use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
 use Larasell\Larasell\Enums\ProductAttributeType;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
-use Larasell\Larasell\Models\ProductAttributeValue;
 use Larasell\Larasell\Price;
 
 it('defines values for a product attribute', function () {

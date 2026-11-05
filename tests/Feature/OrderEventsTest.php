@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\OrderStatus;
@@ -10,7 +11,6 @@ use Larasell\Larasell\Events\OrderFulfilled;
 use Larasell\Larasell\Events\OrderPaid;
 use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 /** @return array<string, string> */

@@ -1,6 +1,6 @@
 <?php
 
-namespace Larasell\Larasell\Models;
+namespace Larasell\Larasell\Catalog\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;

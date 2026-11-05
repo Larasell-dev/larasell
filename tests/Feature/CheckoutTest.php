@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\PaymentProvider;
 use Larasell\Larasell\Enums\Currency;
@@ -13,7 +14,6 @@ use Larasell\Larasell\Events\OrderPlaced;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
 use Larasell\Larasell\Models\Payment;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Payments\PaymentRequest;
 use Larasell\Larasell\Payments\PaymentResult;
 use Larasell\Larasell\Payments\RedirectPaymentAction;

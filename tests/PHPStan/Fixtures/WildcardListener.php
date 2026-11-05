@@ -4,8 +4,8 @@ namespace Larasell\Larasell\Seo\Fixtures;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Events\OrderPaid;
-use Larasell\Larasell\Models\Product;
 
 final class WildcardListener
 {

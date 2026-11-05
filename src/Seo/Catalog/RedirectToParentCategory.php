@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Seo\Catalog;
 
-use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\SeoContext;

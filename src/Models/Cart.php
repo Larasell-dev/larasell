@@ -13,6 +13,8 @@ use Larasell\Larasell\Address;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeResult;
 use Larasell\Larasell\Carts\CartMergeStrategy;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;

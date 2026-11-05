@@ -43,13 +43,13 @@ parameters:
 			path: src/Events/InventoryDecremented.php
 
 		-
-			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Catalog\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
 			identifier: larasell.domainEventModel
 			count: 1
 			path: src/Events/InventoryDecremented.php
 
 		-
-			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Catalog\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
 			identifier: larasell.domainEventModel
 			count: 1
 			path: src/Events/InventoryDecremented.php
@@ -85,13 +85,13 @@ parameters:
 			path: src/Events/InventoryRestocked.php
 
 		-
-			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Catalog\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
 			identifier: larasell.domainEventModel
 			count: 1
 			path: src/Events/InventoryRestocked.php
 
 		-
-			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Catalog\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
 			identifier: larasell.domainEventModel
 			count: 1
 			path: src/Events/InventoryRestocked.php
@@ -211,7 +211,7 @@ parameters:
 			path: src/Models/Order.php
 
 		-
-			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\Product\] of module Catalog with increment\(\)\: call one of Catalog''s actions\.$#'
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Catalog\\Models\\Product\] of module Catalog with increment\(\)\: call one of Catalog''s actions\.$#'
 			identifier: larasell.crossModuleWrite
 			count: 2
 			path: src/Models/Order.php

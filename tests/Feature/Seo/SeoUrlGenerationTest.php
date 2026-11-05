@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Models\Category;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Seo\Facades\Seo;
 use Larasell\Larasell\Seo\Models\SeoUrl;

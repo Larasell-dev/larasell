@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasCode;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
@@ -18,7 +19,6 @@ use Larasell\Larasell\Events\PromotionRedemptionReleased;
 use Larasell\Larasell\Events\PromotionRedemptionReserved;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 
 final class PromotionEventDiscount implements HasCode, HasRedemptionLimit, Promotion

@@ -1,12 +1,12 @@
 <?php
 
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductAttribute;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
-use Larasell\Larasell\Models\ProductAttribute;
-use Larasell\Larasell\Models\ProductVariant;
 use Larasell\Larasell\Price;
 
 it('snapshots the selected variant and its ordered attribute labels', function () {

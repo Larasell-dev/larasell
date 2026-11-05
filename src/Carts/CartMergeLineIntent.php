@@ -2,7 +2,7 @@
 
 namespace Larasell\Larasell\Carts;
 
-use Larasell\Larasell\Models\ProductVariant;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
 
 final readonly class CartMergeLineIntent
 {

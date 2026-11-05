@@ -5,7 +5,7 @@ namespace Larasell\Larasell\Images;
 use GdImage;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
-use Larasell\Larasell\Models\ProductImage;
+use Larasell\Larasell\Catalog\Models\ProductImage;
 
 final class Raster
 {

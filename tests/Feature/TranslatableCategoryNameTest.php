@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
-use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Translatable;
 
 it('casts a category name from translations', function () {

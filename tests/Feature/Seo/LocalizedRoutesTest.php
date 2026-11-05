@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 
 beforeEach(function () {

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Collection;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -9,7 +10,6 @@ use Larasell\Larasell\Exceptions\Cart\MissingRequiredShippingAddressException;
 use Larasell\Larasell\Exceptions\Cart\StaleSelectedShippingOptionException;
 use Larasell\Larasell\Exceptions\Cart\UnavailableShippingOptionException;
 use Larasell\Larasell\Models\Cart;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingMethod;

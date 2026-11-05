@@ -3,6 +3,7 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Contracts\Promotions\HasRedemptionLimit;
 use Larasell\Larasell\Contracts\Promotions\Promotion;
@@ -23,7 +24,6 @@ use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionIntegrityExceptio
 use Larasell\Larasell\Exceptions\Promotions\PromotionRedemptionLimitReachedException;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Models\Order;
-use Larasell\Larasell\Models\Product;
 use Larasell\Larasell\Models\PromotionRedemption;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Promotions\ReleaseExpiredPromotionRedemptionsForOrder;
