@@ -31,7 +31,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Larasell\\Larasell\\Tests\\": "tests"
+      "Larasell\\Larasell\\Tests\\": "tests",
+      "Larasell\\Larasell\\PHPStan\\": "phpstan/"
     }
   },
   "extra": {

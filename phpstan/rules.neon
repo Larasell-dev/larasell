@@ -1,0 +1,20 @@
+# Larasell module rules (L1, L4, L6), included from phpstan.neon. Each rule has a test with fixtures in tests/PHPStan.
+parametersSchema:
+    larasell: structure([
+        modules: arrayOf(listOf(string()))
+    ])
+
+services:
+    -
+        class: Larasell\Larasell\PHPStan\ModuleMap
+        arguments:
+            modules: %larasell.modules%
+    -
+        class: Larasell\Larasell\PHPStan\Rules\NoWildcardEloquentListenerRule
+        tags: [phpstan.rules.rule]
+    -
+        class: Larasell\Larasell\PHPStan\Rules\NoCrossModuleModelWriteRule
+        tags: [phpstan.rules.rule]
+    -
+        class: Larasell\Larasell\PHPStan\Rules\DomainEventsCarryNoModelsRule
+        tags: [phpstan.rules.rule]

@@ -1,0 +1,271 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\InventoryReservation\] of module Inventory with create\(\)\: call one of Inventory''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Checkout/Checkout.php
+
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\Payment\] of module Payments with create\(\)\: call one of Payments''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Checkout/Checkout.php
+
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\Payment\] of module Payments with update\(\)\: call one of Payments''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Checkout/Checkout.php
+
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\PromotionRedemption\] of module Promotions with create\(\)\: call one of Promotions''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Checkout/Checkout.php
+
+		-
+			message: '#^Promotions must not write \[Larasell\\Larasell\\Models\\Cart\] of module Carts with update\(\)\: call one of Carts''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Discounts/PromotionManager.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\CartMerged carries \[Larasell\\Larasell\\Models\\Cart\] in \$cart\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/CartMerged.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryDecremented.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryDecremented.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryDecremented carries \[Larasell\\Larasell\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryDecremented.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryReservationConsumed carries \[Larasell\\Larasell\\Models\\InventoryReservation\] in \$reservation\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryReservationConsumed.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryReservationExpired carries \[Larasell\\Larasell\\Models\\InventoryReservation\] in \$reservation\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryReservationExpired.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryReservationReleased carries \[Larasell\\Larasell\\Models\\InventoryReservation\] in \$reservation\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryReservationReleased.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryReserved carries \[Larasell\\Larasell\\Models\\InventoryReservation\] in \$reservation\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryReserved.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryRestocked.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Models\\ProductVariant\] in \$variant\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryRestocked.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\InventoryRestocked carries \[Larasell\\Larasell\\Models\\Product\] in \$product\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/InventoryRestocked.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\OrderCancelled carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/OrderCancelled.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\OrderFulfilled carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/OrderFulfilled.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\OrderPaid carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/OrderPaid.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\OrderPlaced carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/OrderPlaced.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PaymentCancelled carries \[Larasell\\Larasell\\Models\\Payment\] in \$payment\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PaymentCancelled.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PaymentFailed carries \[Larasell\\Larasell\\Models\\Payment\] in \$payment\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PaymentFailed.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PaymentPending carries \[Larasell\\Larasell\\Models\\Payment\] in \$payment\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PaymentPending.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PaymentSucceeded carries \[Larasell\\Larasell\\Models\\Payment\] in \$payment\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PaymentSucceeded.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionApplied carries \[Larasell\\Larasell\\Models\\Order\] in \$order\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionApplied.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionCodeApplied carries \[Larasell\\Larasell\\Models\\Cart\] in \$cart\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionCodeApplied.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionCodeRemoved carries \[Larasell\\Larasell\\Models\\Cart\] in \$cart\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionCodeRemoved.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionRedemptionRedeemed carries \[Larasell\\Larasell\\Models\\PromotionRedemption\] in \$redemption\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionRedemptionRedeemed.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionRedemptionReleased carries \[Larasell\\Larasell\\Models\\PromotionRedemption\] in \$redemption\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionRedemptionReleased.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\PromotionRedemptionReserved carries \[Larasell\\Larasell\\Models\\PromotionRedemption\] in \$redemption\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/PromotionRedemptionReserved.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\RefundCancelled carries \[Larasell\\Larasell\\Models\\Refund\] in \$refund\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/RefundCancelled.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\RefundFailed carries \[Larasell\\Larasell\\Models\\Refund\] in \$refund\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/RefundFailed.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\RefundPending carries \[Larasell\\Larasell\\Models\\Refund\] in \$refund\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/RefundPending.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Events\\RefundSucceeded carries \[Larasell\\Larasell\\Models\\Refund\] in \$refund\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Events/RefundSucceeded.php
+
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\InventoryReservation\] of module Inventory with update\(\)\: call one of Inventory''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Models/Order.php
+
+		-
+			message: '#^Checkout must not write \[Larasell\\Larasell\\Models\\Product\] of module Catalog with increment\(\)\: call one of Catalog''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 2
+			path: src/Models/Order.php
+
+		-
+			message: '#^Payments must not write \[Larasell\\Larasell\\Models\\InventoryReservation\] of module Inventory with update\(\)\: call one of Inventory''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Models/Payment.php
+
+		-
+			message: '#^Payments must not write \[Larasell\\Larasell\\Models\\Refund\] of module Refunds with create\(\)\: call one of Refunds''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Models/Payment.php
+
+		-
+			message: '#^Payments must not write \[Larasell\\Larasell\\Models\\Refund\] of module Refunds with update\(\)\: call one of Refunds''s actions\.$#'
+			identifier: larasell.crossModuleWrite
+			count: 1
+			path: src/Models/Payment.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Seo\\Events\\SeoResourceGone carries \[Illuminate\\Database\\Eloquent\\Model\] in \$resource\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Seo/Events/SeoResourceGone.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Seo\\Events\\SeoUrlChanged carries \[Illuminate\\Database\\Eloquent\\Model\] in \$resource\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Seo/Events/SeoUrlChanged.php
+
+		-
+			message: '#^The domain event Larasell\\Larasell\\Seo\\Events\\SeoUrlReleased carries \[Larasell\\Larasell\\Seo\\Models\\SeoUrl\] in \$url\: carry its ID and the facts listeners need instead\.$#'
+			identifier: larasell.domainEventModel
+			count: 1
+			path: src/Seo/Events/SeoUrlReleased.php
+
+		-
+			message: '#^Do not listen to \[eloquent\.deleted\: \*\]\: react to the owning module''s domain events instead\.$#'
+			identifier: larasell.wildcardEloquentListener
+			count: 1
+			path: src/Seo/SeoServiceProvider.php
+
+		-
+			message: '#^Do not listen to \[eloquent\.deleting\: \*\]\: react to the owning module''s domain events instead\.$#'
+			identifier: larasell.wildcardEloquentListener
+			count: 1
+			path: src/Seo/SeoServiceProvider.php
+
+		-
+			message: '#^Do not listen to \[eloquent\.saved\: \*\]\: react to the owning module''s domain events instead\.$#'
+			identifier: larasell.wildcardEloquentListener
+			count: 1
+			path: src/Seo/SeoServiceProvider.php
