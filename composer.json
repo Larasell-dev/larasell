@@ -37,7 +37,8 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Larasell\\Larasell\\LarasellServiceProvider"
+        "Larasell\\Larasell\\LarasellServiceProvider",
+        "Larasell\\Larasell\\Seo\\SeoServiceProvider"
       ]
     }
   },
