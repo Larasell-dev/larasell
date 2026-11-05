@@ -5,40 +5,39 @@ namespace Larasell\Larasell\Seo;
 use Closure;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
+use InvalidArgumentException;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Http\Controllers\SeoPageController;
 use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 use LogicException;
 
-/** The Route::storefront() and Route::seo() macros. */
+/** The Route::storefront() and Route::seo() macros, and ->localized() on storefront routes. */
 final class SeoRoutes
 {
+    /** The route action key holding the entry point a storefront route was registered for. */
+    public const ENTRY_POINT = 'storefront_entry_point';
+
     public static function register(): void
     {
         /*
-         * Registers the routes for every entry point. Prefixed entry points share one group with a
-         * {storefront} prefix; entry points without a prefix get a second copy of the routes, with
-         * route names prefixed "unprefixed." when both exist.
+         * Registers the routes once per entry point, bound to its host and prefix, so every copy knows
+         * its channel and locale. Longer prefixes come first, so /en/... never reaches the copy without
+         * a prefix. With several entry points, route names get a "{channel}.{locale}." prefix.
          */
         Router::macro('storefront', function (Closure $routes): void {
             /** @var Router $this */
-            $prefixes = array_unique(array_map(
-                fn (SeoContext $context): string => $context->prefix,
-                app(SeoContextResolver::class)->contexts(),
-            ));
-            $prefixed = array_values(array_filter($prefixes, fn (string $prefix): bool => $prefix !== ''));
-            $middleware = ['web', ResolveStorefront::class];
+            $contexts = app(SeoContextResolver::class)->contexts();
+            usort($contexts, fn (SeoContext $a, SeoContext $b): int => strlen($b->prefix) <=> strlen($a->prefix));
 
-            if ($prefixed !== []) {
-                $this->middleware($middleware)
-                    ->prefix('{'.ResolveStorefront::PREFIX.'}')
-                    ->where([ResolveStorefront::PREFIX => implode('|', array_map(preg_quote(...), $prefixed))])
-                    ->group($routes);
-            }
-
-            if (in_array('', $prefixes, true)) {
-                $group = $this->middleware($middleware);
-                ($prefixed === [] ? $group : $group->name('unprefixed.'))->group($routes);
+            foreach ($contexts as $context) {
+                $this->group(array_filter([
+                    'domain' => $context->host,
+                    'prefix' => $context->prefix,
+                    'middleware' => ['web', ResolveStorefront::class],
+                    'as' => count($contexts) > 1 ? $context->channel.'.'.$context->locale->value.'.' : null,
+                    SeoRoutes::ENTRY_POINT => SeoRoutes::entryPointKey($context),
+                ], fn (mixed $value): bool => $value !== null && $value !== ''), $routes);
             }
         });
 
@@ -52,7 +51,7 @@ final class SeoRoutes
             /** @var Router $this */
             $group = $this->hasGroupStack() ? $this->getGroupStack()[array_key_last($this->getGroupStack())] : [];
 
-            if (! in_array(ResolveStorefront::class, (array) ($group['middleware'] ?? []), true)) {
+            if (! isset($group[SeoRoutes::ENTRY_POINT])) {
                 throw new LogicException('Route::seo() must be registered inside Route::storefront().');
             }
 
@@ -61,5 +60,80 @@ final class SeoRoutes
                 ->defaults(SeoPageController::CONTROLLERS, $controllers)
                 ->fallback();
         });
+
+        /*
+         * Uses this route copy's translated path when lang/{locale}/routes.php has an entry for exactly
+         * the path written in the routes file, e.g. 'cart/add' => 'warenkorb/hinzufuegen'. Without an
+         * entry, the path stays as written. Translations must keep the route's parameters.
+         */
+        Route::macro('localized', function (): Route {
+            /** @var Route $this */
+            $context = SeoRoutes::contextOf($this)
+                ?? throw new LogicException('->localized() can only be used on routes inside Route::storefront().');
+
+            $prefix = trim($this->getPrefix() ?? '', '/');
+            $path = trim($prefix === '' ? $this->uri() : substr($this->uri(), strlen($prefix)), '/');
+            $translated = SeoRoutes::translate($path, $context->locale);
+
+            if ($translated !== null) {
+                $this->setUri(trim($prefix.'/'.$translated, '/') ?: '/');
+            }
+
+            return $this;
+        });
+    }
+
+    public static function entryPointKey(SeoContext $context): string
+    {
+        return $context->host.'/'.$context->prefix;
+    }
+
+    /** The context a storefront route was registered for, or null for routes outside Route::storefront(). */
+    public static function contextOf(Route $route): ?SeoContext
+    {
+        $key = $route->getAction(self::ENTRY_POINT);
+
+        foreach (is_string($key) ? app(SeoContextResolver::class)->contexts() : [] as $context) {
+            if (self::entryPointKey($context) === $key) {
+                return $context;
+            }
+        }
+
+        return null;
+    }
+
+    /** The translation of exactly this path for the locale (or its language, e.g. "de" for "de-CH"), if any. */
+    public static function translate(string $path, Locale $locale): ?string
+    {
+        foreach (Locale::lookupChain($locale->value) as $candidate) {
+            $lines = app('translator')->get('routes', [], $candidate, false);
+            $translated = is_array($lines) ? ($lines[$path] ?? null) : null;
+
+            if (! is_string($translated)) {
+                continue;
+            }
+
+            $translated = trim($translated, '/');
+
+            if (self::parameters($translated) !== self::parameters($path)) {
+                throw new InvalidArgumentException(
+                    "The {$candidate} translation [{$translated}] of route [{$path}] must keep its parameters."
+                );
+            }
+
+            return $translated;
+        }
+
+        return null;
+    }
+
+    /** @return list<string> */
+    private static function parameters(string $path): array
+    {
+        preg_match_all('/\{(\w+)\??\}/', $path, $matches);
+        $names = $matches[1];
+        sort($names);
+
+        return $names;
     }
 }

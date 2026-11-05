@@ -8,7 +8,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Reflector;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
@@ -21,6 +20,7 @@ use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoRedirect;
 use Larasell\Larasell\Seo\SeoResources;
+use Larasell\Larasell\Seo\SeoRoutes;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -34,8 +34,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ResolveStorefront
 {
-    public const PREFIX = 'storefront';
-
     public function __construct(
         private readonly SeoContextResolver $contexts,
         private readonly SeoPages $pages,
@@ -49,20 +47,16 @@ final class ResolveStorefront
         $route = $request->route();
         $context = $this->contexts->resolve($request);
 
-        $prefix = $route->parameter(self::PREFIX);
+        $routeContext = SeoRoutes::contextOf($route);
 
-        // The route group's prefix must be this context's, e.g. "/fr" exists on shop.ch but not shop.com.
-        if ($context === null || (is_string($prefix) ? $prefix : '') !== $context->prefix) {
+        // Each route copy serves one entry point, e.g. the German /warenkorb never answers below /en.
+        if ($context === null || $routeContext === null
+            || SeoRoutes::entryPointKey($routeContext) !== SeoRoutes::entryPointKey($context)) {
             throw new SeoPageNotFound($request->path());
         }
 
-        $route->forgetParameter(self::PREFIX);
         app()->instance(SeoContext::class, $context);
         App::setLocale($context->locale->value);
-
-        if ($context->prefix !== '') {
-            URL::defaults([self::PREFIX => $context->prefix]);
-        }
 
         $path = $this->pathBelow($request, $context);
         $normalized = $this->paths->normalize($path);
