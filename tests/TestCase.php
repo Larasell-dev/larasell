@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Tests;
 
 use Larasell\Larasell\LarasellServiceProvider;
+use Larasell\Larasell\Seo\SeoServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use PDO;
 use RuntimeException;
@@ -19,6 +20,7 @@ abstract class TestCase extends BaseTestCase
     {
         return [
             LarasellServiceProvider::class,
+            SeoServiceProvider::class,
         ];
     }
 
