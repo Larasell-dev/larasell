@@ -10,11 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Address;
+use Larasell\Larasell\Carts\CartItemId;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeResult;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
@@ -79,13 +82,14 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function add(Product|ProductVariant|int $purchasable, int $quantity = 1, array $metadata = []): CartItem
+    public function add(Product|ProductVariant|ProductId|VariantId $purchasable, int $quantity = 1, array $metadata = []): CartItem
     {
-        if (is_int($purchasable)) {
-            /** @var Product $product */
-            $product = Product::query()->findOrFail($purchasable);
+        if ($purchasable instanceof ProductId) {
+            return $this->add(Product::query()->findOrFail($purchasable->value), $quantity, $metadata);
+        }
 
-            return $this->add($product, $quantity, $metadata);
+        if ($purchasable instanceof VariantId) {
+            return $this->add(ProductVariant::query()->findOrFail($purchasable->value), $quantity, $metadata);
         }
 
         $this->assertValidQuantity($quantity);
@@ -120,11 +124,11 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function set(Product|ProductVariant|int $purchasable, int $quantity, array $metadata = []): CartItem
+    public function set(Product|ProductVariant|CartItemId $purchasable, int $quantity, array $metadata = []): CartItem
     {
-        if (is_int($purchasable)) {
+        if ($purchasable instanceof CartItemId) {
             /** @var CartItem $item */
-            $item = $this->items()->with('variant')->findOrFail($purchasable);
+            $item = $this->items()->with('variant')->findOrFail($purchasable->value);
 
             return $this->set($item->variant, $quantity, $item->metadata->all());
         }
@@ -158,10 +162,10 @@ class Cart extends Model
     }
 
     /** @param array<string, mixed> $metadata */
-    public function remove(Product|ProductVariant|int $purchasable, array $metadata = []): void
+    public function remove(Product|ProductVariant|CartItemId $purchasable, array $metadata = []): void
     {
-        if (is_int($purchasable)) {
-            $this->items()->whereKey($purchasable)->delete();
+        if ($purchasable instanceof CartItemId) {
+            $this->items()->whereKey($purchasable->value)->delete();
 
             return;
         }
