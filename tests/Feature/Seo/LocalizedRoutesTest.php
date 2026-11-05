@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 
 beforeEach(function () {
@@ -56,7 +56,7 @@ it('names each copy by channel and locale', function () {
 
 it('reserves translated paths only in their locale', function () {
     localizedRoutes();
-    $category = Category::create(['name' => ['de' => 'Warenkorb', 'en' => 'Warenkorb']]);
+    $category = app(CreateCategory::class)->handle(['name' => ['de' => 'Warenkorb', 'en' => 'Warenkorb']]);
 
     expect(SeoUrl::query()->where('resource_id', $category->getKey())->pluck('path', 'locale')->all())
         ->toBe(['de' => 'warenkorb-2', 'en' => 'warenkorb']);

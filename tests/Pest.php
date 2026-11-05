@@ -43,3 +43,41 @@ pest()->extend(ConcurrencyTestCase::class)
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/*
+| Catalog writes the way apps make them: through the catalog's actions, which keep SEO URLs in step.
+*/
+
+use Larasell\Larasell\Catalog\Actions\DeleteCategory;
+use Larasell\Larasell\Catalog\Actions\DeleteProduct;
+use Larasell\Larasell\Catalog\Actions\MoveCategory;
+use Larasell\Larasell\Catalog\Actions\UpdateCategory;
+use Larasell\Larasell\Catalog\Actions\UpdateProduct;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
+
+/** @param  array<string, mixed>  $attributes */
+function updateCatalog(Product|Category $model, array $attributes): void
+{
+    if ($model instanceof Product) {
+        app(UpdateProduct::class)->handle($model->id, $attributes);
+
+        return;
+    }
+
+    if (array_key_exists('parent_id', $attributes)) {
+        app(MoveCategory::class)->handle($model->id, $attributes['parent_id']);
+        unset($attributes['parent_id']);
+    }
+
+    if ($attributes !== []) {
+        app(UpdateCategory::class)->handle($model->id, $attributes);
+    }
+}
+
+function deleteFromCatalog(Product|Category $model): void
+{
+    $model instanceof Product
+        ? app(DeleteProduct::class)->handle($model->id)
+        : app(DeleteCategory::class)->handle($model->id);
+}

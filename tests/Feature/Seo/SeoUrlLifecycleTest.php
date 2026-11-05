@@ -5,11 +5,17 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Seo\Contracts\Slugifier;
+use Larasell\Larasell\Seo\DefaultSlugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
 use Larasell\Larasell\Seo\InvalidSeoPath;
@@ -20,6 +26,7 @@ use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
 use Larasell\Larasell\Seo\SeoUrlStatus;
+use Larasell\Larasell\Translatable;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -28,7 +35,7 @@ beforeEach(function () {
 /** @param  string|array<string, string>  $name */
 function seoProduct(string|array $name, Visibility $status = Visibility::Visible): Product
 {
-    return Product::create([
+    return app(CreateProduct::class)->handle([
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
@@ -37,7 +44,7 @@ function seoProduct(string|array $name, Visibility $status = Visibility::Visible
 
 function seoCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
 {
-    return Category::create([
+    return app(CreateCategory::class)->handle([
         'parent_id' => $parent?->getKey(),
         'name' => ['en' => $name],
         'status' => $status,
@@ -74,7 +81,7 @@ it('gives a new product a canonical URL', function () {
 
 it('keeps the old URL as history when a public product is renamed', function () {
     $product = seoProduct('Boots');
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect(seoPaths($product))->toBe([
         'p/boots' => 'historic',
@@ -83,11 +90,11 @@ it('keeps the old URL as history when a public product is renamed', function () 
 });
 
 it('treats products and categories created without a status as public', function () {
-    $product = Product::create(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
-    $category = Category::create(['name' => ['en' => 'Shoes']]);
+    $product = app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes']]);
 
-    $product->update(['name' => ['en' => 'Leather Boots']]);
-    $category->update(['name' => ['en' => 'Footwear']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($category, ['name' => ['en' => 'Footwear']]);
 
     expect(seoPaths($product))->toBe(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
         ->and(seoPaths($category))->toBe(['footwear' => 'canonical', 'shoes' => 'historic']);
@@ -95,8 +102,8 @@ it('treats products and categories created without a status as public', function
 
 it('reuses the old URL when a product is renamed back', function () {
     $product = seoProduct('Boots');
-    $product->update(['name' => ['en' => 'Leather Boots']]);
-    $product->update(['name' => ['en' => 'Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Boots']]);
 
     expect(seoPaths($product))->toBe([
         'p/boots' => 'canonical',
@@ -106,13 +113,13 @@ it('reuses the old URL when a product is renamed back', function () {
 
 it('keeps no history while a product has never been public', function () {
     $product = seoProduct('Draft', Visibility::Hidden);
-    $product->update(['name' => ['en' => 'Second Draft']]);
-    $product->update(['name' => ['en' => 'Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Second Draft']]);
+    updateCatalog($product, ['name' => ['en' => 'Boots']]);
 
     expect(seoPaths($product))->toBe(['p/boots' => 'canonical']);
 
-    $product->update(['status' => Visibility::Visible]);
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['status' => Visibility::Visible]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect(seoPaths($product))->toBe([
         'p/boots' => 'historic',
@@ -143,7 +150,7 @@ it('keeps categories out of the product prefix', function () {
 it('lets a new page claim the URL of a deleted one', function () {
     Event::fake([SeoUrlReleased::class]);
     $old = seoProduct('Boots');
-    $old->delete();
+    deleteFromCatalog($old);
 
     expect(seoPaths($old))->toBe(['p/boots' => 'gone']);
 
@@ -151,7 +158,7 @@ it('lets a new page claim the URL of a deleted one', function () {
 
     expect(seoPaths($new))->toBe(['p/boots' => 'canonical'])
         ->and(seoPaths($old))->toBe([]);
-    Event::assertDispatched(SeoUrlReleased::class, fn (SeoUrlReleased $event): bool => $event->url->path === 'p/boots');
+    Event::assertDispatched(SeoUrlReleased::class, fn (SeoUrlReleased $event): bool => $event->path === 'p/boots');
 });
 
 it('keeps a custom URL through renames until it is reset', function () {
@@ -159,7 +166,7 @@ it('keeps a custom URL through renames until it is reset', function () {
     $product = seoProduct('Boots');
 
     $manager->setCustom($product, seoContext(), '/Winter-Sale/');
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect(seoPaths($product))->toBe([
         'p/boots' => 'historic',
@@ -194,7 +201,7 @@ it('moves the URLs of child categories along with their parent', function () {
     $sandals = seoCategory('Sandals', $shoes);
     app(SeoUrlManager::class)->setCustom($sandals, seoContext(), 'summer');
 
-    $shoes->update(['parent_id' => $sale->getKey()]);
+    updateCatalog($shoes, ['parent_id' => $sale->getKey()]);
 
     expect(seoPaths($shoes))->toBe(['sale/shoes' => 'canonical', 'shoes' => 'historic'])
         ->and(seoPaths($boots))->toBe(['sale/shoes/boots' => 'canonical', 'shoes/boots' => 'historic'])
@@ -215,8 +222,8 @@ it('keeps the public URLs of a deleted category and moves its children up', func
     $boots = seoCategory('Boots', $shoes);
     $draft = seoCategory('Draft', status: Visibility::Hidden);
 
-    $shoes->delete();
-    $draft->delete();
+    deleteFromCatalog($shoes);
+    deleteFromCatalog($draft);
 
     $gone = SeoUrl::query()->where('path', 'shoes')->sole();
 
@@ -232,7 +239,7 @@ it('gives a product a URL only in the locales it has a name in', function () {
     $product = seoProduct(['en' => 'Size Chart']);
     expect(seoPaths($product, 'de-DE'))->toBe([]);
 
-    $product->update(['name' => ['en' => 'Size Chart', 'de' => 'Größentabelle']]);
+    updateCatalog($product, ['name' => ['en' => 'Size Chart', 'de' => 'Größentabelle']]);
 
     expect(seoPaths($product, 'en'))->toBe(['p/size-chart' => 'canonical'])
         ->and(seoPaths($product, 'de-DE'))->toBe(['p/groessentabelle' => 'canonical'])
@@ -245,13 +252,13 @@ it('keeps exactly one canonical URL and no duplicate paths through any sequence 
     seoProduct('Shoes');
 
     $steps = [
-        fn () => $product->update(['name' => ['en' => 'Shoes']]),
+        fn () => updateCatalog($product, ['name' => ['en' => 'Shoes']]),
         fn () => $manager->setCustom($product, seoContext(), 'sale'),
-        fn () => $product->update(['name' => ['en' => 'Boots']]),
+        fn () => updateCatalog($product, ['name' => ['en' => 'Boots']]),
         fn () => $manager->resetToAutomatic($product, seoContext()),
         fn () => $manager->setCustom($product, seoContext(), 'p/shoes-2'),
         fn () => $manager->resetToAutomatic($product, seoContext()),
-        fn () => $product->update(['name' => ['en' => 'Sale']]),
+        fn () => updateCatalog($product, ['name' => ['en' => 'Sale']]),
     ];
 
     foreach ($steps as $step) {
@@ -313,7 +320,7 @@ it('keeps the URLs of a page when the app adds a morph map later', function () {
     Relation::morphMap(['shop-product' => Product::class]);
 
     try {
-        $product->update(['name' => ['en' => 'Leather Boots']]);
+        updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
         expect(allSeoPaths())->toEqual(['p/boots' => 'historic', 'p/leather-boots' => 'canonical'])
             ->and(app(SeoPages::class)->url($product, seoContext()))->toBe('http://localhost/p/leather-boots');
@@ -369,7 +376,7 @@ it('announces URL changes only once they are committed', function () {
 
     try {
         DB::transaction(function () use ($product): void {
-            $product->update(['name' => ['en' => 'Leather Boots']]);
+            updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
             throw new RuntimeException('Rolled back.');
         });
@@ -379,7 +386,7 @@ it('announces URL changes only once they are committed', function () {
     expect($announced)->toBe(['p/boots'])
         ->and(seoPaths($product))->toBe(['p/boots' => 'canonical']);
 
-    $product->update(['name' => ['en' => 'Leather Boots']]);
+    updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect($announced)->toBe(['p/boots', 'p/leather-boots']);
 });
@@ -388,8 +395,105 @@ it('redirects a deleted page to a replacement chosen after the delete', function
     $old = seoProduct('Boots');
     $new = seoProduct('Boots 2027');
 
-    $old->delete();
+    deleteFromCatalog($old);
     app(SeoUrlManager::class)->markGone($old, $new);
 
     expect(app(SeoPages::class)->resolve('p/boots', seoContext())->redirect?->url)->toBe('http://localhost/p/boots-2027');
 });
+
+/** Slugs like the default one, but fails for the name "Kaputt", e.g. a transliteration service that is down. */
+class FailingSeoSlugifier implements Slugifier
+{
+    public function slug(Translatable $text, Locale $locale): ?string
+    {
+        $slug = (new DefaultSlugifier)->slug($text, $locale);
+
+        return $slug === 'kaputt' ? throw new RuntimeException('Slugifier failed.') : $slug;
+    }
+}
+
+it('gives a new product its URL and a deleted one its tombstone in the same write', function () {
+    $product = seoProduct('Boots');
+
+    expect(seoPaths($product))->toBe(['p/boots' => 'canonical']);
+
+    deleteFromCatalog($product);
+
+    expect(seoPaths($product))->toBe(['p/boots' => 'gone'])
+        ->and(SeoUrl::query()->sole()->gone_snapshot)->toBe(['name' => 'Boots', 'category_ids' => []]);
+});
+
+it('keeps a product and its URLs as they were when its delete fails', function () {
+    $product = seoProduct('Boots');
+    // Another listener stops the delete after the SEO listener ran, as a foreign key or lost connection would.
+    Event::listen(ProductDeleted::class, fn () => throw new RuntimeException('Delete failed.'));
+
+    expect(fn () => deleteFromCatalog($product))->toThrow(RuntimeException::class, 'Delete failed.');
+
+    expect(Product::query()->whereKey($product->getKey())->exists())->toBeTrue()
+        ->and(seoPaths($product))->toBe(['p/boots' => 'canonical'])
+        ->and(app(SeoPages::class)->resolve('p/boots', seoContext())->kind)->toBe(ResolutionKind::Found);
+});
+
+it('saves a product and its URLs in every locale together, or none of them', function () {
+    config()->set('larasell.locale.supported', ['en', 'de-DE']);
+    config()->set('larasell.seo.slugifier', FailingSeoSlugifier::class);
+    $product = seoProduct(['en' => 'Boots', 'de' => 'Stiefel']);
+
+    expect(fn () => updateCatalog($product, ['name' => ['en' => 'Leather Boots', 'de' => 'Kaputt']]))
+        ->toThrow(RuntimeException::class, 'Slugifier failed.');
+
+    expect(Product::query()->findOrFail($product->getKey())->name->get('en'))->toBe('Boots')
+        ->and(seoPaths($product, 'en'))->toBe(['p/boots' => 'canonical'])
+        ->and(seoPaths($product, 'de-DE'))->toBe(['p/stiefel' => 'canonical']);
+});
+
+it('leaves URLs alone when a model is written directly instead of through a catalog action', function () {
+    $product = seoProduct('Boots');
+
+    $product->update(['name' => ['en' => 'Leather Boots']]);
+    Product::query()->findOrFail($product->getKey())->delete();
+
+    expect(seoPaths($product))->toBe(['p/boots' => 'canonical']);
+});
+
+it('moves the URLs of every descendant in the same write, without queueing anything', function () {
+    Queue::fake();
+    $shoes = seoCategory('Shoes');
+    $boots = seoCategory('Boots', $shoes);
+    $winter = seoCategory('Winter', $boots);
+
+    updateCatalog($shoes, ['name' => ['en' => 'Footwear']]);
+
+    expect(seoPaths($winter))->toBe(['footwear/boots/winter' => 'canonical', 'shoes/boots/winter' => 'historic']);
+    Queue::assertNothingPushed();
+});
+
+it('moves a category back if the URL of one of its descendants cannot be written', function () {
+    $sale = seoCategory('Sale');
+    $shoes = seoCategory('Shoes');
+    $kaputt = seoCategory('Kaputt', $shoes);
+    config()->set('larasell.seo.slugifier', FailingSeoSlugifier::class);
+
+    expect(fn () => updateCatalog($shoes, ['parent_id' => $sale->getKey()]))->toThrow(RuntimeException::class, 'Slugifier failed.')
+        ->and(Category::query()->findOrFail($shoes->getKey())->parent_id)->toBeNull()
+        ->and(seoPaths($shoes))->toBe(['shoes' => 'canonical'])
+        ->and(seoPaths($kaputt))->toBe(['shoes/kaputt' => 'canonical']);
+});
+
+it('brings no URL back for a page refreshed from a copy loaded before its delete', function () {
+    $product = seoProduct('Boots');
+    $stale = Product::query()->findOrFail($product->getKey());
+    deleteFromCatalog($product);
+
+    expect(app(SeoUrlManager::class)->refresh($stale))->toBe([])
+        ->and(seoPaths($product))->toBe(['p/boots' => 'gone']);
+});
+
+it('stops instead of looping when categories form a cycle that bypassed MoveCategory', function () {
+    $a = seoCategory('A');
+    $b = seoCategory('B', $a);
+    Category::query()->whereKey($a->getKey())->update(['parent_id' => $b->getKey()]);
+
+    updateCatalog($a, ['name' => ['en' => 'A2']]);
+})->throws(LogicException::class, 'cycle');

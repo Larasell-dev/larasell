@@ -9,6 +9,7 @@ use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\Translatable;
 
 /** Products live at "p/{name}". The "p" prefix is reserved, so no other page can use it. *
  * @implements SeoResourceType<Product>
@@ -57,9 +58,17 @@ class ProductResourceType implements SeoResourceType
     /** @param  Product  $resource */
     public function snapshot(Model $resource, SeoContext $context): array
     {
-        return [
-            'name' => $resource->name->get($context->locale->value),
-            'category_ids' => $resource->categories()->pluck($resource->categories()->getRelated()->getQualifiedKeyName())->all(),
-        ];
+        return self::snapshotOf($resource->name, array_values($resource->categories()->pluck('larasell_categories.id')->map(fn (mixed $id): int => (int) $id)->sort()->all()), $context);
+    }
+
+    /**
+     * What a deleted product's URLs keep: its name and the categories it was in.
+     *
+     * @param  list<int>  $categoryIds
+     * @return array{name: string, category_ids: list<int>}
+     */
+    public static function snapshotOf(Translatable $name, array $categoryIds, SeoContext $context): array
+    {
+        return ['name' => $name->get($context->locale->value), 'category_ids' => $categoryIds];
     }
 }

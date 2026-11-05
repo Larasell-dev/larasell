@@ -7,6 +7,14 @@ use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Larasell\Larasell\Catalog\Events\CategoryCreated;
+use Larasell\Larasell\Catalog\Events\CategoryDeleted;
+use Larasell\Larasell\Catalog\Events\CategoryMoved;
+use Larasell\Larasell\Catalog\Events\CategoryUpdated;
+use Larasell\Larasell\Catalog\Events\ProductCreated;
+use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Catalog\Events\ProductUpdated;
+use Larasell\Larasell\Seo\Catalog\CatalogUrls;
 use Larasell\Larasell\Seo\Commands\RegenerateSeoUrlsCommand;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
@@ -27,7 +35,6 @@ class SeoServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../config/larasell/seo.php', 'larasell.seo');
 
         $this->app->singleton(SeoResources::class);
-        $this->app->singleton(SeoModelListener::class);
         // Scoped: preloaded paths must not outlive a request or job, e.g. under Octane or in queue workers.
         $this->app->scoped(SeoPages::class);
         $this->app->bind(SeoContextResolver::class, fn ($app) => $app->make(
@@ -54,7 +61,7 @@ class SeoServiceProvider extends ServiceProvider
         SeoRoutes::register();
 
         Event::listen(SeoUrlChanged::class, function (SeoUrlChanged $event): void {
-            $this->app->make(SeoPages::class)->forget($event->resource, $event->context);
+            $this->app->make(SeoPages::class)->forget($event->resourceType, $event->resourceId, $event->context);
         });
 
         // Pages must be bound before implicit binding looks up {product} by its ID.
@@ -64,11 +71,11 @@ class SeoServiceProvider extends ServiceProvider
             }
         });
 
-        foreach (['saved', 'deleting', 'deleted'] as $event) {
-            Event::listen("eloquent.{$event}: *", function (string $name, array $payload) use ($event): void {
-                $this->app->make(SeoModelListener::class)->{$event}($payload[0]);
-            });
-        }
+        // Sync listeners, so the URLs are written inside the catalog action's transaction.
+        Event::listen([ProductCreated::class, ProductUpdated::class], [CatalogUrls::class, 'productChanged']);
+        Event::listen(ProductDeleted::class, [CatalogUrls::class, 'productDeleted']);
+        Event::listen([CategoryCreated::class, CategoryUpdated::class, CategoryMoved::class], [CatalogUrls::class, 'categoryChanged']);
+        Event::listen(CategoryDeleted::class, [CatalogUrls::class, 'categoryDeleted']);
 
         if ($this->app->runningInConsole()) {
             $this->commands([RegenerateSeoUrlsCommand::class]);
