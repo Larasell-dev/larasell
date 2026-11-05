@@ -27,10 +27,9 @@ use Symfony\Component\HttpFoundation\Response;
  * Runs on every route in Route::storefront(), before implicit route model binding:
  *
  * 1. resolves the channel and locale and makes them the request's SeoContext and app locale;
- * 2. redirects paths that are not in normalized form;
- * 3. on routes with a parameter typed as an SEO model (or the Route::seo() catch-all), looks up the
- *    whole request path and binds the page, redirects, or fails with SeoPageNotFound, SeoPageHidden,
- *    or SeoPageGone. Implicit binding then skips the parameter, because it is already a model.
+ * 2. on routes with a parameter typed as an SEO model (or the Route::seo() catch-all), redirects
+ *    paths that are not in normalized form, then looks up the whole request path and binds the page,
+ *    redirects, or fails with SeoPageNotFound, SeoPageHidden, or SeoPageGone. Implicit binding then skips the parameter, because it is already a model.
  */
 final class ResolveStorefront
 {
@@ -58,17 +57,18 @@ final class ResolveStorefront
         app()->instance(SeoContext::class, $context);
         App::setLocale($context->locale->value);
 
+        $parameter = $this->pageParameter($route);
+
+        // Other storefront routes keep their path as sent: parameters such as order numbers are case-sensitive.
+        if ($parameter === null) {
+            return $next($request);
+        }
+
         $path = $this->pathBelow($request, $context);
         $normalized = $this->paths->normalize($path);
 
         if ($normalized !== $path) {
             return $this->redirect($request, new SeoRedirect($context->url($normalized), 301));
-        }
-
-        $parameter = $this->pageParameter($route);
-
-        if ($parameter === null) {
-            return $next($request);
         }
 
         [$name, $class] = $parameter;
