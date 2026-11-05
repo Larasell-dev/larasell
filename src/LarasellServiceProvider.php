@@ -3,11 +3,14 @@
 namespace Larasell\Larasell;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
+use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Checkout\Listeners\KeepProductsOfOpenOrders;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
 use Larasell\Larasell\Contracts\PlanResolver;
@@ -20,6 +23,7 @@ use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Images\Commands\RefreshPlaceholdersCommand;
 use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
+use Larasell\Larasell\Inventory\Listeners\KeepReservedProducts;
 use Larasell\Larasell\Licensing\Commands\ActivateLicenseCommand;
 use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
 use Larasell\Larasell\Licensing\Entitlements;
@@ -88,6 +92,10 @@ class LarasellServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        // Rules other modules set for the catalog; they throw inside the catalog action's transaction.
+        Event::listen(ProductDeleted::class, KeepProductsOfOpenOrders::class);
+        Event::listen(ProductDeleted::class, KeepReservedProducts::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
