@@ -10,7 +10,7 @@ use Larasell\Larasell\Price;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
-    config()->set('larasell.locale.supported', ['en', 'de']);
+    shopLocales(['en', 'de']);
 
     Route::storefront(fn () => Route::seo([
         Category::class => fn (ProductListingRequest $request): array => $request->products()->get()->map(

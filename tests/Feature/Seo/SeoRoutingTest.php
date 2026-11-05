@@ -12,9 +12,9 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
 use Larasell\Larasell\Seo\Models\SeoUrl;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoUrlManager;
 
 beforeEach(function () {
@@ -43,7 +43,7 @@ function routedCategory(string $name, ?Category $parent = null, Visibility $stat
 function storefrontRoutes(): void
 {
     Route::storefront(function () {
-        Route::get('/', fn (SeoContext $context) => 'home '.$context->locale->value);
+        Route::get('/', fn (SalesContext $context) => 'home '.$context->locale->value);
         Route::get('cart', fn () => 'cart');
         Route::get('p/{product}', fn (Product $product) => 'product '.$product->name->get().' '.app()->getLocale());
         Route::seo([
@@ -174,7 +174,7 @@ it('leaves routes outside the storefront binding by ID', function () {
 });
 
 it('serves each locale below its prefix', function () {
-    config()->set('larasell.locale.supported', ['en', 'de-DE']);
+    shopLocales(['en', 'de-DE']);
     storefrontRoutes();
     routedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 
@@ -186,8 +186,7 @@ it('serves each locale below its prefix', function () {
 });
 
 it('serves the default locale without a prefix next to prefixed ones', function () {
-    config()->set('larasell.locale.supported', ['en', 'de']);
-    config()->set('larasell.seo.channels.default.entry_points', [
+    shopLocales(['en', 'de'], [
         ['url' => 'http://localhost', 'locale' => 'de'],
         ['url' => 'http://localhost/en', 'locale' => 'en'],
     ]);

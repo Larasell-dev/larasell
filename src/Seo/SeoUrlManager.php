@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Larasell\Larasell\SalesChannels\SalesChannels;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
-use Larasell\Larasell\Seo\Contracts\SeoContextResolver;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoResourceGone;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
@@ -29,28 +30,22 @@ final class SeoUrlManager
 {
     public function __construct(
         private readonly SeoResources $resources,
-        private readonly SeoContextResolver $contextResolver,
+        private readonly SalesChannels $channels,
         private readonly CollisionPolicy $collisions,
         private readonly PathNormalizer $paths,
     ) {}
 
     /**
-     * One context per channel and locale. When several entry points serve the same pair, the first one wins.
+     * One context per sales channel and locale; each has its own URLs.
      *
-     * @return list<SeoContext>
+     * @return list<SalesContext>
      */
     public function contexts(): array
     {
-        $contexts = [];
-
-        foreach ($this->contextResolver->contexts() as $context) {
-            $contexts[$context->channel.'|'.$context->locale->value] ??= $context;
-        }
-
-        return array_values($contexts);
+        return $this->channels->contexts();
     }
 
-    public function canonical(Model $resource, SeoContext $context): ?SeoUrl
+    public function canonical(Model $resource, SalesContext $context): ?SeoUrl
     {
         $rows = $this->rows($this->resources->for($resource)->key(), $resource->getKey(), $context)
             ->where('status', SeoUrlStatus::Canonical->value)
@@ -66,7 +61,7 @@ final class SeoUrlManager
     }
 
     /** @param  string  $type  The resource type's key(), e.g. "category" */
-    public function canonicalPath(string $type, int|string $id, SeoContext $context): ?string
+    public function canonicalPath(string $type, int|string $id, SalesContext $context): ?string
     {
         $path = $this->rows($type, $id, $context)->where('status', SeoUrlStatus::Canonical->value)->value('path');
 
@@ -77,7 +72,7 @@ final class SeoUrlManager
      * Brings the resource's automatic URLs up to date in every context at once, or in none when one
      * fails, together with the pages built on its URL, such as subcategories.
      *
-     * @param  list<SeoContext>|null  $contexts  null for every context
+     * @param  list<SalesContext>|null  $contexts  null for every context
      * @return list<SeoUrlChanged> One change per page and context whose path changed
      */
     public function refresh(Model $resource, ?array $contexts = null, bool $cascade = true): array
@@ -90,7 +85,7 @@ final class SeoUrlManager
      * cannot write outdated URLs, and a page that no longer exists gets none.
      *
      * @param  SeoResourceType<Model>  $type
-     * @param  list<SeoContext>|null  $contexts  null for every context
+     * @param  list<SalesContext>|null  $contexts  null for every context
      * @return list<SeoUrlChanged>
      */
     public function refreshPage(SeoResourceType $type, int|string $id, ?array $contexts = null, bool $cascade = true): array
@@ -99,7 +94,7 @@ final class SeoUrlManager
     }
 
     /** Makes the path the resource's custom URL. Renames never change it until resetToAutomatic(). */
-    public function setCustom(Model $resource, SeoContext $context, string $path): SeoUrl
+    public function setCustom(Model $resource, SalesContext $context, string $path): SeoUrl
     {
         $type = $this->resources->for($resource);
         $path = $this->normalize($path);
@@ -117,7 +112,7 @@ final class SeoUrlManager
         });
     }
 
-    public function resetToAutomatic(Model $resource, SeoContext $context): void
+    public function resetToAutomatic(Model $resource, SalesContext $context): void
     {
         $type = $this->resources->for($resource);
 
@@ -146,14 +141,14 @@ final class SeoUrlManager
     {
         $type = $this->resources->for($resource);
 
-        $this->gone($type, $resource->getKey(), fn (SeoContext $context): array => $type->snapshot($resource, $context), $replacement);
+        $this->gone($type, $resource->getKey(), fn (SalesContext $context): array => $type->snapshot($resource, $context), $replacement);
     }
 
     /**
      * Like markGone(), by ID, for a page that is already deleted, with what was known about it.
      *
      * @param  SeoResourceType<Model>  $type
-     * @param  Closure(SeoContext): array<string, mixed>  $snapshot
+     * @param  Closure(SalesContext): array<string, mixed>  $snapshot
      */
     public function markGoneById(SeoResourceType $type, int|string $id, Closure $snapshot): void
     {
@@ -172,7 +167,7 @@ final class SeoUrlManager
     }
 
     /** @param  SeoResourceType<Model>  $type */
-    private function refreshIn(SeoResourceType $type, Model $resource, SeoContext $context): ?SeoUrlChanged
+    private function refreshIn(SeoResourceType $type, Model $resource, SalesContext $context): ?SeoUrlChanged
     {
         $current = $this->canonical($resource, $context);
         $available = $type->isAvailable($resource, $context);
@@ -204,7 +199,7 @@ final class SeoUrlManager
      *
      * @param  SeoResourceType<Model>  $type
      */
-    private function place(SeoResourceType $type, Model $resource, SeoContext $context, string $path, bool $custom, ?SeoUrl $current, ?bool $available = null): SeoUrl
+    private function place(SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom, ?SeoUrl $current, ?bool $available = null): SeoUrl
     {
         $path = $this->freePath($type, $resource, $context, $path, $custom);
         $available ??= $type->isAvailable($resource, $context);
@@ -248,7 +243,7 @@ final class SeoUrlManager
      *
      * @param  SeoResourceType<Model>  $type
      */
-    private function freePath(SeoResourceType $type, Model $resource, SeoContext $context, string $path, bool $custom): string
+    private function freePath(SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom): string
     {
         $inContext = fn () => SeoUrl::query()->where('channel', $context->channel)->where('locale', $context->locale->value);
         $numbered = null;
@@ -318,7 +313,7 @@ final class SeoUrlManager
      *
      * @param  SeoResourceType<Model>  $type
      */
-    private function changed(SeoResourceType $type, Model $resource, SeoContext $context, ?string $old, ?string $new): ?SeoUrlChanged
+    private function changed(SeoResourceType $type, Model $resource, SalesContext $context, ?string $old, ?string $new): ?SeoUrlChanged
     {
         if ($old === $new) {
             return null;
@@ -331,7 +326,7 @@ final class SeoUrlManager
 
     /**
      * @param  SeoResourceType<Model>  $type
-     * @param  list<SeoContext>  $contexts
+     * @param  list<SalesContext>  $contexts
      * @param  array<string, true>  $ancestors  The pages this refresh came through, to stop at a cycle
      * @return list<SeoUrlChanged>
      */
@@ -362,7 +357,7 @@ final class SeoUrlManager
      * Refreshes the pages built on this one's URL, in the same transaction, however many there are.
      *
      * @param  SeoResourceType<Model>  $type
-     * @param  list<SeoContext>  $contexts
+     * @param  list<SalesContext>  $contexts
      * @param  array<string, true>  $ancestors
      * @return list<SeoUrlChanged>
      */
@@ -397,7 +392,7 @@ final class SeoUrlManager
 
     /**
      * @param  SeoResourceType<Model>  $type
-     * @param  Closure(SeoContext): array<string, mixed>  $snapshot
+     * @param  Closure(SalesContext): array<string, mixed>  $snapshot
      */
     private function gone(SeoResourceType $type, int|string $id, Closure $snapshot, ?Model $replacement): void
     {
@@ -436,7 +431,7 @@ final class SeoUrlManager
     }
 
     /** @return Builder<SeoUrl> */
-    private function rows(string $type, int|string $id, SeoContext $context): Builder
+    private function rows(string $type, int|string $id, SalesContext $context): Builder
     {
         return SeoUrl::query()
             ->where('resource_type', $type)

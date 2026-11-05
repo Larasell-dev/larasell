@@ -11,7 +11,7 @@ use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Events\ProductUpdated;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
 
@@ -37,7 +37,7 @@ final readonly class CatalogUrls
         $this->urls->markGoneById(
             $this->resources->forClass(Product::class),
             $event->productId,
-            fn (SeoContext $context): array => ProductResourceType::snapshotOf($event->name, $event->categoryIds, $context),
+            fn (SalesContext $context): array => ProductResourceType::snapshotOf($event->name, $event->categoryIds, $context),
         );
     }
 
@@ -55,7 +55,7 @@ final readonly class CatalogUrls
         $this->urls->markGoneById(
             $type,
             $event->categoryId,
-            fn (SeoContext $context): array => CategoryResourceType::snapshotOf($event->name, $event->parentId, $context),
+            fn (SalesContext $context): array => CategoryResourceType::snapshotOf($event->name, $event->parentId, $context),
         );
 
         foreach ($event->childIds as $childId) {

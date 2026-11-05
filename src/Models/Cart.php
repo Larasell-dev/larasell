@@ -30,6 +30,7 @@ use Larasell\Larasell\Exceptions\Cart\StaleSelectedShippingOptionException;
 use Larasell\Larasell\Exceptions\Cart\UnavailableCartItemException;
 use Larasell\Larasell\Exceptions\Cart\UnavailableShippingOptionException;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\HasSalesContext;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Shipping\ShippingOption;
 use Larasell\Larasell\Taxes\CartTaxEstimate;
@@ -50,6 +51,8 @@ class Cart extends Model
 {
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
+
+    use HasSalesContext;
 
     protected $table = 'larasell_carts';
 

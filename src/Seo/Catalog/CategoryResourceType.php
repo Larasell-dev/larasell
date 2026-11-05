@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Enums\Visibility;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoUrlManager;
 use Larasell\Larasell\Translatable;
 
@@ -38,7 +38,7 @@ class CategoryResourceType implements SeoResourceType
     }
 
     /** @param  Category  $resource */
-    public function path(Model $resource, SeoContext $context): ?string
+    public function path(Model $resource, SalesContext $context): ?string
     {
         $slug = $this->slugs->slug($resource->name, $context->locale);
 
@@ -52,7 +52,7 @@ class CategoryResourceType implements SeoResourceType
     }
 
     /** @param  Category  $resource */
-    public function isAvailable(Model $resource, SeoContext $context): bool
+    public function isAvailable(Model $resource, SalesContext $context): bool
     {
         return $resource->status === Visibility::Visible;
     }
@@ -67,7 +67,7 @@ class CategoryResourceType implements SeoResourceType
     }
 
     /** @param  Category  $resource */
-    public function snapshot(Model $resource, SeoContext $context): array
+    public function snapshot(Model $resource, SalesContext $context): array
     {
         return self::snapshotOf($resource->name, $resource->parent_id, $context);
     }
@@ -77,7 +77,7 @@ class CategoryResourceType implements SeoResourceType
      *
      * @return array{name: string, parent_id: int|null}
      */
-    public static function snapshotOf(Translatable $name, ?int $parentId, SeoContext $context): array
+    public static function snapshotOf(Translatable $name, ?int $parentId, SalesContext $context): array
     {
         return ['name' => $name->get($context->locale->value), 'parent_id' => $parentId];
     }

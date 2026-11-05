@@ -3,7 +3,7 @@
 namespace Larasell\Larasell\Seo\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
-use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\SeoRedirect;
 
 /**
@@ -12,5 +12,5 @@ use Larasell\Larasell\Seo\SeoRedirect;
  */
 interface HiddenPagePolicy
 {
-    public function redirect(Model $resource, SeoContext $context): ?SeoRedirect;
+    public function redirect(Model $resource, SalesContext $context): ?SeoRedirect;
 }

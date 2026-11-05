@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Seo;
 
 use Illuminate\Database\Eloquent\Model;
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\GoneStrategy;
 use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
@@ -25,7 +26,7 @@ final class SeoPages
     ) {}
 
     /** What the path below the context's entry point leads to. */
-    public function resolve(string $path, SeoContext $context): Resolution
+    public function resolve(string $path, SalesContext $context): Resolution
     {
         $url = SeoUrl::query()
             ->where('channel', $context->channel)
@@ -76,7 +77,7 @@ final class SeoPages
      * null when it has no URL there. Hidden pages keep their URL; use availableUrl() to link only to
      * pages a visitor can open.
      */
-    public function url(Model $resource, ?SeoContext $context = null): ?string
+    public function url(Model $resource, ?SalesContext $context = null): ?string
     {
         $context ??= $this->currentContext();
         $type = $this->resources->for($resource)->key();
@@ -90,7 +91,7 @@ final class SeoPages
     }
 
     /** The URL of the page, or null when it has none or is not available in the context. */
-    public function availableUrl(Model $resource, ?SeoContext $context = null): ?string
+    public function availableUrl(Model $resource, ?SalesContext $context = null): ?string
     {
         $context ??= $this->currentContext();
         $type = $this->resources->find($resource);
@@ -104,7 +105,7 @@ final class SeoPages
      *
      * @param  iterable<Model>  $resources
      */
-    public function preload(iterable $resources, ?SeoContext $context = null): void
+    public function preload(iterable $resources, ?SalesContext $context = null): void
     {
         $context ??= $this->currentContext();
         $ids = [];
@@ -138,18 +139,18 @@ final class SeoPages
      *
      * @param  string  $type  The resource type's key(), e.g. "product"
      */
-    public function forget(string $type, int|string $id, SeoContext $context): void
+    public function forget(string $type, int|string $id, SalesContext $context): void
     {
         unset($this->preloaded[self::key($type, $id, $context)]);
     }
 
-    /** The request's context inside Route::storefront(), otherwise the first configured one. */
-    private function currentContext(): SeoContext
+    /** The current request's or job's context, otherwise the first channel's first locale. */
+    private function currentContext(): SalesContext
     {
-        return app()->bound(SeoContext::class) ? app(SeoContext::class) : $this->manager->contexts()[0];
+        return SalesContext::current() ?? $this->manager->contexts()[0];
     }
 
-    private static function key(string $type, mixed $id, SeoContext $context): string
+    private static function key(string $type, mixed $id, SalesContext $context): string
     {
         return $type.'|'.$id.'|'.$context->channel.'|'.$context->locale->value;
     }

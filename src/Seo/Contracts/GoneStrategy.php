@@ -2,8 +2,8 @@
 
 namespace Larasell\Larasell\Seo\Contracts;
 
+use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Models\SeoUrl;
-use Larasell\Larasell\Seo\SeoContext;
 use Larasell\Larasell\Seo\SeoRedirect;
 
 /**
@@ -13,5 +13,5 @@ use Larasell\Larasell\Seo\SeoRedirect;
  */
 interface GoneStrategy
 {
-    public function redirect(SeoUrl $url, SeoContext $context): ?SeoRedirect;
+    public function redirect(SeoUrl $url, SalesContext $context): ?SeoRedirect;
 }

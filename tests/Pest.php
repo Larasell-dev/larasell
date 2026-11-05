@@ -81,3 +81,53 @@ function deleteFromCatalog(Product|Category $model): void
         ? app(DeleteProduct::class)->handle($model->id)
         : app(DeleteCategory::class)->handle($model->id);
 }
+
+/*
+| Sales channels: tests run as if in a storefront request of the default channel, unless they say otherwise.
+*/
+
+use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\Actions\AddEntryPoint;
+use Larasell\Larasell\SalesChannels\Actions\DeleteEntryPoint;
+use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
+use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesContext;
+
+uses()->beforeEach(function () {
+    SalesContext::for('default', Locale::ENGLISH)->activate();
+})->in('Feature');
+
+/**
+ * Makes the default channel serve these locales, as installing with them would: one locale on app.url,
+ * several each below its own prefix, unless entry points are given (the first one's locale becomes the default), e.g. [['url' => 'http://localhost', 'locale' => 'de']].
+ *
+ * @param  list<string>  $locales
+ * @param  list<array{url: string, locale: string}>|null  $entryPoints
+ */
+function shopLocales(array $locales, ?array $entryPoints = null): void
+{
+    $channel = SalesChannel::query()->where('key', 'default')->sole();
+    $url = rtrim((string) config('app.url'), '/');
+    $entryPoints ??= count($locales) === 1
+        ? [['url' => $url, 'locale' => $locales[0]]]
+        : array_map(fn (string $locale): array => ['url' => $url.'/'.strtolower($locale), 'locale' => $locale], $locales);
+    $old = array_map(fn (Locale $locale): string => $locale->value, $channel->locales());
+
+    // Keeps the old locales until the new entry points exist, as every locale needs one.
+    $all = array_values(array_unique([...$old, ...$locales]));
+    config()->set('larasell.locale.supported', $all);
+    app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $all]);
+
+    foreach ($channel->entryPoints()->pluck('id') as $id) {
+        app(DeleteEntryPoint::class)->handle((int) $id);
+    }
+
+    foreach ($entryPoints as $entryPoint) {
+        app(AddEntryPoint::class)->handle($channel->id, $entryPoint);
+    }
+
+    config()->set('larasell.locale.supported', $locales);
+    app(UpdateSalesChannel::class)->handle($channel->id, ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
+
+    SalesContext::for('default', $entryPoints[0]['locale'])->activate();
+}

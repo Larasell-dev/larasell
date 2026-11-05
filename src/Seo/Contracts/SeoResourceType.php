@@ -4,7 +4,7 @@ namespace Larasell\Larasell\Seo\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Larasell\Larasell\Seo\SeoContext;
+use Larasell\Larasell\SalesChannels\SalesContext;
 
 /**
  * Tells the SEO module how to treat one kind of model that has pages, such as products.
@@ -32,10 +32,10 @@ interface SeoResourceType
     public function reservedPrefixes(): array;
 
     /** The automatic path below the entry point, without slashes, or null for no page in this context. */
-    public function path(Model $resource, SeoContext $context): ?string;
+    public function path(Model $resource, SalesContext $context): ?string;
 
     /** Whether the page can be shown in this context right now, e.g. it is published. */
-    public function isAvailable(Model $resource, SeoContext $context): bool;
+    public function isAvailable(Model $resource, SalesContext $context): bool;
 
     /**
      * Resources whose paths are built from this one's. They are refreshed when its path changes.
@@ -49,5 +49,5 @@ interface SeoResourceType
      *
      * @return array<string, mixed>
      */
-    public function snapshot(Model $resource, SeoContext $context): array;
+    public function snapshot(Model $resource, SalesContext $context): array;
 }
