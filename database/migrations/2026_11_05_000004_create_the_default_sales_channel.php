@@ -49,7 +49,7 @@ return new class extends Migration
                 'port' => $url['port'] ?? null,
                 'prefix' => $prefix,
                 'locale' => $locale->value,
-                'currency' => $currencies[0]->value,
+                'default_currency' => null,
                 'is_primary' => true,
                 'created_at' => $now,
                 'updated_at' => $now,

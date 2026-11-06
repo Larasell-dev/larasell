@@ -39,26 +39,26 @@ final readonly class Storefronts
         return $match === null ? null : $this->context($match);
     }
 
-    /** The storefront context of a sales context, through the primary entry point of its channel, locale and currency. */
+    /** The storefront context of a sales context, through the primary entry point of its channel and locale; it keeps the context's currency. */
     public function for(SalesContext $sales): StorefrontContext
     {
         $entryPoint = array_find($this->entryPoints(), fn (EntryPoint $entryPoint): bool => $entryPoint->primary
-            && $entryPoint->channelId->equals($sales->channelId) && $entryPoint->locale === $sales->locale && $entryPoint->currency === $sales->currency);
+            && $entryPoint->channelId->equals($sales->channelId) && $entryPoint->locale === $sales->locale);
 
         if (($this->channels->channel($sales->channelId)['type'] ?? null) !== StorefrontContext::TYPE) {
             throw new LogicException("The sales channel [{$sales->channel}] is not a storefront, so it has no entry points.");
         }
 
         if ($entryPoint === null) {
-            throw new LogicException("The sales channel [{$sales->channel}] has no entry point in [{$sales->locale->value}, {$sales->currency->value}].");
+            throw new LogicException("The sales channel [{$sales->channel}] has no entry point in [{$sales->locale->value}].");
         }
 
         return new StorefrontContext($sales, $entryPoint);
     }
 
     /**
-     * One context per active storefront channel and locale that has an entry point, through the
-     * primary entry point of the channel's default currency where it has one.
+     * One context per active storefront channel and locale that has an entry point, through its
+     * primary entry point, in the currency that entry point starts visits in.
      *
      * @return list<StorefrontContext>
      */
@@ -73,14 +73,10 @@ final readonly class Storefronts
                 continue;
             }
 
-            $key = $entryPoint->channelId->value.'|'.$entryPoint->locale->value;
-
-            if (! isset($contexts[$key]) || $entryPoint->currency === $channel['default_currency']) {
-                $contexts[$key] = $this->context($entryPoint);
-            }
+            $contexts[] = $this->context($entryPoint);
         }
 
-        return array_values($contexts);
+        return $contexts;
     }
 
     /** Drops the cached entry points. */
@@ -89,9 +85,10 @@ final readonly class Storefronts
         $this->cache->forget(self::CACHE_KEY);
     }
 
+    /** A visit through the entry point, in the currency it starts in: its own default, else the channel's. */
     private function context(EntryPoint $entryPoint): StorefrontContext
     {
-        return new StorefrontContext($this->channels->for($entryPoint->channelId, $entryPoint->locale, $entryPoint->currency), $entryPoint);
+        return new StorefrontContext($this->channels->for($entryPoint->channelId, $entryPoint->locale, $entryPoint->defaultCurrency), $entryPoint);
     }
 
     /** @return list<EntryPoint> */

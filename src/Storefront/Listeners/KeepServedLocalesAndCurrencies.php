@@ -7,7 +7,7 @@ use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
 
-/** Refuses, inside UpdateSalesChannel's transaction, to drop a locale or currency an entry point still serves. */
+/** Refuses, inside UpdateSalesChannel's transaction, to drop a locale an entry point serves or a currency one starts visits in. */
 final class KeepServedLocalesAndCurrencies
 {
     public function handle(SalesChannelUpdated $event): void
@@ -20,11 +20,18 @@ final class KeepServedLocalesAndCurrencies
         $locales = $channel->locales();
         $currencies = $channel->currencies();
         $orphan = EntryPoint::query()->where('sales_channel_id', $channel->id)->orderBy('id')->get()->first(
-            fn (EntryPoint $entryPoint): bool => ! in_array($entryPoint->locale, $locales, true) || ! in_array($entryPoint->currency, $currencies, true),
+            fn (EntryPoint $entryPoint): bool => ! in_array($entryPoint->locale, $locales, true)
+                || ($entryPoint->default_currency !== null && ! in_array($entryPoint->default_currency, $currencies, true)),
         );
 
-        if ($orphan !== null) {
-            throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still serves [{$orphan->locale->value}, {$orphan->currency->value}]; delete it first.");
+        if ($orphan === null) {
+            return;
         }
+
+        if (! in_array($orphan->locale, $locales, true)) {
+            throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still serves [{$orphan->locale->value}]; delete it first.");
+        }
+
+        throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still starts visits in [{$orphan->default_currency?->value}]; delete it first.");
     }
 }

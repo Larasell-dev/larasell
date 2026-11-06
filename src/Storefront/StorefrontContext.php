@@ -13,7 +13,8 @@ use LogicException;
 /**
  * A sales context reached through a storefront entry point: what the storefront and anything that
  * builds absolute URLs, such as links in emails or SEO, needs. Only storefront channels have one, and
- * its entry point always belongs to the context's channel, locale and currency.
+ * its entry point always belongs to the context's channel and locale. The currency is not part of the URL:
+ * any of the channel's currencies can be used through any of its entry points.
  */
 final readonly class StorefrontContext
 {
@@ -37,20 +38,29 @@ final readonly class StorefrontContext
             throw new LogicException("The entry point [{$entryPoint->url()}] belongs to another sales channel than [{$sales->channel}].");
         }
 
-        if ($entryPoint->locale !== $sales->locale || $entryPoint->currency !== $sales->currency) {
-            throw new LogicException("The entry point [{$entryPoint->url()}] serves [{$entryPoint->locale->value}, {$entryPoint->currency->value}], not [{$sales->locale->value}, {$sales->currency->value}].");
+        if ($entryPoint->locale !== $sales->locale) {
+            throw new LogicException("The entry point [{$entryPoint->url()}] serves [{$entryPoint->locale->value}], not [{$sales->locale->value}].");
         }
     }
 
     /**
-     * The storefront context of a sales context, or of a channel (key or ID) in a locale, through the
-     * channel's primary entry point for that locale and currency.
+     * The storefront context of a sales context, or of a channel (key or ID) in a locale and optionally a
+     * currency, through the channel's primary entry point for that locale.
      */
     public static function for(SalesContext|string|SalesChannelId $channel, Locale|string|null $locale = null, ?Currency $currency = null): self
     {
         $sales = $channel instanceof SalesContext ? $channel : SalesContext::for($channel, $locale ?? throw new LogicException('Pass a locale with the channel.'), $currency);
 
         return app(Storefronts::class)->for($sales);
+    }
+
+    /**
+     * The same visit in another of the channel's currencies, e.g. the one the visitor picked or their cart
+     * is in. The URL stays the same. Throws InvalidSalesChannel for a currency the channel does not sell in.
+     */
+    public function withCurrency(Currency $currency): self
+    {
+        return new self(SalesContext::for($this->sales->channelId, $this->sales->locale, $currency), $this->entryPoint);
     }
 
     /** The storefront context of the current request or of the job it queued, or null outside of both. */

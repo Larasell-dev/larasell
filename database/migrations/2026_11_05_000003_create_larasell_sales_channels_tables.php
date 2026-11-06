@@ -42,14 +42,15 @@ return new class extends Migration
             $table->unsignedInteger('port')->nullable();
             $table->string('prefix')->default('');
             $table->string('locale', 35);
-            $table->string('currency', 3);
+            // The currency a visit starts in until the visitor picks another of the channel's; NULL for the channel's default.
+            $table->string('default_currency', 3)->nullable();
             // true on the primary entry point, NULL on all others: the unique index then allows one primary
-            // per channel, locale and currency, and any number of others, because NULLs never collide.
+            // per channel and locale, and any number of others, because NULLs never collide.
             $table->boolean('is_primary')->nullable();
             $table->timestamps();
 
             $table->unique(['host', 'prefix'], 'larasell_entry_points_url_unique');
-            $table->unique(['sales_channel_id', 'locale', 'currency', 'is_primary'], 'larasell_entry_points_one_primary_unique');
+            $table->unique(['sales_channel_id', 'locale', 'is_primary'], 'larasell_entry_points_one_primary_unique');
         });
     }
 
