@@ -16,12 +16,18 @@ abstract class DatabaseOrderNumberSequence implements OrderNumberSequence
         $this->assertName($name);
 
         $start = $this->start();
+        $retry = false;
 
         while (true) {
-            $highest = $this->database->table('larasell_order_number_sequences')
-                ->where('name', $name)
-                ->max('number');
+            $query = $this->database->table('larasell_order_number_sequences')->where('name', $name);
+            // Checkout calls this in a transaction. Under MySQL's and MariaDB's REPEATABLE READ, a plain
+            // read keeps returning the transaction's first snapshot, which misses the number another
+            // checkout just claimed, so the retry would collide forever. A locking read sees it.
+            $highest = $retry
+                ? $query->orderByDesc('number')->lockForUpdate()->value('number')
+                : $query->max('number');
             $next = max($start, (int) $highest + 1);
+            $retry = true;
 
             try {
                 $this->database->table('larasell_order_number_sequences')->insert([
