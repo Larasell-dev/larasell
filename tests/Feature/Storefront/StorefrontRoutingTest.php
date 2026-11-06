@@ -90,8 +90,14 @@ it('leaves routes outside the storefront on the same host alone', function () {
     shopRoutes();
     Route::middleware('web')->get('admin/orders/{order}', fn (string $order) => 'admin '.$order);
 
+    Route::middleware('web')->get('admin/{any}', fn () => 'admin not found')->where('any', '.*')->fallback();
+    Route::fallback(fn () => 'app not found');
+
     $this->get('https://shop.de/admin/orders/A-1')->assertOk()->assertSee('admin A-1');
+    // The admin's own catch-all answers below admin/; the app's root one leaves the storefront alone.
+    $this->get('https://shop.de/admin/missing')->assertSee('admin not found');
     $this->get('https://shop.de/orders/A-1')->assertOk()->assertSee('order A-1');
+    $this->get('https://shop.de/warenkorb')->assertOk()->assertSee('cart https://shop.de/warenkorb');
 });
 
 it('builds storefront URLs for any context, and refuses without one', function () {
