@@ -185,16 +185,16 @@ it('keeps a custom URL through renames until it is reset', function () {
     ]);
 });
 
-it('rejects a custom URL that another page uses or that is malformed', function (string $path, string $message) {
+it('rejects a custom URL that another page uses or that is malformed, and says why', function (string $path, string $reason) {
     seoProduct('Boots');
     $product = seoProduct('Shoes');
 
     expect(fn () => app(SeoUrlManager::class)->setCustom($product, seoContext(), $path))
-        ->toThrow(InvalidSeoPath::class, $message);
+        ->toThrow(fn (InvalidSeoPath $e) => expect($e->reason)->toBe($reason));
 })->with([
-    'taken' => ['p/boots', 'already used'],
-    'query string' => ['sale?page=2', 'not a valid'],
-    'spaces' => ['winter sale', 'not a valid'],
+    'taken' => ['p/boots', InvalidSeoPath::TAKEN],
+    'query string' => ['sale?page=2', InvalidSeoPath::MALFORMED],
+    'spaces' => ['winter sale', InvalidSeoPath::MALFORMED],
 ]);
 
 it('moves the URLs of child categories along with their parent', function () {
