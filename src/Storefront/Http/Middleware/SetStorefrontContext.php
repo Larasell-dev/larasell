@@ -69,6 +69,12 @@ final readonly class SetStorefrontContext
             return false;
         }
 
-        return ! $route->isFallback && StorefrontRoutes::localeOf($route) === null;
+        if (StorefrontRoutes::localeOf($route) !== null) {
+            return false;
+        }
+
+        // A catch-all at the root, such as the app's Route::fallback(), yields to the storefront.
+        // One below a fixed path, such as an admin panel's admin/{any}, owns that path.
+        return ! $route->isFallback || ! str_starts_with($route->uri(), '{');
     }
 }
