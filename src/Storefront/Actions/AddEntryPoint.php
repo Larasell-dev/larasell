@@ -16,7 +16,8 @@ use Larasell\Larasell\Storefront\StorefrontContext;
 use Larasell\Larasell\Storefront\Storefronts;
 
 /**
- * Lets a storefront channel be reached through a host plus optional prefix in one locale and currency.
+ * Lets a storefront channel be reached through a host plus optional prefix in one locale, optionally
+ * starting visits in a currency other than the channel's default.
  * Routes need no change: SetStorefrontContext finds the new entry point on the next request.
  */
 final readonly class AddEntryPoint
@@ -28,8 +29,8 @@ final readonly class AddEntryPoint
     ) {}
 
     /**
-     * @param  array{url: string, locale: Locale|string, currency?: Currency|string, primary?: bool}  $input  The first entry point of
-     *                                                                                                        its locale and currency is the primary one; pass primary to make a later one primary
+     * @param  array{url: string, locale: Locale|string, default_currency?: Currency|string|null, primary?: bool}  $input  The first
+     *                                                                                                                     entry point of its locale is the primary one; pass primary to make a later one primary
      */
     public function handle(SalesChannelId $channelId, array $input): EntryPoint
     {
@@ -41,10 +42,9 @@ final readonly class AddEntryPoint
             }
 
             $locale = $this->rules->locale($input['locale']);
-            $currency = $this->rules->currency($input['currency'] ?? $channel->default_currency);
+            $currency = isset($input['default_currency']) ? $this->rules->currency($input['default_currency']) : null;
             $url = $this->url($input['url'], $locale, $currency, $channel);
-            $others = EntryPoint::query()->where('sales_channel_id', $channel->id)
-                ->where('locale', $locale->value)->where('currency', $currency->value);
+            $others = EntryPoint::query()->where('sales_channel_id', $channel->id)->where('locale', $locale->value);
             $primary = ($input['primary'] ?? false) || ! (clone $others)->exists();
 
             if ($primary) {
@@ -55,7 +55,7 @@ final readonly class AddEntryPoint
                 ...$url,
                 'sales_channel_id' => $channel->id,
                 'locale' => $locale,
-                'currency' => $currency,
+                'default_currency' => $currency,
                 'is_primary' => $primary ? true : null,
             ]);
 
@@ -70,7 +70,7 @@ final readonly class AddEntryPoint
     }
 
     /** @return array{scheme: string, host: string, port: int|null, prefix: string} */
-    private function url(string $url, Locale $locale, Currency $currency, SalesChannel $channel): array
+    private function url(string $url, Locale $locale, ?Currency $currency, SalesChannel $channel): array
     {
         $parts = parse_url($url);
 
@@ -82,8 +82,8 @@ final readonly class AddEntryPoint
             throw new InvalidSalesChannel("The entry point [{$url}] serves the locale [{$locale->value}], which its channel does not have.");
         }
 
-        if (! in_array($currency, $channel->currencies(), true)) {
-            throw new InvalidSalesChannel("The entry point [{$url}] uses the currency [{$currency->value}], which its channel does not have.");
+        if ($currency !== null && ! in_array($currency, $channel->currencies(), true)) {
+            throw new InvalidSalesChannel("The entry point [{$url}] starts in the currency [{$currency->value}], which its channel does not have.");
         }
 
         $entryPoint = [

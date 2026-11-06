@@ -6,7 +6,10 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 
-/** A host plus an optional path prefix that serves one locale and currency of a sales channel. */
+/**
+ * A host plus an optional path prefix that serves one locale of a sales channel. Currency is not part of
+ * the URL: a visit starts in the default currency and may switch to any other the channel sells in.
+ */
 final readonly class EntryPoint
 {
     public function __construct(
@@ -18,8 +21,9 @@ final readonly class EntryPoint
         /** The path prefix without slashes, e.g. "fr", or "" for none. */
         public string $prefix,
         public Locale $locale,
-        public Currency $currency,
-        /** The entry point StorefrontContext::for() uses for its channel, locale and currency. */
+        /** The currency a visit starts in, or null for the channel's default currency. */
+        public ?Currency $defaultCurrency,
+        /** The entry point StorefrontContext::for() uses for its channel and locale. */
         public bool $primary,
     ) {}
 

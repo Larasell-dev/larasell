@@ -10,7 +10,7 @@ use Larasell\Larasell\Storefront\Events\EntryPointDeleted;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
 use Larasell\Larasell\Storefront\Storefronts;
 
-/** Deletes an entry point. When it was primary, the oldest other one of its locale and currency takes over. */
+/** Deletes an entry point. When it was primary, the oldest other one of its locale takes over. */
 final readonly class DeleteEntryPoint
 {
     public function __construct(
@@ -29,7 +29,7 @@ final readonly class DeleteEntryPoint
 
             if ($entryPoint->is_primary === true) {
                 EntryPoint::query()->where('sales_channel_id', $channelId)
-                    ->where('locale', $entryPoint->locale->value)->where('currency', $entryPoint->currency->value)
+                    ->where('locale', $entryPoint->locale->value)
                     ->orderBy('id')->first()?->update(['is_primary' => true]);
             }
 

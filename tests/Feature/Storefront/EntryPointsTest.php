@@ -55,7 +55,7 @@ it('checks an entry point before saving it', function (array $input, string $mes
     expect(fn () => app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), $input))->toThrow(InvalidSalesChannel::class, $message);
 })->with([
     'locale the channel lacks' => [['url' => 'https://shop.ch/en', 'locale' => 'en'], 'locale [en]'],
-    'currency the channel lacks' => [['url' => 'https://shop.ch/eur', 'locale' => 'de', 'currency' => 'EUR'], 'currency [EUR]'],
+    'default currency the channel lacks' => [['url' => 'https://shop.ch/eur', 'locale' => 'de', 'default_currency' => 'EUR'], 'currency [EUR]'],
     'taken by another channel' => [['url' => 'http://localhost', 'locale' => 'de'], 'already'],
     'no host' => [['url' => '/de', 'locale' => 'de'], 'scheme and a host'],
 ]);
@@ -76,14 +76,14 @@ it('refuses an entry point of another channel or locale in a storefront context'
     $de = StorefrontContext::for('ch', 'de');
 
     expect(fn () => new StorefrontContext(SalesContext::for('default', 'en'), $de->entryPoint))->toThrow(LogicException::class, 'belongs to')
-        ->and(fn () => new StorefrontContext(SalesContext::for('ch', 'fr-CH'), $de->entryPoint))->toThrow(LogicException::class, 'serves [de, CHF]');
+        ->and(fn () => new StorefrontContext(SalesContext::for('ch', 'fr-CH'), $de->entryPoint))->toThrow(LogicException::class, 'serves [de]');
 });
 
 it('refuses unknown channel types', function () {
     app(CreateSalesChannel::class)->handle(['key' => 'x', 'name' => 'X', 'type' => 'carrier-pigeon', 'locales' => ['de'], 'currencies' => ['CHF']]);
 })->throws(InvalidSalesChannel::class, 'no sales channel type [carrier-pigeon]');
 
-it('makes the first entry point per locale and currency the primary one, and the next one when it goes', function () {
+it('makes the first entry point per locale the primary one, and the next one when it goes', function () {
     $channel = swissStorefront();
     $www = app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://www.shop.ch', 'locale' => 'de']);
 
@@ -138,4 +138,27 @@ it('links a cart or order back through the primary entry point of its channel an
     $cart = Cart::createIn(SalesContext::for('ch', 'fr-CH'));
 
     expect(StorefrontContext::for($cart->sales_context)->url('panier'))->toBe('https://shop.ch/fr/panier');
+});
+
+it('sells in every currency of the channel through one entry point, starting in its default', function () {
+    $channel = swissStorefront();
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['currencies' => ['CHF', 'EUR']]);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.eu', 'locale' => 'de', 'default_currency' => 'EUR']);
+    $resolve = fn (string $url): ?StorefrontContext => app(Storefronts::class)->resolve(Request::create($url));
+
+    // shop.ch starts in the channel's default, shop.eu in its own; either can switch on the same URL.
+    expect($resolve('https://shop.ch/p/stiefel')?->sales->currency)->toBe(Currency::CHF)
+        ->and($resolve('https://shop.eu/p/stiefel')?->sales->currency)->toBe(Currency::EUR)
+        ->and($resolve('https://shop.ch/p/stiefel')?->withCurrency(Currency::EUR)->url('p/stiefel'))->toBe('https://shop.ch/p/stiefel')
+        ->and(StorefrontContext::for('ch', 'de', Currency::EUR)->entryPoint->host)->toBe('shop.ch')
+        ->and(fn () => $resolve('https://shop.ch')?->withCurrency(Currency::USD))->toThrow(InvalidSalesChannel::class);
+});
+
+it('keeps a channel from dropping a currency an entry point starts visits in', function () {
+    $channel = swissStorefront();
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['currencies' => ['CHF', 'EUR']]);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.eu', 'locale' => 'de', 'default_currency' => 'EUR']);
+
+    expect(fn () => app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['currencies' => ['CHF']]))
+        ->toThrow(InvalidSalesChannel::class, 'starts visits in [EUR]');
 });

@@ -17,6 +17,7 @@ final readonly class EntryPointCreated
         public EntryPointId $entryPointId,
         public SalesChannelId $channelId,
         public Locale $locale,
-        public Currency $currency,
+        /** The currency a visit starts in, or null for the channel's default. */
+        public ?Currency $defaultCurrency,
     ) {}
 }
