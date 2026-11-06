@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
@@ -9,12 +10,16 @@ use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
+use Larasell\Larasell\SalesChannels\Actions\DeleteSalesChannel;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
 use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
+use Larasell\Larasell\SalesChannels\SalesChannelInUse;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Settings\CurrencySettings;
+use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
 
 beforeEach(function () {
     config()->set('larasell.locale.supported', ['en', 'de', 'fr-CH']);
@@ -113,4 +118,38 @@ it('creates a cart only in a context it is given, not in one that happens to be 
 
     expect(fn () => Cart::query()->create())->toThrow(LogicException::class, 'Cart::createIn(')
         ->and(Cart::createIn(SalesContext::for('default', 'en'))->fresh()->sales_context->channel)->toBe('default');
+});
+
+it('deletes a channel with its locales, currencies and entry points, and announces it', function () {
+    Event::fake([SalesChannelDeleted::class]);
+    $channel = createSalesChannel();
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.ch', 'locale' => 'de']);
+
+    app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel));
+
+    expect(SalesChannel::query()->whereKey($channel->id)->exists())->toBeFalse()
+        ->and(DB::table('larasell_sales_channel_locales')->where('sales_channel_id', $channel->id)->exists())->toBeFalse()
+        ->and(DB::table('larasell_storefront_entry_points')->where('sales_channel_id', $channel->id)->exists())->toBeFalse()
+        ->and(fn () => SalesContext::for('ch', 'de'))->toThrow(InvalidSalesChannel::class);
+    Event::assertDispatched(SalesChannelDeleted::class, fn (SalesChannelDeleted $event) => $event->channelId->equals(SalesChannelId::of($channel)) && $event->key === 'ch');
+});
+
+it('refuses to delete the last channel, or one that carts or orders were made in', function () {
+    $default = SalesChannelId::of(SalesChannel::query()->where('key', 'default')->sole());
+
+    expect(fn () => app(DeleteSalesChannel::class)->handle($default))->toThrow(InvalidSalesChannel::class, 'last one');
+
+    $channel = createSalesChannel();
+    $product = app(CreateProduct::class)->handle(['name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5]);
+    $cart = Cart::createIn(SalesContext::for('ch', 'de'));
+    $cart->add($product, 1);
+
+    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel)))->toThrow(SalesChannelInUse::class, '1 carts');
+
+    app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A']);
+    $cart->delete();
+
+    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel)))->toThrow(SalesChannelInUse::class, '1 orders')
+        ->and(SalesChannel::query()->whereKey($channel->id)->exists())->toBeTrue()
+        ->and(SalesContext::for('ch', 'de')->channel)->toBe('ch');
 });
