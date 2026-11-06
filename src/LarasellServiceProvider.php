@@ -8,8 +8,10 @@ use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
+use Larasell\Larasell\Carts\Listeners\KeepChannelsWithCarts;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Checkout\Listeners\KeepChannelsWithOrders;
 use Larasell\Larasell\Checkout\Listeners\KeepProductsOfOpenOrders;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PlaceholderGenerator;
@@ -36,6 +38,7 @@ use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
@@ -105,6 +108,8 @@ class LarasellServiceProvider extends ServiceProvider
         // Rules other modules set for the catalog; they throw inside the catalog action's transaction.
         Event::listen(ProductDeleted::class, KeepProductsOfOpenOrders::class);
         Event::listen(ProductDeleted::class, KeepReservedProducts::class);
+        Event::listen(SalesChannelDeleted::class, KeepChannelsWithCarts::class);
+        Event::listen(SalesChannelDeleted::class, KeepChannelsWithOrders::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
