@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Contracts\Database\Eloquent\ComparesCastableAttributes;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use JsonException;
@@ -12,7 +13,7 @@ use Larasell\Larasell\Translatable;
 /**
  * @implements CastsAttributes<Translatable, Translatable|non-empty-array<string, string>|string>
  */
-class TranslatableCast implements CastsAttributes
+class TranslatableCast implements CastsAttributes, ComparesCastableAttributes
 {
     public function get(Model $model, string $key, mixed $value, array $attributes): Translatable
     {
@@ -46,5 +47,28 @@ class TranslatableCast implements CastsAttributes
         }
 
         return json_encode($value->all(), JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Whether two stored values hold the same translations. MySQL and MariaDB normalize JSON, e.g.
+     * {"en": "Boots"} with a space and keys reordered, so the stored strings can differ while the
+     * translations don't, and Eloquent would see a change that isn't one.
+     */
+    public function compare(Model $model, string $key, mixed $firstValue, mixed $secondValue): bool
+    {
+        return self::decode($firstValue) == self::decode($secondValue);
+    }
+
+    private static function decode(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        try {
+            return json_decode($value, true, flags: JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return $value;
+        }
     }
 }
