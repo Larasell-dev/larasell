@@ -4,7 +4,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProductVariant;
 use Larasell\Larasell\Catalog\Actions\DeleteProduct;
 use Larasell\Larasell\Catalog\Actions\DeleteProductVariant;
@@ -13,6 +15,7 @@ use Larasell\Larasell\Catalog\Actions\SetProductAttributeValues;
 use Larasell\Larasell\Catalog\Actions\SetProductCategories;
 use Larasell\Larasell\Catalog\Actions\SetProductImages;
 use Larasell\Larasell\Catalog\Actions\UpdateProduct;
+use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
 use Larasell\Larasell\Catalog\Actions\UpdateProductVariant;
 use Larasell\Larasell\Catalog\AttributeId;
 use Larasell\Larasell\Catalog\AttributeValueId;
@@ -36,7 +39,13 @@ use Larasell\Larasell\Price;
 
 function createProduct(string $name = 'Boots', array $attributes = []): Product
 {
-    return app(CreateProduct::class)->handle(['name' => ['en' => $name], 'price' => Price::of(1000), ...$attributes]);
+    return app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => $name], 'price' => Price::of(1000), ...$attributes]));
+}
+
+/** What an app passes along with a product action for its own listeners. */
+final readonly class ProductNote
+{
+    public function __construct(public string $text) {}
 }
 
 beforeEach(function () {
@@ -65,10 +74,10 @@ it('dispatches catalog events inside the write, so a failing listener undoes it'
 it('updates the stored product, not a stale copy, and names the changed attributes', function () {
     $product = createProduct('Boots', ['sku' => 'B-1']);
     $stale = Product::query()->findOrFail($product->id);
-    app(UpdateProduct::class)->handle(ProductId::of($product), ['sku' => 'B-2']);
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['sku' => 'B-2']));
     Event::fake([ProductUpdated::class]);
 
-    $updated = app(UpdateProduct::class)->handle(ProductId::of($stale), ['name' => ['en' => 'Leather Boots']]);
+    $updated = app(UpdateProduct::class)->handle(ProductId::of($stale), new UpdateProductPayload(['name' => ['en' => 'Leather Boots']]));
 
     expect($updated->sku)->toBe('B-2')
         ->and($updated->name->get('en'))->toBe('Leather Boots')
@@ -81,7 +90,7 @@ it('announces nothing when an update changes nothing', function () {
     $product = createProduct('Boots');
     Event::fake([ProductUpdated::class]);
 
-    app(UpdateProduct::class)->handle(ProductId::of($product), ['name' => ['en' => 'Boots']]);
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => 'Boots']]));
 
     Event::assertNotDispatched(ProductUpdated::class);
 });
@@ -90,7 +99,7 @@ it('announces a rename to a name that only looks equal as a number', function (s
     $product = createProduct($before);
     Event::fake([ProductUpdated::class]);
 
-    $updated = app(UpdateProduct::class)->handle(ProductId::of($product), ['name' => ['en' => $after]]);
+    $updated = app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => $after]]));
 
     expect($updated->fresh()?->name->get('en'))->toBe($after);
     Event::assertDispatched(ProductUpdated::class, fn (ProductUpdated $event): bool => $event->changed === ['name']);
@@ -104,7 +113,7 @@ it('refuses to update a product that was deleted meanwhile', function () {
     $product = createProduct('Boots');
     app(DeleteProduct::class)->handle(ProductId::of($product));
 
-    app(UpdateProduct::class)->handle(ProductId::of($product), ['name' => ['en' => 'Leather Boots']]);
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => 'Leather Boots']]));
 })->throws(ModelNotFoundException::class);
 
 it('deletes a product and announces what listeners need to know about it', function () {
@@ -189,4 +198,27 @@ it('creates a single variant from attribute values', function () {
 
     expect(ProductVariant::query()->findOrFail($variantId)->sku)->toBe('S');
     Event::assertDispatched(ProductVariantCreated::class, fn (ProductVariantCreated $event): bool => $event->variantId->equals($variantId));
+});
+
+it('hands what the app passed along to the product\'s events, even when nothing else changed', function () {
+    Event::fake([ProductCreated::class, ProductUpdated::class]);
+
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(
+        ['name' => ['en' => 'Boots'], 'price' => Price::of(1000)],
+        new Attachments(new ProductNote('new')),
+    ));
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(attachments: new Attachments(new ProductNote('edited'))));
+
+    Event::assertDispatched(ProductCreated::class, fn (ProductCreated $event): bool => $event->attachments->get(ProductNote::class)?->text === 'new');
+    Event::assertDispatched(ProductUpdated::class, fn (ProductUpdated $event): bool => $event->changed === []
+        && $event->attachments->get(ProductNote::class)?->text === 'edited');
+});
+
+it('announces no product update when nothing changed and nothing was passed along', function () {
+    $product = createProduct('Boots');
+    Event::fake([ProductUpdated::class]);
+
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => 'Boots']]));
+
+    Event::assertNotDispatched(ProductUpdated::class);
 });

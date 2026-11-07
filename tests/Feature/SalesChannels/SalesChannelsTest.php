@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
@@ -116,9 +117,9 @@ it('gives a context only in a locale and currency of the channel', function (Clo
 it('sells through a channel that has no URL at all', function () {
     $channel = createSalesChannel(['key' => 'pos', 'name' => 'Shop floor']);
     $context = SalesContext::for('pos', Locale::GERMAN);
-    $product = app(CreateProduct::class)->handle([
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload([
         'name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5,
-    ]);
+    ]));
 
     $cart = Cart::createIn($context);
     $cart->add($product, 1);
@@ -173,7 +174,7 @@ it('refuses to delete the last channel, or one that carts or orders were made in
     expect(fn () => app(DeleteSalesChannel::class)->handle($default))->toThrow(InvalidSalesChannel::class, 'last one');
 
     $channel = createSalesChannel();
-    $product = app(CreateProduct::class)->handle(['name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5]);
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5]));
     $cart = Cart::createIn(SalesContext::for('ch', 'de'));
     $cart->add($product, 1);
 

@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\ProductId;
 
 /**
@@ -16,5 +17,7 @@ final readonly class ProductCreated
 
     public function __construct(
         public ProductId $productId,
+        /** What the app passed along with the action for its own listeners. */
+        public Attachments $attachments = new Attachments,
     ) {}
 }

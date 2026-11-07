@@ -8,7 +8,7 @@ use Larasell\Larasell\Catalog\CategoryId;
 
 /**
  * A category changed, other than its place in the tree; $changed names its changed attributes,
- * empty when only extensions were passed along.
+ * empty when only attachments were passed along.
  * Dispatched inside the catalog action's transaction: a sync listener writes in it and can undo it
  * by throwing; implement ShouldHandleEventsAfterCommit or ShouldQueueAfterCommit to run after commit.
  */
