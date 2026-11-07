@@ -3,7 +3,7 @@
 namespace Larasell\Larasell\OrderNumbers;
 
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\Query\Expression;
 use InvalidArgumentException;
 use Larasell\Larasell\Contracts\OrderNumberSequence;
 
@@ -16,31 +16,31 @@ abstract class DatabaseOrderNumberSequence implements OrderNumberSequence
         $this->assertName($name);
 
         $start = $this->start();
-        $retry = false;
 
-        while (true) {
-            $query = $this->database->table('larasell_order_number_sequences')->where('name', $name);
-            // Checkout calls this in a transaction. Under MySQL's and MariaDB's REPEATABLE READ, a plain
-            // read keeps returning the transaction's first snapshot, which misses the number another
-            // checkout just claimed, so the retry would collide forever. A locking read sees it.
-            $highest = $retry
-                ? $query->orderByDesc('number')->lockForUpdate()->value('number')
-                : $query->max('number');
-            $next = max($start, (int) $highest + 1);
-            $retry = true;
+        // Each sequence is one row holding the last number it issued, claimed with a single statement
+        // in the checkout's transaction: its row lock makes concurrent checkouts wait for each other
+        // instead of colliding, and a rolled back checkout gives its number back. It is an upsert, not
+        // an update followed by an insert, because on MySQL two updates that miss a new sequence's
+        // row take gap locks that deadlock both inserts. The column is qualified because PostgreSQL
+        // would otherwise not know whether it means the existing row or the one being inserted.
+        $sequence = $this->database->table('larasell_order_number_sequences')->where('name', $name);
+        $sequence->upsert(
+            ['name' => $name, 'number' => $start],
+            ['name'],
+            ['number' => new Expression('larasell_order_number_sequences.number + 1')],
+        );
 
-            try {
-                $this->database->table('larasell_order_number_sequences')->insert([
-                    'name' => $name,
-                    'number' => $next,
-                    'created_at' => now(),
-                ]);
+        // A transaction always reads its own write, even under REPEATABLE READ.
+        $next = (int) $sequence->clone()->value('number');
 
-                return $next;
-            } catch (UniqueConstraintViolationException) {
-                // Another checkout claimed this number.
-            }
+        if ($next < $start) {
+            // The start was raised past the sequence; this transaction already holds its row.
+            $sequence->update(['number' => $start]);
+
+            return $start;
         }
+
+        return $next;
     }
 
     abstract protected function assertName(string $name): void;
