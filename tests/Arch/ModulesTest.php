@@ -10,7 +10,7 @@
 const MODULE_TIERS = [
     ['SalesChannels' => ['Larasell\Larasell\SalesChannels']],
     ['Storefront' => ['Larasell\Larasell\Storefront']],
-    ['Catalog' => ['Larasell\Larasell\Catalog', 'Larasell\Larasell\Images']],
+    ['Catalog' => ['Larasell\Larasell\Catalog']],
     [
         'Inventory' => ['Larasell\Larasell\Inventory', 'Larasell\Larasell\Models\InventoryReservation'],
         'Taxes' => ['Larasell\Larasell\Taxes'],

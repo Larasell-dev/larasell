@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Storage;
 use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
@@ -13,7 +11,6 @@ use Larasell\Larasell\Catalog\Actions\DeleteProductVariant;
 use Larasell\Larasell\Catalog\Actions\GenerateProductVariants;
 use Larasell\Larasell\Catalog\Actions\SetProductAttributeValues;
 use Larasell\Larasell\Catalog\Actions\SetProductCategories;
-use Larasell\Larasell\Catalog\Actions\SetProductImages;
 use Larasell\Larasell\Catalog\Actions\UpdateProduct;
 use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
 use Larasell\Larasell\Catalog\Actions\UpdateProductVariant;
@@ -26,11 +23,9 @@ use Larasell\Larasell\Catalog\Events\ProductUpdated;
 use Larasell\Larasell\Catalog\Events\ProductVariantCreated;
 use Larasell\Larasell\Catalog\Events\ProductVariantDeleted;
 use Larasell\Larasell\Catalog\Events\ProductVariantUpdated;
-use Larasell\Larasell\Catalog\ImageId;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
-use Larasell\Larasell\Catalog\Models\ProductImage;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Catalog\VariantId;
@@ -47,11 +42,6 @@ final readonly class ProductNote
 {
     public function __construct(public string $text) {}
 }
-
-beforeEach(function () {
-    Storage::fake('product-images');
-    config()->set('larasell.images.disk', 'product-images');
-});
 
 it('creates a product with its default variant and announces it by ID', function () {
     Event::fake([ProductCreated::class]);
@@ -140,14 +130,12 @@ it('keeps the product when a listener of its deletion fails', function () {
         ->and(Product::query()->whereKey($product->id)->exists())->toBeTrue();
 });
 
-it('sets the categories, attribute values and images of a product', function () {
+it('sets the categories and attribute values of a product', function () {
     $product = createProduct('Boots');
     $shoes = Category::query()->create(['name' => ['en' => 'Shoes']]);
     $sale = Category::query()->create(['name' => ['en' => 'Sale']]);
     $size = ProductAttribute::query()->create(['slug' => 'size', 'name' => ['en' => 'Size']]);
     $small = $size->values()->create(['slug' => 's', 'name' => ['en' => 'S'], 'value' => 's']);
-    $front = ProductImage::query()->create(['file' => UploadedFile::fake()->image('front.jpg')]);
-    $side = ProductImage::query()->create(['file' => UploadedFile::fake()->image('side.jpg')]);
     $changes = [];
     Event::listen(ProductUpdated::class, function (ProductUpdated $event) use (&$changes): void {
         $changes[] = $event->changed;
@@ -156,13 +144,11 @@ it('sets the categories, attribute values and images of a product', function () 
     app(SetProductCategories::class)->handle(ProductId::of($product), [CategoryId::of($shoes), CategoryId::of($sale)]);
     app(SetProductCategories::class)->handle(ProductId::of($product), [CategoryId::of($sale), CategoryId::of($shoes)]);
     app(SetProductAttributeValues::class)->handle(ProductId::of($product), [AttributeValueId::of($small)]);
-    app(SetProductImages::class)->handle(ProductId::of($product), [ImageId::of($side), ImageId::of($front)]);
 
     $product = Product::query()->findOrFail($product->id);
     expect($product->categories->modelKeys())->toEqualCanonicalizing([$shoes->id, $sale->id])
         ->and($product->attributeValues->modelKeys())->toBe([$small->id])
-        ->and($product->images->modelKeys())->toBe([$side->id, $front->id])
-        ->and($changes)->toBe([['categories'], ['attribute_values'], ['images']]);
+        ->and($changes)->toBe([['categories'], ['attribute_values']]);
 });
 
 it('creates, updates and deletes variants with an event for each change', function () {

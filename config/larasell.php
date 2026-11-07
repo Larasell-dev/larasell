@@ -3,7 +3,6 @@
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
-use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\OfflinePaymentProvider;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
@@ -14,13 +13,6 @@ use Larasell\Larasell\Taxes\NoTaxCalculator;
 return [
     'carts' => [
         'merge_strategy' => CombineQuantities::class,
-    ],
-
-    'images' => [
-        'disk' => env('LARASELL_IMAGES_DISK', config('filesystems.default')),
-        'path' => env('LARASELL_IMAGES_PATH', 'larasell/products'),
-        'visibility' => env('LARASELL_IMAGES_VISIBILITY', 'public'),
-        'placeholder' => NullPlaceholderGenerator::class,
     ],
 
     'licensing' => [
