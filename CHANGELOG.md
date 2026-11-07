@@ -11,6 +11,34 @@
 
 * remove product images from the core ([e42507f](https://github.com/Larasell-dev/larasell/commit/e42507f7614bf0828903f324ac78bb75da00608e))
 
+### Upgrade guide
+
+#### Product images are gone from the core
+
+The core no longer stores product images. They will come back in a dedicated media module,
+so the old `ProductImage` model and its placeholder system are removed instead of kept alongside.
+
+##### Who is affected
+
+Apps that use any of these: `ProductImage`, `Product::images()`, `Product::$thumbnail`,
+`ProductVariant::$thumbnail`, `CreateProductImage`, `UpdateProductImage`, `DeleteProductImage`,
+`SetProductImages`, the `ProductImageCreated`/`ProductImageUpdated`/`ProductImageDeleted` events,
+`ImageId`, `ProductImageFileCast`, `PlaceholderCast`, `PlaceholderGenerator` and everything in
+`Larasell\Larasell\Images`, the `larasell:refresh-placeholders` command, or the `larasell.images`
+config. `ProductUpdated::$changed` no longer contains `"images"`.
+
+A new migration drops the `larasell_product_images` and `larasell_product_product_image` tables.
+**Their rows are deleted**; the files on the images disk are left in place.
+
+##### How to upgrade
+
+Back up the two tables first if you need the data, remove any code using the classes above,
+remove `images` from a published `config/larasell.php`, and run the migrations:
+
+```sh
+php artisan migrate
+```
+
 ## [1.25.0](https://github.com/Larasell-dev/larasell/compare/v1.24.1...v1.25.0) (2026-11-07)
 
 
