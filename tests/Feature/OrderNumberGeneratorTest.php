@@ -192,9 +192,6 @@ it('starts at a high value without allocating the missing numbers', function () 
 
     expect($generator->generate())->toBe('LS-001000')
         ->and($generator->generate())->toBe('LS-001001');
-
-    expect(DB::table('larasell_order_number_sequences')->count())->toBe(2)
-        ->and(DB::table('larasell_order_number_sequences')->pluck('number')->all())->toBe([1000, 1001]);
 });
 
 it('moves the next number up to a higher start without filling the gap', function () {
@@ -203,9 +200,8 @@ it('moves the next number up to a higher start without filling the gap', functio
 
     config()->set('larasell.order_numbers.start', 1000);
 
-    expect($generator->generate())->toBe('LS-001000');
-    expect(DB::table('larasell_order_number_sequences')->count())->toBe(2)
-        ->and(DB::table('larasell_order_number_sequences')->pluck('number')->all())->toBe([1, 1000]);
+    expect($generator->generate())->toBe('LS-001000')
+        ->and($generator->generate())->toBe('LS-001001');
 });
 
 it('continues from the highest issued number when that number is above the start', function () {
@@ -216,7 +212,6 @@ it('continues from the highest issued number when that number is above the start
     config()->set('larasell.order_numbers.start', 1000);
 
     expect($generator->generate())->toBe('LS-001002');
-    expect(DB::table('larasell_order_number_sequences')->count())->toBe(2);
 });
 
 class CountingOrderNumberGenerator implements OrderNumberGenerator

@@ -100,3 +100,109 @@ it('gives concurrent checkouts different order numbers', function () {
         ->and($numbers)->toHaveCount(2)
         ->and($numbers->unique())->toHaveCount(2);
 });
+
+it('numbers many concurrent checkouts without deadlocks or gaps', function () {
+    if (DB::getDriverName() === 'sqlite') {
+        $this->markTestSkipped('SQLite serialises all writers, so checkouts cannot race.');
+    }
+
+    if (! function_exists('pcntl_fork')) {
+        $this->markTestSkipped('The pcntl extension is required for the concurrency test.');
+    }
+
+    $workers = 8;
+    $checkoutsPerWorker = 25;
+
+    $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+
+    // Every cart buys its own product, so checkouts only contend for the order number.
+    $cartIds = collect(range(1, $workers * $checkoutsPerWorker))->map(function (int $index): int {
+        $product = Product::query()->create([
+            'name' => "Concurrent product {$index}",
+            'price' => Price::of(1000),
+            'stock' => 1,
+            'allow_backorders' => false,
+            'status' => Visibility::Visible,
+        ]);
+        $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
+        $cart->add($product);
+
+        return (int) $cart->getKey();
+    })->chunk($checkoutsPerWorker)->map->values();
+
+    $deadlocksBefore = concurrencyDeadlockCount();
+    DB::disconnect();
+
+    $children = $cartIds->values()->map(function ($workerCartIds, int $worker): array {
+        [$parentSocket, $childSocket] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
+        $pid = pcntl_fork();
+
+        if ($pid === -1) {
+            throw new RuntimeException('Unable to fork checkout process.');
+        }
+
+        if ($pid === 0) {
+            fclose($parentSocket);
+            DB::purge();
+            fwrite($childSocket, "ready\n");
+            fgets($childSocket);
+
+            foreach ($workerCartIds as $cartId) {
+                try {
+                    $result = app(Checkout::class)->create(Cart::query()->findOrFail($cartId), [
+                        'customer_email' => "buyer{$worker}@example.com",
+                        'customer_name' => "Buyer {$worker}",
+                    ]);
+                    fwrite($childSocket, 'succeeded:'.$result->order->number."\n");
+                } catch (Throwable $exception) {
+                    fwrite($childSocket, 'failed:'.str_replace("\n", ' ', $exception->getMessage())."\n");
+                }
+            }
+
+            fclose($childSocket);
+            exit(0);
+        }
+
+        fclose($childSocket);
+        stream_set_timeout($parentSocket, 60);
+
+        return [$pid, $parentSocket];
+    });
+
+    $children->each(fn (array $child) => expect(fgets($child[1]))->toBe("ready\n"));
+    $children->each(fn (array $child) => fwrite($child[1], "go\n"));
+
+    $results = $children->flatMap(function (array $child): array {
+        [$pid, $socket] = $child;
+        $lines = explode("\n", trim((string) stream_get_contents($socket)));
+        fclose($socket);
+        pcntl_waitpid($pid, $status);
+
+        expect(pcntl_wifexited($status))->toBeTrue()
+            ->and(pcntl_wexitstatus($status))->toBe(0);
+
+        return $lines;
+    });
+
+    DB::purge();
+
+    $total = $workers * $checkoutsPerWorker;
+    $expectedNumbers = collect(range(1, $total))->map(fn (int $number): string => sprintf('LS-%06d', $number))->all();
+
+    expect($results->reject(fn (string $result): bool => str_starts_with($result, 'succeeded:'))->values()->all())->toBe([])
+        ->and($results)->toHaveCount($total)
+        ->and(Order::query()->orderBy('number')->pluck('number')->all())->toBe($expectedNumbers)
+        ->and(concurrencyDeadlockCount())->toBe($deadlocksBefore);
+});
+
+/** The number of deadlocks the database server has detected so far. */
+function concurrencyDeadlockCount(): int
+{
+    if (DB::getDriverName() === 'pgsql') {
+        DB::statement('SELECT pg_stat_clear_snapshot()');
+
+        return (int) DB::scalar('SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()');
+    }
+
+    return (int) DB::scalar("SELECT `count` FROM information_schema.INNODB_METRICS WHERE name = 'lock_deadlocks'");
+}
