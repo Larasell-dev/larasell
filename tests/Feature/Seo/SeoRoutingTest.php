@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
@@ -16,6 +18,7 @@ use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\SeoUrlManager;
+use Larasell\Larasell\Translatable;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -33,11 +36,11 @@ function routedProduct(array|string $name, Visibility $status = Visibility::Visi
 
 function routedCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
 {
-    return app(CreateCategory::class)->handle([
-        'parent_id' => $parent?->getKey(),
-        'name' => ['en' => $name],
-        'status' => $status,
-    ]);
+    return app(CreateCategory::class)->handle(new CreateCategoryPayload(
+        name: new Translatable(['en' => $name]),
+        status: $status,
+        parentId: $parent === null ? null : CategoryId::of($parent),
+    ));
 }
 
 function storefrontRoutes(): void

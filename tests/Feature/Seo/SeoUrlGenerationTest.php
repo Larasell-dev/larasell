@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
@@ -15,6 +16,7 @@ use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Settings\CurrencySettings;
 use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
 use Larasell\Larasell\Storefront\StorefrontContext;
+use Larasell\Larasell\Translatable;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -70,7 +72,7 @@ it('has no URL where the page has none, and no available URL for hidden pages', 
 
 it('loads the URLs of a listing in one query per kind of page', function () {
     $products = collect(range(1, 5))->map(fn (int $i) => linkedProduct(['en' => "Boots {$i}"]));
-    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes']]);
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
     $unsaved = new Product(['name' => ['en' => 'Unsaved']]);
     $unsaved->id = 999;
 
