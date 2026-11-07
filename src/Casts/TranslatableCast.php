@@ -56,7 +56,8 @@ class TranslatableCast implements CastsAttributes, ComparesCastableAttributes
      */
     public function compare(Model $model, string $key, mixed $firstValue, mixed $secondValue): bool
     {
-        return self::decode($firstValue) == self::decode($secondValue);
+        // Strict, so "10" and "1e1" differ; sorted, since the key order is all MySQL may change.
+        return self::decode($firstValue) === self::decode($secondValue);
     }
 
     private static function decode(mixed $value): mixed
@@ -66,9 +67,15 @@ class TranslatableCast implements CastsAttributes, ComparesCastableAttributes
         }
 
         try {
-            return json_decode($value, true, flags: JSON_THROW_ON_ERROR);
+            $decoded = json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return $value;
         }
+
+        if (is_array($decoded)) {
+            ksort($decoded);
+        }
+
+        return $decoded;
     }
 }
