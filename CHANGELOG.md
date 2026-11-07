@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.26.0](https://github.com/Larasell-dev/larasell/compare/v1.25.0...v1.26.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove product images from the core
+
+### Code Refactoring
+
+* remove product images from the core ([e42507f](https://github.com/Larasell-dev/larasell/commit/e42507f7614bf0828903f324ac78bb75da00608e))
+
 ## [1.25.0](https://github.com/Larasell-dev/larasell/compare/v1.24.1...v1.25.0) (2026-11-07)
 
 
