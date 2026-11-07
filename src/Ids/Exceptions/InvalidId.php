@@ -2,11 +2,10 @@
 
 namespace Larasell\Larasell\Ids\Exceptions;
 
-use Larasell\Larasell\Ids\Id;
-
 use InvalidArgumentException;
 use Larasell\Chronicle\Exceptions\HasStructuredException;
 use Larasell\Chronicle\Exceptions\StructuredException;
+use Larasell\Larasell\Ids\Id;
 
 final class InvalidId extends InvalidArgumentException implements StructuredException
 {
