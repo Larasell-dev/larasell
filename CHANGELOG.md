@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.25.0](https://github.com/Larasell-dev/larasell/compare/v1.24.1...v1.25.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* give custom URLs per channel and name the channel of a rejected one
+* save custom URLs from attachments on the catalog payloads
+* take payloads in the category actions
+* move module exceptions to Exceptions namespaces as structured errors
+* claim order numbers from one counter row per sequence
+* check the sales channel key in CreateSalesChannel
+
+### Features
+
+* check the sales channel key in CreateSalesChannel ([e1a85c8](https://github.com/Larasell-dev/larasell/commit/e1a85c8d62ef12b27ecbe08694a1b243f10cf085))
+* give custom URLs per channel and name the channel of a rejected one ([85416e3](https://github.com/Larasell-dev/larasell/commit/85416e34a3b5f460ae34de25625f9034378bbc69))
+* save custom URLs from attachments on the catalog payloads ([5ba98ce](https://github.com/Larasell-dev/larasell/commit/5ba98cefa7d74aa5d762881f6ec7b616754c558b))
+* take payloads in the category actions ([7fc571a](https://github.com/Larasell-dev/larasell/commit/7fc571aa2aa8b7ff04d6fa9a6ae0e9a00bd489f5))
+
+
+### Bug Fixes
+
+* claim order numbers from one counter row per sequence ([be853c3](https://github.com/Larasell-dev/larasell/commit/be853c3d419ee7d288808da82c7f5f1a8dc782f9))
+
+
+### Code Refactoring
+
+* move module exceptions to Exceptions namespaces as structured errors ([b3eb8cc](https://github.com/Larasell-dev/larasell/commit/b3eb8cc032446a892fd7a5e79a760e7b8994b78e))
+
 ## [1.24.1](https://github.com/Larasell-dev/larasell/compare/v1.24.0...v1.24.1) (2026-11-07)
 
 
