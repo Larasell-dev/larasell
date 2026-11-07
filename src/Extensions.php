@@ -2,6 +2,8 @@
 
 namespace Larasell\Larasell;
 
+use Larasell\Larasell\Exceptions\DuplicateExtension;
+
 /**
  * What an app passes along with an action for its own listeners, one object per class, e.g. the
  * custom URLs an admin form typed. The action hands it to its event untouched; the core never
@@ -12,11 +14,18 @@ final readonly class Extensions
     /** @var array<class-string, object> */
     private array $items;
 
+    /**
+     * @throws DuplicateExtension when two objects share a class
+     */
     public function __construct(object ...$items)
     {
         $byClass = [];
 
         foreach ($items as $item) {
+            if (isset($byClass[$item::class])) {
+                throw DuplicateExtension::of($item::class);
+            }
+
             $byClass[$item::class] = $item;
         }
 
