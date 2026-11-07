@@ -5,6 +5,7 @@
   "versioning": "always-bump-patch",
   "include-component-in-tag": false,
   "include-v-in-tag": true,
+  "pull-request-title-pattern": "chore: release ${version}",
   "packages": {
     ".": {
       "package-name": "larasell"
