@@ -91,10 +91,18 @@ final readonly class Storefronts
         return new StorefrontContext($this->channels->for($entryPoint->channelId, $entryPoint->locale, $entryPoint->defaultCurrency), $entryPoint);
     }
 
-    /** @return list<EntryPoint> */
+    /**
+     * Cached as plain rows, since apps may let their cache unserialize no classes
+     * (cache.serializable_classes, false in new Laravel apps).
+     *
+     * @return list<EntryPoint>
+     */
     private function entryPoints(): array
     {
-        return $this->cache->rememberForever(self::CACHE_KEY, fn (): array => array_values(EntryPointModel::query()->orderBy('id')->get()
-            ->map(fn (EntryPointModel $entryPoint): EntryPoint => $entryPoint->toEntryPoint())->all()));
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->cache->rememberForever(self::CACHE_KEY, fn (): array => EntryPointModel::query()->orderBy('id')->get()
+            ->map(fn (EntryPointModel $entryPoint): array => $entryPoint->getAttributes())->all());
+
+        return array_map(fn (array $row): EntryPoint => (new EntryPointModel)->newFromBuilder($row)->toEntryPoint(), $rows);
     }
 }
