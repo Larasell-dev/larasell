@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
@@ -10,6 +11,7 @@ use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
 use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
+use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Settings\CurrencySettings;
@@ -161,4 +163,19 @@ it('keeps a channel from dropping a currency an entry point starts visits in', f
 
     expect(fn () => app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['currencies' => ['CHF']]))
         ->toThrow(InvalidSalesChannel::class, 'starts visits in [EUR]');
+});
+
+it('reads cached entry points in an app whose cache unserializes no classes', function () {
+    // New Laravel apps set this, so a cache holding objects reads back incomplete ones.
+    config()->set('cache.serializable_classes', false);
+    Cache::forgetDriver('file');
+    swissStorefront();
+    $storefronts = fn (): Storefronts => new Storefronts(Cache::store('file'), app(SalesChannels::class));
+    $storefronts()->forget();
+    $storefronts()->resolve(Request::create('https://shop.ch/fr'));
+
+    $context = $storefronts()->resolve(Request::create('https://shop.ch/fr/panier'));
+
+    expect($context?->entryPoint->url('panier'))->toBe('https://shop.ch/fr/panier')
+        ->and($context?->sales->locale)->toBe(Locale::FRENCH_SWITZERLAND);
 });
