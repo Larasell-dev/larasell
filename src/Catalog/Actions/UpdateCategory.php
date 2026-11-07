@@ -24,9 +24,9 @@ final readonly class UpdateCategory
                 $category->save();
             }
 
-            // Extensions are what the app saves with the category, so their listeners run either way.
-            if ($changed !== [] || ! $payload->extensions->isEmpty()) {
-                CategoryUpdated::dispatch($categoryId, $changed, $payload->extensions);
+            // Attachments are what the app saves with the category, so their listeners run either way.
+            if ($changed !== [] || ! $payload->attachments->isEmpty()) {
+                CategoryUpdated::dispatch($categoryId, $changed, $payload->attachments);
             }
 
             return $category;

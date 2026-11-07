@@ -3,8 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\CategoryId;
-use Larasell\Larasell\Extensions;
 
 /**
  * A category changed, other than its place in the tree; $changed names its changed attributes,
@@ -23,6 +23,6 @@ final readonly class CategoryUpdated
         public CategoryId $categoryId,
         public array $changed,
         /** What the app passed along with the action for its own listeners. */
-        public Extensions $extensions = new Extensions,
+        public Attachments $attachments = new Attachments,
     ) {}
 }

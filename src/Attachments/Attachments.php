@@ -1,21 +1,21 @@
 <?php
 
-namespace Larasell\Larasell;
+namespace Larasell\Larasell\Attachments;
 
-use Larasell\Larasell\Exceptions\DuplicateExtension;
+use Larasell\Larasell\Attachments\Exceptions\DuplicateAttachment;
 
 /**
  * What an app passes along with an action for its own listeners, one object per class, e.g. the
  * custom URLs an admin form typed. The action hands it to its event untouched; the core never
  * reads it.
  */
-final readonly class Extensions
+final readonly class Attachments
 {
     /** @var array<class-string, object> */
     private array $items;
 
     /**
-     * @throws DuplicateExtension when two objects share a class
+     * @throws DuplicateAttachment when two objects share a class
      */
     public function __construct(object ...$items)
     {
@@ -23,7 +23,7 @@ final readonly class Extensions
 
         foreach ($items as $item) {
             if (isset($byClass[$item::class])) {
-                throw DuplicateExtension::of($item::class);
+                throw DuplicateAttachment::of($item::class);
             }
 
             $byClass[$item::class] = $item;

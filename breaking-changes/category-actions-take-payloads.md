@@ -1,7 +1,7 @@
 # Category actions take payloads instead of attribute arrays
 
 `CreateCategory`, `UpdateCategory` and `MoveCategory` now take typed payloads, so callers can't
-pass unknown or misspelled attributes. The payloads can carry `Extensions`, which the actions hand
+pass unknown or misspelled attributes. The payloads can carry `Attachments`, which the actions hand
 to `CategoryCreated` and `CategoryUpdated` for an app's own listeners. `MoveCategory` now also
 numbers the new siblings from 0 and puts the category at the given position.
 
@@ -9,7 +9,7 @@ numbers the new siblings from 0 and puts the category at the given position.
 
 Apps that call `CreateCategory`, `UpdateCategory`, `MoveCategory`, `CreateCategoryWithUrls` or
 `UpdateCategoryWithUrls` directly. Apps that rely on `CategoryUpdated` only firing when an
-attribute changed: it now also fires, with `$changed === []`, when extensions were passed.
+attribute changed: it now also fires, with `$changed === []`, when attachments were passed.
 
 ## How to upgrade
 

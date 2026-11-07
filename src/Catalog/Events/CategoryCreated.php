@@ -3,8 +3,8 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\CategoryId;
-use Larasell\Larasell\Extensions;
 
 /**
  * A category was created.
@@ -19,6 +19,6 @@ final readonly class CategoryCreated
         public CategoryId $categoryId,
         public ?CategoryId $parentId,
         /** What the app passed along with the action for its own listeners. */
-        public Extensions $extensions = new Extensions,
+        public Attachments $attachments = new Attachments,
     ) {}
 }

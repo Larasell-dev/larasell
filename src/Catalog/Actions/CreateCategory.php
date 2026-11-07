@@ -25,7 +25,7 @@ final readonly class CreateCategory
                 'parent_id' => $payload->parentId?->value,
             ]);
 
-            CategoryCreated::dispatch(CategoryId::of($category), $payload->parentId, $payload->extensions);
+            CategoryCreated::dispatch(CategoryId::of($category), $payload->parentId, $payload->attachments);
 
             return $category;
         });

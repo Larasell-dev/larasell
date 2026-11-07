@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\DeleteCategory;
@@ -18,7 +19,6 @@ use Larasell\Larasell\Catalog\Exceptions\CategoryCycle;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
-use Larasell\Larasell\Extensions;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\Translatable;
 
@@ -66,13 +66,13 @@ it('hands what the app passed along to the category\'s events, even when nothing
 
     $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(
         name: new Translatable(['en' => 'Shoes']),
-        extensions: new Extensions(new CategoryNote('new')),
+        attachments: new Attachments(new CategoryNote('new')),
     ));
-    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(extensions: new Extensions(new CategoryNote('edited'))));
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(attachments: new Attachments(new CategoryNote('edited'))));
 
-    Event::assertDispatched(CategoryCreated::class, fn (CategoryCreated $event): bool => $event->extensions->get(CategoryNote::class)?->text === 'new');
+    Event::assertDispatched(CategoryCreated::class, fn (CategoryCreated $event): bool => $event->attachments->get(CategoryNote::class)?->text === 'new');
     Event::assertDispatched(CategoryUpdated::class, fn (CategoryUpdated $event): bool => $event->changed === []
-        && $event->extensions->get(CategoryNote::class)?->text === 'edited');
+        && $event->attachments->get(CategoryNote::class)?->text === 'edited');
 });
 
 it('announces no update when nothing changed and nothing was passed along', function () {
