@@ -11,8 +11,10 @@ use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
 use Larasell\Larasell\SalesChannels\Actions\DeleteSalesChannel;
+use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
 use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
@@ -68,7 +70,38 @@ it('checks a channel before saving it', function (array $input, string $message)
     'currency not enabled' => [['currencies' => ['CHF', 'USD']], 'not enabled'],
     'default locale outside its locales' => [['default_locale' => 'en'], 'default locale'],
     'default currency outside its currencies' => [['currencies' => ['CHF'], 'default_currency' => 'EUR'], 'default currency'],
+    'key in capitals' => [['key' => 'CH'], 'lowercase'],
+    'key with spaces' => [['key' => 'c h'], 'lowercase'],
+    'key with a trailing dash' => [['key' => 'ch-'], 'lowercase'],
+    'key longer than 64 characters' => [['key' => str_repeat('c', 65)], '64 characters'],
 ]);
+
+it('accepts lowercase words joined by - or _ as a key', function () {
+    expect(createSalesChannel(['key' => 'b2b-shop_2'])->key)->toBe('b2b-shop_2');
+});
+
+it('refuses a key another channel has', function () {
+    createSalesChannel();
+
+    expect(fn () => createSalesChannel(['name' => 'Other']))->toThrow(InvalidSalesChannel::class, 'already a sales channel [ch]')
+        ->and(SalesChannel::query()->where('key', 'ch')->count())->toBe(1);
+});
+
+it('says which fields an update changed, and announces nothing when none did', function () {
+    $channel = createSalesChannel();
+    $events = [];
+    Event::listen(SalesChannelUpdated::class, function (SalesChannelUpdated $event) use (&$events): void {
+        $events[] = $event->changed;
+    });
+    $update = fn (array $input) => app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), $input);
+
+    $update(['name' => 'Schweiz']);
+    $update(['name' => 'Schweiz', 'active' => false]);
+    $update(['name' => 'Schweiz', 'locales' => ['fr-CH', 'de']]);
+    $update(['name' => 'Schweiz', 'active' => false]);
+
+    expect($events)->toBe([['name'], ['active'], ['locales']]);
+});
 
 it('gives a context only in a locale and currency of the channel', function (Closure $context, string $message) {
     createSalesChannel();
