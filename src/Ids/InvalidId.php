@@ -28,7 +28,7 @@ final class InvalidId extends InvalidArgumentException implements StructuredExce
      */
     public static function malformed(string $id, string $value): static
     {
-        return static::structured(
+        return self::structured(
             errorCode: 'larasell.id.malformed',
             message: "[{$value}] is not a valid {$id}.",
             why: 'An ID is a positive whole number without sign, leading zeros or decimals, and it must fit in an integer.',
@@ -41,7 +41,7 @@ final class InvalidId extends InvalidArgumentException implements StructuredExce
      */
     public static function wrongModel(string $id, string $expected, string $given): static
     {
-        return static::structured(
+        return self::structured(
             errorCode: 'larasell.id.wrong-model',
             message: "A {$id} identifies a {$expected}, but a {$given} was given.",
             why: 'Taking the key of another kind of record would point the ID at an unrelated row with the same number.',
@@ -54,7 +54,7 @@ final class InvalidId extends InvalidArgumentException implements StructuredExce
      */
     public static function unsaved(string $id, string $model): static
     {
-        return static::structured(
+        return self::structured(
             errorCode: 'larasell.id.unsaved',
             message: "The {$model} is not saved yet, so it has no {$id}.",
             why: 'A record only gets its ID when it is inserted.',
