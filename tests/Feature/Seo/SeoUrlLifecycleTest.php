@@ -21,7 +21,7 @@ use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\DefaultSlugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
-use Larasell\Larasell\Seo\InvalidSeoPath;
+use Larasell\Larasell\Seo\Exceptions\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;

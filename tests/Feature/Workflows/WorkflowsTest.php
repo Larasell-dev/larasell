@@ -13,7 +13,7 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
-use Larasell\Larasell\Seo\InvalidSeoPath;
+use Larasell\Larasell\Seo\Exceptions\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;

@@ -6,7 +6,7 @@ use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Storefront\EntryPointId;
@@ -38,7 +38,7 @@ final readonly class AddEntryPoint
             $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId->value);
 
             if ($channel->type !== StorefrontContext::TYPE) {
-                throw new InvalidSalesChannel("The sales channel [{$channel->key}] is not a storefront, so it has no entry points.");
+                throw InvalidSalesChannel::notAStorefront($channel->key);
             }
 
             $locale = $this->rules->locale($input['locale']);
@@ -75,15 +75,15 @@ final readonly class AddEntryPoint
         $parts = parse_url($url);
 
         if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            throw new InvalidSalesChannel("The entry point URL [{$url}] needs a scheme and a host.");
+            throw InvalidSalesChannel::entryPointWithoutHost($url);
         }
 
         if (! in_array($locale, $channel->locales(), true)) {
-            throw new InvalidSalesChannel("The entry point [{$url}] serves the locale [{$locale->value}], which its channel does not have.");
+            throw InvalidSalesChannel::entryPointLocaleMissing($url, $locale->value);
         }
 
         if ($currency !== null && ! in_array($currency, $channel->currencies(), true)) {
-            throw new InvalidSalesChannel("The entry point [{$url}] starts in the currency [{$currency->value}], which its channel does not have.");
+            throw InvalidSalesChannel::entryPointCurrencyMissing($url, $currency->value);
         }
 
         $entryPoint = [
@@ -94,7 +94,7 @@ final readonly class AddEntryPoint
         ];
 
         if (EntryPoint::query()->where('host', $entryPoint['host'])->where('prefix', $entryPoint['prefix'])->exists()) {
-            throw new InvalidSalesChannel("The entry point [{$url}] is already used by a sales channel.");
+            throw InvalidSalesChannel::entryPointTaken($url);
         }
 
         return $entryPoint;

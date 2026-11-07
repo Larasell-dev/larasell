@@ -4,7 +4,7 @@ namespace Larasell\Larasell\SalesChannels\Actions;
 
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
@@ -13,7 +13,7 @@ use Larasell\Larasell\SalesChannels\SalesChannels;
  * Deletes a sales channel with its locales and currencies; tables of other modules that hang off
  * the channel, such as entry points and SEO URLs, cascade. It refuses the last channel. Other
  * modules may refuse by throwing from a listener of SalesChannelDeleted, e.g.
- * Larasell\Larasell\SalesChannels\SalesChannelInUse for carts or orders, which keep pointing at it.
+ * Larasell\Larasell\SalesChannels\Exceptions\SalesChannelInUse for carts or orders, which keep pointing at it.
  */
 final readonly class DeleteSalesChannel
 {
@@ -31,7 +31,7 @@ final readonly class DeleteSalesChannel
             $channel = SalesChannel::query()->findOrFail($channelId->value);
 
             if ($count === 1) {
-                throw new InvalidSalesChannel("The sales channel [{$channel->key}] is the last one, so it cannot be deleted.");
+                throw InvalidSalesChannel::lastOne($channel->key);
             }
 
             // Before the delete, so listeners still see the channel and can refuse before a foreign key does.

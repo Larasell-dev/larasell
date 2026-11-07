@@ -5,6 +5,7 @@ namespace Larasell\Larasell\SalesChannels;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 
 /**
@@ -22,16 +23,16 @@ final readonly class SalesChannels
     /** The context of a channel (key or ID) in one of its locales and currencies, by default its default currency. */
     public function for(string|SalesChannelId $channel, Locale|string $locale, ?Currency $currency = null): SalesContext
     {
-        $found = $this->channel($channel) ?? throw new InvalidSalesChannel("There is no sales channel [{$channel}].");
+        $found = $this->channel($channel) ?? throw InvalidSalesChannel::unknown((string) $channel);
         $locale = $locale instanceof Locale ? $locale : Locale::tryFrom(Locale::canonicalize($locale));
         $currency ??= $found['default_currency'];
 
         if ($locale === null || ! in_array($locale, $found['locales'], true)) {
-            throw new InvalidSalesChannel("The sales channel [{$found['key']}] does not sell in [".($locale->value ?? 'that locale').'].');
+            throw InvalidSalesChannel::doesNotSellIn($found['key'], $locale->value ?? 'that locale');
         }
 
         if (! in_array($currency, $found['currencies'], true)) {
-            throw new InvalidSalesChannel("The sales channel [{$found['key']}] does not sell in [{$currency->value}].");
+            throw InvalidSalesChannel::doesNotSellIn($found['key'], $currency->value);
         }
 
         return new SalesContext($found['key'], new SalesChannelId($found['id']), $locale, $currency);

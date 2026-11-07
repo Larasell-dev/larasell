@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesContext;
@@ -31,7 +31,7 @@ final class SalesContextCast implements CastsAttributes
 
         // Built as stored: a record keeps its context when its channel later stops selling in that locale or currency.
         $channel = app(SalesChannels::class)->channel(new SalesChannelId((int) $attributes['sales_channel_id']))
-            ?? throw new InvalidSalesChannel("There is no sales channel [{$attributes['sales_channel_id']}].");
+            ?? throw InvalidSalesChannel::unknown((string) $attributes['sales_channel_id']);
 
         return new SalesContext($channel['key'], new SalesChannelId($channel['id']), Locale::from((string) $attributes['locale']), Currency::from((string) $attributes['currency']));
     }

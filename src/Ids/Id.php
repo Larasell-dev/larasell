@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Ids;
 
 use Illuminate\Database\Eloquent\Model;
 use JsonSerializable;
+use Larasell\Larasell\Ids\Exceptions\InvalidId;
 use Stringable;
 
 /**

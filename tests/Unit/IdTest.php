@@ -4,7 +4,7 @@ use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\ProductId;
-use Larasell\Larasell\Ids\InvalidId;
+use Larasell\Larasell\Ids\Exceptions\InvalidId;
 
 it('tells IDs of different entities apart, even with the same number', function () {
     expect(new ProductId(5)->equals(new ProductId(5)))->toBeTrue()

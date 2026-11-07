@@ -1,6 +1,8 @@
 <?php
 
-namespace Larasell\Larasell\Ids;
+namespace Larasell\Larasell\Ids\Exceptions;
+
+use Larasell\Larasell\Ids\Id;
 
 use InvalidArgumentException;
 use Larasell\Chronicle\Exceptions\HasStructuredException;

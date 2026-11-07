@@ -14,6 +14,7 @@ use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoResourceGone;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
 use Larasell\Larasell\Seo\Events\SeoUrlReleased;
+use Larasell\Larasell\Seo\Exceptions\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Storefront\StorefrontContext;
 use Larasell\Larasell\Storefront\Storefronts;
