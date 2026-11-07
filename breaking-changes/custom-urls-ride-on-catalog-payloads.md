@@ -41,13 +41,33 @@ app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => '
 app(UpdateProduct::class)->handle(ProductId::of($boots), new UpdateProductPayload(['sku' => 'B-2']));
 app(CreateCategory::class)->handle(new CreateCategoryPayload(
     new Translatable(['en' => 'Shoes']),
-    attachments: new Attachments(new CustomUrls(['en' => 'footwear'])),
+    attachments: new Attachments(CustomUrls::byLocale(['en' => 'footwear'])),
 ));
 app(UpdateProduct::class)->handle(ProductId::of($boots), new UpdateProductPayload(
     ['name' => ['en' => 'Leather Boots']],
-    new Attachments(new CustomUrls(['de' => 'winter-angebot', 'en' => null])),
+    new Attachments(CustomUrls::byLocale(['de' => 'winter-angebot', 'en' => null])),
 ));
 ```
 
-`new CustomUrls()` throws an `InvalidArgumentException` for a locale no sales channel serves, so
-nothing is written. A null path still goes back to the automatic URL.
+`CustomUrls::byLocale()` writes a path to every channel that serves its locale. To give channels
+in the same locale their own paths, use `CustomUrls::byChannel()` with paths keyed by sales channel ID:
+
+```php
+CustomUrls::byChannel('en', [$shop->id => 'footwear', $uk->id => 'trainers', $outlet->id => null]);
+```
+
+Both throw an `InvalidArgumentException` for a locale or channel with no URLs, before anything is
+written. A null path still goes back to the automatic URL.
+
+The workflows threw `InvalidSeoPath` for a rejected path. The catalog actions now throw
+`Larasell\Larasell\Seo\Exceptions\CustomUrlRejected` instead. It names the channel and locale
+(`$context`) and carries the `$reason` and `$path`, with the original `InvalidSeoPath` as its
+previous exception:
+
+```php
+try {
+    app(UpdateCategory::class)->handle($id, $payload);
+} catch (CustomUrlRejected $exception) {
+    // e.g. show $exception->reason on the field of $exception->context->channelId
+}
+```
