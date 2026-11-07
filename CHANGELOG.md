@@ -29,6 +29,240 @@
 
 * move module exceptions to Exceptions namespaces as structured errors ([b3eb8cc](https://github.com/Larasell-dev/larasell/commit/b3eb8cc032446a892fd7a5e79a760e7b8994b78e))
 
+### Upgrade guide
+
+#### Category actions take payloads instead of attribute arrays
+
+`CreateCategory`, `UpdateCategory` and `MoveCategory` now take typed payloads, so callers can't
+pass unknown or misspelled attributes. The payloads can carry `Attachments`, which the actions hand
+to `CategoryCreated` and `CategoryUpdated` for an app's own listeners. `MoveCategory` now also
+numbers the new siblings from 0 and puts the category at the given position.
+
+##### Who is affected
+
+Apps that call `CreateCategory`, `UpdateCategory`, `MoveCategory`, `CreateCategoryWithUrls` or
+`UpdateCategoryWithUrls` directly. Apps that rely on `CategoryUpdated` only firing when an
+attribute changed: it now also fires, with `$changed === []`, when attachments were passed.
+
+##### How to upgrade
+
+```php
+// Before
+app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes'], 'parent_id' => $parent->id, 'status' => Visibility::Visible]);
+app(UpdateCategory::class)->handle(CategoryId::of($shoes), ['name' => ['en' => 'Footwear']]);
+app(MoveCategory::class)->handle(CategoryId::of($boots), CategoryId::of($sale), 2);
+
+// After
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
+use Larasell\Larasell\Catalog\Actions\MoveCategoryPayload;
+use Larasell\Larasell\Catalog\Actions\UpdateCategoryPayload;
+use Larasell\Larasell\Translatable;
+
+app(CreateCategory::class)->handle(new CreateCategoryPayload(
+    name: new Translatable(['en' => 'Shoes']),
+    status: Visibility::Visible,
+    parentId: CategoryId::of($parent),
+));
+app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Footwear'])));
+app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($sale), 2));
+```
+
+`CreateCategoryWithUrls::handle()` and `UpdateCategoryWithUrls::handle()` take the same payloads in
+place of their `$attributes` array.
+
+#### Custom URLs are attachments on the catalog payloads, and the `*WithUrls` workflows are gone
+
+`CreateCategoryWithUrls`, `UpdateCategoryWithUrls`, `CreateProductWithUrls` and
+`UpdateProductWithUrls` have been removed. Instead, pass a `Larasell\Larasell\Seo\Catalog\CustomUrls`
+attachment to the catalog action. The SEO module listens to the catalog events and saves the URLs
+inside the action's transaction, so a taken path still undoes the catalog write. Apps no longer need
+a second entry point for every catalog action.
+
+`CreateProduct` and `UpdateProduct` now take `CreateProductPayload` and `UpdateProductPayload`
+instead of an attributes array. `ProductCreated` and `ProductUpdated` carry the payload's
+`Attachments`. `ProductUpdated` now also fires when only attachments were passed, with
+`$changed === []`.
+
+##### Who is affected
+
+- Apps that call any of the four `*WithUrls` workflows.
+- Apps that call `CreateProduct` or `UpdateProduct` directly.
+- Apps with `ProductUpdated` listeners that assume at least one attribute changed.
+
+`DiscontinueProduct` is unchanged. Apps that only listen to `ProductCreated` are not affected.
+
+##### How to upgrade
+
+```php
+// Before
+use Larasell\Larasell\Workflows\CreateCategoryWithUrls;
+use Larasell\Larasell\Workflows\UpdateProductWithUrls;
+
+app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+app(UpdateProduct::class)->handle(ProductId::of($boots), ['sku' => 'B-2']);
+app(CreateCategoryWithUrls::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])), ['en' => 'footwear']);
+app(UpdateProductWithUrls::class)->handle(ProductId::of($boots), ['name' => ['en' => 'Leather Boots']], ['de' => 'winter-angebot', 'en' => null]);
+
+// After
+use Larasell\Larasell\Attachments\Attachments;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
+use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
+use Larasell\Larasell\Seo\Catalog\CustomUrls;
+
+app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]));
+app(UpdateProduct::class)->handle(ProductId::of($boots), new UpdateProductPayload(['sku' => 'B-2']));
+app(CreateCategory::class)->handle(new CreateCategoryPayload(
+    new Translatable(['en' => 'Shoes']),
+    attachments: new Attachments(CustomUrls::byLocale(['en' => 'footwear'])),
+));
+app(UpdateProduct::class)->handle(ProductId::of($boots), new UpdateProductPayload(
+    ['name' => ['en' => 'Leather Boots']],
+    new Attachments(CustomUrls::byLocale(['de' => 'winter-angebot', 'en' => null])),
+));
+```
+
+`CustomUrls::byLocale()` writes a path to every channel that serves its locale. To give channels
+in the same locale their own paths, use `CustomUrls::byChannel()` with paths keyed by sales channel ID:
+
+```php
+CustomUrls::byChannel('en', [$shop->id => 'footwear', $uk->id => 'trainers', $outlet->id => null]);
+```
+
+Both throw an `InvalidArgumentException` for a locale or channel with no URLs, before anything is
+written. A null path still goes back to the automatic URL.
+
+The workflows threw `InvalidSeoPath` for a rejected path. The catalog actions now throw
+`Larasell\Larasell\Seo\Exceptions\CustomUrlRejected` instead. It names the channel and locale
+(`$context`) and carries the `$reason` and `$path`, with the original `InvalidSeoPath` as its
+previous exception:
+
+```php
+try {
+    app(UpdateCategory::class)->handle($id, $payload);
+} catch (CustomUrlRejected $exception) {
+    // e.g. show $exception->reason on the field of $exception->context->channelId
+}
+```
+
+#### Module exceptions moved to `<Module>\Exceptions` and are Chronicle structured errors
+
+Every module now keeps its exceptions in its own `Exceptions` namespace, and
+each one implements Chronicle's `StructuredException`, so logs and error pages
+get an error code, a why and a fix. Messages are unchanged.
+
+##### Who is affected
+
+Apps that import, catch or throw one of these classes:
+
+| Before | After |
+| --- | --- |
+| `Larasell\Larasell\Ids\InvalidId` | `Larasell\Larasell\Ids\Exceptions\InvalidId` |
+| `Larasell\Larasell\SalesChannels\InvalidSalesChannel` | `Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel` |
+| `Larasell\Larasell\SalesChannels\SalesChannelInUse` | `Larasell\Larasell\SalesChannels\Exceptions\SalesChannelInUse` |
+| `Larasell\Larasell\Seo\InvalidSeoPath` | `Larasell\Larasell\Seo\Exceptions\InvalidSeoPath` |
+
+`InvalidSalesChannel` is now built through named constructors only, e.g.
+`InvalidSalesChannel::unknown('b2b')`.
+
+##### How to upgrade
+
+```php
+// Before
+use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+
+throw new InvalidSalesChannel('There is no sales channel [b2b].');
+
+// After
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
+
+throw InvalidSalesChannel::unknown('b2b');
+```
+
+Update the other imports from the table the same way.
+
+#### `larasell_order_number_sequences` keeps one counter row per sequence
+
+The table used to get a new row for every order number issued. Concurrent
+checkouts read the highest number, tried to insert the next one and retried on a
+collision, which deadlocked on MySQL and MariaDB and failed outright on
+PostgreSQL. Now each sequence is a single row holding the last number it
+issued, and `SingleOrderNumberSequence` and `MultipleOrderNumberSequence` claim
+the next number by incrementing that row inside the checkout's transaction.
+Concurrent checkouts wait for each other on that row instead of colliding.
+
+The PHP API is unchanged: `OrderNumberSequence::next()` still returns the next
+number, honours `larasell.order_numbers.start` the same way, and order numbers
+continue where they left off. A checkout that rolls back now gives its number
+back, so numbers no longer skip after a failed checkout.
+
+##### Who is affected
+
+Apps that read or write `larasell_order_number_sequences` themselves, for
+example to count issued numbers or to look up when a number was issued. Its
+`id` and `created_at` columns are gone, and it holds one row per sequence name
+with the last number in `number`. Apps that only use the sequences or order
+numbers through Larasell are not affected; run the migration.
+
+##### How to upgrade
+
+Run the migration. It keeps the highest issued number of every sequence, so the
+next order number follows the last one:
+
+```sh
+php artisan migrate
+```
+
+Read a sequence's last number from its row instead of from the newest row:
+
+```php
+// Before
+DB::table('larasell_order_number_sequences')->where('name', 'default')->max('number');
+DB::table('larasell_order_number_sequences')->where('name', 'default')->count();
+
+// After
+DB::table('larasell_order_number_sequences')->where('name', 'default')->value('number');
+```
+
+The issued numbers themselves are on the orders, in `larasell_orders.number`.
+
+#### `CreateSalesChannel` checks the channel key
+
+`CreateSalesChannel` now refuses a key that isn't lowercase letters and numbers joined by `-` or
+`_` (e.g. `b2b-shop`), is longer than 64 characters, or another channel already has. It throws
+`InvalidSalesChannel`, like for its other checks. Code names a channel by its key, as in
+`SalesContext::for('b2b-shop')`, so the rule belongs with the channel rather than with each
+form that creates one. A duplicate key used to fail with a database `QueryException`.
+
+##### Who is affected
+
+Apps that call `Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel` with a key in
+capitals, with spaces or other characters, or that catch `QueryException` for a duplicate key.
+Existing channels are not checked or changed; apps that already use keys like `default` or
+`b2b-shop` can skip this entry.
+
+##### How to upgrade
+
+Pass a key in the new format, and catch `InvalidSalesChannel` for a duplicate:
+
+```php
+use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
+use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+
+// Before
+try {
+    app(CreateSalesChannel::class)->handle(['key' => 'B2B Shop', /* … */]);
+} catch (\Illuminate\Database\QueryException) {
+    // the key was taken
+}
+
+// After
+try {
+    app(CreateSalesChannel::class)->handle(['key' => 'b2b-shop', /* … */]);
+} catch (InvalidSalesChannel $exception) {
+    // the key is taken or malformed; $exception->getMessage() says which
+}
+```
+
 ## [1.24.1](https://github.com/Larasell-dev/larasell/compare/v1.24.0...v1.24.1) (2026-11-07)
 
 
