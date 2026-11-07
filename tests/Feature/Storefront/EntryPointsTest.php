@@ -8,7 +8,7 @@ use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
 use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;

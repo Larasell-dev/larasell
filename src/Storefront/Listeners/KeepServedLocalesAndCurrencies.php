@@ -3,7 +3,7 @@
 namespace Larasell\Larasell\Storefront\Listeners;
 
 use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
-use Larasell\Larasell\SalesChannels\InvalidSalesChannel;
+use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\Storefront\Models\EntryPoint;
 
@@ -29,9 +29,9 @@ final class KeepServedLocalesAndCurrencies
         }
 
         if (! in_array($orphan->locale, $locales, true)) {
-            throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still serves [{$orphan->locale->value}]; delete it first.");
+            throw InvalidSalesChannel::entryPointStillServesLocale($orphan->toEntryPoint()->url(), $orphan->locale->value);
         }
 
-        throw new InvalidSalesChannel("The entry point [{$orphan->toEntryPoint()->url()}] still starts visits in [{$orphan->default_currency?->value}]; delete it first.");
+        throw InvalidSalesChannel::entryPointStillStartsIn($orphan->toEntryPoint()->url(), $orphan->default_currency->value ?? '');
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Larasell\Larasell\Seo\Exceptions;
 
+use Larasell\Chronicle\Exceptions\HasStructuredFields;
+use Larasell\Chronicle\Exceptions\StructuredException;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Storefront\StorefrontContext;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -10,8 +12,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * The page was deleted and no gone strategy redirects its URL (410). The snapshot holds what its
  * resource type kept about it, e.g. a product's name and category IDs, for a helpful error page.
  */
-class SeoPageGone extends HttpException
+class SeoPageGone extends HttpException implements StructuredException
 {
+    use HasStructuredFields;
+
     /** @var array<string, mixed> */
     public readonly array $snapshot;
 
@@ -20,5 +24,7 @@ class SeoPageGone extends HttpException
         $this->snapshot = $url->gone_snapshot ?? [];
 
         parent::__construct(410, 'The page was removed.');
+
+        $this->withError('larasell.seo.page-gone', 'The page was deleted and no gone strategy redirects its URL.', 'Register a GoneStrategy to redirect removed pages, e.g. to their category.');
     }
 }

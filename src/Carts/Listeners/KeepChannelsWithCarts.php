@@ -4,7 +4,7 @@ namespace Larasell\Larasell\Carts\Listeners;
 
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
-use Larasell\Larasell\SalesChannels\SalesChannelInUse;
+use Larasell\Larasell\SalesChannels\Exceptions\SalesChannelInUse;
 
 /** Refuses to delete a sales channel that carts were made in. Runs inside the delete's transaction. */
 final class KeepChannelsWithCarts
