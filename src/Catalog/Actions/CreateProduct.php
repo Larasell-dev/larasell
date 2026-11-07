@@ -11,13 +11,12 @@ final readonly class CreateProduct
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    /** @param  array<string, mixed>  $attributes  Product attributes, e.g. name, price, sku, status */
-    public function handle(array $attributes): Product
+    public function handle(CreateProductPayload $payload): Product
     {
-        return $this->db->transaction(function () use ($attributes): Product {
-            $product = Product::query()->create($attributes);
+        return $this->db->transaction(function () use ($payload): Product {
+            $product = Product::query()->create($payload->attributes);
 
-            ProductCreated::dispatch(ProductId::of($product));
+            ProductCreated::dispatch(ProductId::of($product), $payload->attachments);
 
             return $product;
         });

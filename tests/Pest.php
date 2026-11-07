@@ -60,6 +60,7 @@ use Larasell\Larasell\Catalog\Actions\DeleteProduct;
 use Larasell\Larasell\Catalog\Actions\MoveCategory;
 use Larasell\Larasell\Catalog\Actions\UpdateCategory;
 use Larasell\Larasell\Catalog\Actions\UpdateProduct;
+use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 
@@ -67,7 +68,7 @@ use Larasell\Larasell\Catalog\Models\Product;
 function updateCatalog(Product|Category $model, array $attributes): void
 {
     if ($model instanceof Product) {
-        app(UpdateProduct::class)->handle(ProductId::of($model), $attributes);
+        app(UpdateProduct::class)->handle(ProductId::of($model), new UpdateProductPayload($attributes));
 
         return;
     }

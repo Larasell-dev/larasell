@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Models\Category;
@@ -40,11 +41,11 @@ beforeEach(function () {
 /** @param  string|array<string, string>  $name */
 function seoProduct(string|array $name, Visibility $status = Visibility::Visible): Product
 {
-    return app(CreateProduct::class)->handle([
+    return app(CreateProduct::class)->handle(new CreateProductPayload([
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]);
+    ]));
 }
 
 function seoCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
@@ -95,7 +96,7 @@ it('keeps the old URL as history when a public product is renamed', function () 
 });
 
 it('treats products and categories created without a status as public', function () {
-    $product = app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]));
     $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
 
     updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);

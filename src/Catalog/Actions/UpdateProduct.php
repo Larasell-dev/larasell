@@ -13,18 +13,20 @@ final readonly class UpdateProduct
 
     /**
      * Changes the product as stored now, so a stale copy elsewhere cannot undo other changes.
-     *
-     * @param  array<string, mixed>  $attributes
      */
-    public function handle(ProductId $productId, array $attributes): Product
+    public function handle(ProductId $productId, UpdateProductPayload $payload): Product
     {
-        return $this->db->transaction(function () use ($productId, $attributes): Product {
+        return $this->db->transaction(function () use ($productId, $payload): Product {
             $product = Product::query()->lockForUpdate()->findOrFail($productId->value);
-            $changed = array_keys($product->fill($attributes)->getDirty());
+            $changed = array_keys($product->fill($payload->attributes)->getDirty());
 
             if ($changed !== []) {
                 $product->save();
-                ProductUpdated::dispatch($productId, $changed);
+            }
+
+            // Attachments are what the app saves with the product, so their listeners run either way.
+            if ($changed !== [] || ! $payload->attachments->isEmpty()) {
+                ProductUpdated::dispatch($productId, $changed, $payload->attachments);
             }
 
             return $product;

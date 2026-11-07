@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
@@ -25,11 +26,11 @@ beforeEach(function () {
 /** @param  array<string, string>  $name */
 function linkedProduct(array $name, Visibility $status = Visibility::Visible): Product
 {
-    return app(CreateProduct::class)->handle([
+    return app(CreateProduct::class)->handle(new CreateProductPayload([
         'name' => $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]);
+    ]));
 }
 
 function linkContext(string $locale): StorefrontContext

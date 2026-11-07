@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
 use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
@@ -27,11 +28,11 @@ beforeEach(function () {
 /** @param  array<string, string>  $name */
 function routedProduct(array|string $name, Visibility $status = Visibility::Visible): Product
 {
-    return app(CreateProduct::class)->handle([
+    return app(CreateProduct::class)->handle(new CreateProductPayload([
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]);
+    ]));
 }
 
 function routedCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
