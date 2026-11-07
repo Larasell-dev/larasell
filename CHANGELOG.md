@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.24.0](https://github.com/Larasell-dev/larasell/compare/v1.23.0...v1.24.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **storefront:** let entry points serve a locale, not a currency
+* pass typed IDs across module boundaries
+* add typed IDs and take them in cart add, set and remove
+* create carts and orders in an explicit sales context
+* split the storefront off sales channels
+* add the sales channel module
+* keep SEO URLs in step through catalog events, in the same transaction
+* move catalog models to Larasell\Larasell\Catalog\Models
+* remove the model registry
+* replace product and category slugs with SEO URLs
+
+### Features
+
+* add the sales channel module ([6fc4ccf](https://github.com/Larasell-dev/larasell/commit/6fc4ccf82b2835f6e1bb4e76ea0d1b62c5a5fd0b))
+* add the SEO module with sales channel entry points ([a79b716](https://github.com/Larasell-dev/larasell/commit/a79b7162ea549970f3390f6d1d63b34900cf8435))
+* add workflows for discontinuing products and saving pages with custom URLs ([b31a735](https://github.com/Larasell-dev/larasell/commit/b31a73547c8dc975856cf32f8ce7c66cdfe34c02))
+* generate links to SEO URLs ([014ac6a](https://github.com/Larasell-dev/larasell/commit/014ac6a1a69132aef2e6f8b11ae85e0c46978455))
+* keep SEO URLs in step through catalog events, in the same transaction ([cb9fe9f](https://github.com/Larasell-dev/larasell/commit/cb9fe9f681dbd910ddd6df2de7f6b35f2e573836))
+* keep SEO URLs with history for products and categories ([8d0d3b3](https://github.com/Larasell-dev/larasell/commit/8d0d3b369648fcc1fefc60ffbfdec836e70d5c85))
+* replace product and category slugs with SEO URLs ([0886f2e](https://github.com/Larasell-dev/larasell/commit/0886f2eb15792b8bf04eba5ec8ebf8792990de45))
+* **sales-channels:** add DeleteSalesChannel ([77d2e8f](https://github.com/Larasell-dev/larasell/commit/77d2e8feed28a33ffb7ecdbabb90d76f8b89a3c8))
+* **seo:** say why a path is invalid ([40b0f5b](https://github.com/Larasell-dev/larasell/commit/40b0f5b0cc2bc4a9a9feb8e615aef1bfd597f922))
+* serve storefront pages through SEO URLs ([0fe8a04](https://github.com/Larasell-dev/larasell/commit/0fe8a044141e0bf8c1f896b49afa75eac7dbadb4))
+* **storefront:** let entry points serve a locale, not a currency ([1b943b4](https://github.com/Larasell-dev/larasell/commit/1b943b4669badba816de96312f4113e10b634cad))
+* translate storefront route paths with -&gt;localized() ([c2e260e](https://github.com/Larasell-dev/larasell/commit/c2e260e1ed4cd9fb4beb0d4c0fc7e2aa6736fb80))
+* write the catalog through actions that dispatch domain events ([88c7d7e](https://github.com/Larasell-dev/larasell/commit/88c7d7e5b04014e36b3d72bcbbdb9aa194b23c59))
+
+
+### Bug Fixes
+
+* announce SEO URL changes after commit and keep a replacement chosen after delete ([8c661e2](https://github.com/Larasell-dev/larasell/commit/8c661e2333ce1b12916a8847886474d4977a0ac6))
+* **catalog:** compare translations by value, not by stored JSON ([124773d](https://github.com/Larasell-dev/larasell/commit/124773d0b582d81f54c3a2e98f42ddeec0828d27))
+* check the Route::seo() controller map when the route is registered ([1e28717](https://github.com/Larasell-dev/larasell/commit/1e2871774310b0c82c3410b6a5a50b97f3cbfe25))
+* keep the path of non-SEO storefront routes as sent ([34b2d8f](https://github.com/Larasell-dev/larasell/commit/34b2d8f2f09698af34caba3c7e7757c9d9400b3b))
+* **order-numbers:** stop concurrent checkouts looping on MySQL ([fc532f1](https://github.com/Larasell-dev/larasell/commit/fc532f154823af8e655ddae6bca685e43063d799))
+* store SEO paths of any length and number duplicates without a limit ([22809ce](https://github.com/Larasell-dev/larasell/commit/22809ce27a64dd62440bc4046956b10b3ce54495))
+* store SEO URLs by resource type key, with one canonical row per page ([421e4f9](https://github.com/Larasell-dev/larasell/commit/421e4f9ba4e5c76eaf095f6a20e7b4c825660d98))
+* **storefront:** leave fallback routes below a fixed path alone ([4a28fa3](https://github.com/Larasell-dev/larasell/commit/4a28fa38aa1bfbead0578a0495d26179949ecbf0))
+
+
+### Code Refactoring
+
+* add typed IDs and take them in cart add, set and remove ([01027d9](https://github.com/Larasell-dev/larasell/commit/01027d9d5c4885e57783cf50b735f1359face0f0))
+* create carts and orders in an explicit sales context ([179de1e](https://github.com/Larasell-dev/larasell/commit/179de1e01f0773742bbccf0130e5a3a1bd75673e))
+* move catalog models to Larasell\Larasell\Catalog\Models ([7af94bf](https://github.com/Larasell-dev/larasell/commit/7af94bf9cadcd5285bf8d5dc6441a6f7e5518e70))
+* pass typed IDs across module boundaries ([f6450f5](https://github.com/Larasell-dev/larasell/commit/f6450f5ded2c17bbb09d0c1e255c039fbc2a3c4f))
+* remove the model registry ([f48676b](https://github.com/Larasell-dev/larasell/commit/f48676bc95d4c686e6998b7c45882702f449ac3a))
+* split the storefront off sales channels ([48d0e96](https://github.com/Larasell-dev/larasell/commit/48d0e965158630c01398e4306241669a75e11f47))
+
 ## [1.23.0](https://github.com/Larasell-dev/larasell/compare/v1.22.0...v1.23.0) (2026-11-03)
 
 
