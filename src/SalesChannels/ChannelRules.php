@@ -5,6 +5,7 @@ namespace Larasell\Larasell\SalesChannels;
 use InvalidArgumentException;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\SalesChannels\Models\SalesChannel;
 use Larasell\Larasell\Settings\CurrencySettings;
 use Larasell\Larasell\Settings\LocaleSettings;
 
@@ -16,6 +17,24 @@ final readonly class ChannelRules
         private CurrencySettings $currencies,
         private SalesChannelTypes $types,
     ) {}
+
+    /** Code names a channel by its key, e.g. SalesContext::for('b2b-shop'), so it is lowercase words joined by - or _, and unique. */
+    public function key(string $key): string
+    {
+        if (strlen($key) > 64) {
+            throw new InvalidSalesChannel("The sales channel key [{$key}] is longer than 64 characters.");
+        }
+
+        if (preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/', $key) !== 1) {
+            throw new InvalidSalesChannel("The sales channel key [{$key}] must be lowercase letters and numbers, joined by - or _.");
+        }
+
+        if (SalesChannel::query()->where('key', $key)->exists()) {
+            throw new InvalidSalesChannel("There is already a sales channel [{$key}].");
+        }
+
+        return $key;
+    }
 
     public function type(string $type): string
     {

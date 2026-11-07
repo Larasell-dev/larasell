@@ -34,6 +34,7 @@ final readonly class CreateSalesChannel
      */
     public function handle(array $input): SalesChannel
     {
+        $key = $this->rules->key($input['key']);
         $type = $this->rules->type($input['type']);
         $locales = array_values(array_unique(array_map($this->rules->locale(...), $input['locales']), SORT_REGULAR));
         $currencies = array_values(array_unique(array_map($this->rules->currency(...), $input['currencies']), SORT_REGULAR));
@@ -41,9 +42,9 @@ final readonly class CreateSalesChannel
         $defaultCurrency = $this->rules->currency($input['default_currency'] ?? $currencies[0] ?? null);
         $this->rules->defaults($locales, $currencies, $defaultLocale, $defaultCurrency);
 
-        $channel = $this->db->transaction(function () use ($input, $type, $locales, $currencies, $defaultLocale, $defaultCurrency): SalesChannel {
+        $channel = $this->db->transaction(function () use ($input, $key, $type, $locales, $currencies, $defaultLocale, $defaultCurrency): SalesChannel {
             $channel = SalesChannel::query()->create([
-                'key' => $input['key'],
+                'key' => $key,
                 'name' => $input['name'],
                 'type' => $type,
                 'default_locale' => $defaultLocale,
