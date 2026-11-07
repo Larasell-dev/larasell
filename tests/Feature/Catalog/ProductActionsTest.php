@@ -86,6 +86,20 @@ it('announces nothing when an update changes nothing', function () {
     Event::assertNotDispatched(ProductUpdated::class);
 });
 
+it('announces a rename to a name that only looks equal as a number', function (string $before, string $after) {
+    $product = createProduct($before);
+    Event::fake([ProductUpdated::class]);
+
+    $updated = app(UpdateProduct::class)->handle(ProductId::of($product), ['name' => ['en' => $after]]);
+
+    expect($updated->fresh()?->name->get('en'))->toBe($after);
+    Event::assertDispatched(ProductUpdated::class, fn (ProductUpdated $event): bool => $event->changed === ['name']);
+})->with([
+    'exponent' => ['10', '1e1'],
+    'leading zero' => ['1', '01'],
+    'decimal' => ['1', '1.0'],
+]);
+
 it('refuses to update a product that was deleted meanwhile', function () {
     $product = createProduct('Boots');
     app(DeleteProduct::class)->handle(ProductId::of($product));
