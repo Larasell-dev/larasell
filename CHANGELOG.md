@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.24.1](https://github.com/Larasell-dev/larasell/compare/v1.24.0...v1.24.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* cache storefront entry points as plain rows ([4178eae](https://github.com/Larasell-dev/larasell/commit/4178eae9d9383edd6edcb5228a2d83b644c8144a))
+* tell translations apart that only look equal as numbers ([3c3022b](https://github.com/Larasell-dev/larasell/commit/3c3022b258cc894775ed0be3c8c4cecc36d5290e))
+
 ## [1.24.0](https://github.com/Larasell-dev/larasell/compare/v1.23.0...v1.24.0) (2026-11-07)
 
 
