@@ -54,6 +54,526 @@
 * remove the model registry ([f48676b](https://github.com/Larasell-dev/larasell/commit/f48676bc95d4c686e6998b7c45882702f449ac3a))
 * split the storefront off sales channels ([48d0e96](https://github.com/Larasell-dev/larasell/commit/48d0e965158630c01398e4306241669a75e11f47))
 
+### Upgrade guide
+
+#### `Cart::add()`, `set()` and `remove()` take typed IDs instead of numbers
+
+A bare number meant a product ID in `Cart::add()` but a cart line ID in
+`Cart::set()` and `Cart::remove()`. Passing the wrong one changed an unrelated
+line or added an unrelated product without any error. These methods now take a
+`ProductId`, `VariantId` or `CartItemId`, so PHP rejects the mix-up.
+
+##### Who is affected
+
+Apps that pass numbers to these methods. Passing a `Product` or
+`ProductVariant` works as before.
+
+##### How to upgrade
+
+```php
+use Larasell\Larasell\Carts\CartItemId;
+use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Catalog\VariantId;
+
+// Before
+$cart->add($request->integer('product'), 2);
+$cart->set($request->integer('line'), 3);
+$cart->remove($request->integer('line'));
+
+// After
+$cart->add(ProductId::fromString($request->input('product')), 2);
+$cart->add(VariantId::fromString($request->input('variant')));
+$cart->set(CartItemId::fromString($request->input('line')), 3);
+$cart->remove(CartItemId::of($item));
+```
+
+`fromString()` throws `Larasell\Larasell\Ids\InvalidId` for input that is not a
+positive whole number; validate request input before it reaches the cart.
+
+#### Carts and orders need a sales context
+
+Larasell now has sales channels: the places you sell, such as a storefront, a
+POS or a marketplace. Carts and orders remember the `SalesContext` they were
+made in (channel, locale and currency), in the new columns `sales_channel_id`
+and `locale` next to `currency`. A channel without a URL, such as a POS, works
+the same way.
+
+A cart or order is created in a context you pass, with `createIn()`. It never
+picks one up from whatever context happens to be current, so a cart made in a
+command or job cannot silently land in the wrong channel. In a storefront
+controller, inject the request's context. The migrations create a `default`
+channel from `app.url`, the supported locales and the enabled currencies.
+
+##### Who is affected
+
+Apps that create carts or orders themselves. Orders made by `Checkout` are not
+affected: they take the cart's context.
+
+##### How to upgrade
+
+Run the migrations, then create carts with their context:
+
+```php
+use Larasell\Larasell\Models\Cart;
+use Larasell\Larasell\SalesChannels\SalesContext;
+
+// Before
+$cart = Cart::query()->create(['currency' => Currency::EUR]);
+
+// After, in a storefront controller
+public function store(SalesContext $context)
+{
+    $cart = Cart::createIn($context);
+}
+
+// After, anywhere else
+$cart = Cart::createIn(SalesContext::for('default', 'en'));
+```
+
+`Cart::query()->create()` without a context now throws a `LogicException`. A
+`currency` given in the attributes still wins over the context's, e.g.
+`Cart::createIn($context, ['currency' => Currency::EUR])`.
+
+#### Catalog models live in `Larasell\Larasell\Catalog\Models`
+
+The catalog is now a module of its own, so its models moved out of the shared
+`Larasell\Larasell\Models` namespace:
+
+| Before | After |
+| --- | --- |
+| `Larasell\Larasell\Models\Product` | `Larasell\Larasell\Catalog\Models\Product` |
+| `Larasell\Larasell\Models\ProductVariant` | `Larasell\Larasell\Catalog\Models\ProductVariant` |
+| `Larasell\Larasell\Models\Category` | `Larasell\Larasell\Catalog\Models\Category` |
+| `Larasell\Larasell\Models\ProductAttribute` | `Larasell\Larasell\Catalog\Models\ProductAttribute` |
+| `Larasell\Larasell\Models\ProductAttributeValue` | `Larasell\Larasell\Catalog\Models\ProductAttributeValue` |
+| `Larasell\Larasell\Models\ProductImage` | `Larasell\Larasell\Catalog\Models\ProductImage` |
+| `Larasell\Larasell\Models\Relations\Siblings` | `Larasell\Larasell\Catalog\Models\Relations\Siblings` |
+
+Tables and columns are unchanged.
+
+##### Who is affected
+
+Apps that import any of the classes above. Polymorphic relations that stored
+one of these class names in a `*_type` column also need their rows updated,
+unless the app uses a morph map.
+
+##### How to upgrade
+
+Update the imports:
+
+```php
+// Before
+use Larasell\Larasell\Models\Category;
+use Larasell\Larasell\Models\Product;
+
+// After
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
+```
+
+This replaces them across an app on Linux (on macOS, use `sed -i ''`):
+
+```bash
+grep -rlE 'Larasell\\Larasell\\Models\\(Product|Category|Relations)' app config database routes tests \
+  | xargs sed -i -E 's/Larasell\\Larasell\\Models\\(Product|Category|Relations)/Larasell\\Larasell\\Catalog\\Models\\\1/g'
+```
+
+#### Write the catalog through its actions
+
+Products, variants, categories, attributes, attribute values and images are
+now written through actions in `Larasell\Larasell\Catalog\Actions`, such as
+`CreateProduct`, `UpdateProduct`, `MoveCategory` and `DeleteProduct`. Each
+action runs in its own transaction, locks the rows it changes, checks its
+rules before writing, and dispatches a domain event from
+`Larasell\Larasell\Catalog\Events` (`ProductUpdated`, `CategoryMoved`, …).
+Other modules, such as SEO, react to those events inside the same
+transaction, so a product and its URL are saved together or not at all.
+
+**Writing a model directly no longer updates anything else.** `$product->update()`,
+`Product::create()` and `$category->delete()` still write the row, but no
+event is dispatched: SEO URLs are not created, moved, or marked as gone, and
+the rules other modules set (no delete of a product with open orders or
+reserved stock) are not checked.
+
+##### Who is affected
+
+Apps, imports and seeders that create, change or delete catalog models with
+Eloquent. Reading models is unchanged.
+
+##### How to upgrade
+
+Call the action that matches the change. Actions take IDs and plain input:
+
+```php
+use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\DeleteProduct;
+use Larasell\Larasell\Catalog\Actions\MoveCategory;
+use Larasell\Larasell\Catalog\Actions\SetProductCategories;
+use Larasell\Larasell\Catalog\Actions\UpdateProduct;
+
+// Before
+$product = Product::create(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+$product->categories()->attach($shoes);
+$product->update(['name' => ['en' => 'Leather Boots']]);
+$boots->update(['parent_id' => $sale->id]);
+$product->delete();
+
+// After
+$product = app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+app(SetProductCategories::class)->handle($product->id, [$shoes->id]);
+app(UpdateProduct::class)->handle($product->id, ['name' => ['en' => 'Leather Boots']]);
+app(MoveCategory::class)->handle($boots->id, $sale->id);
+app(DeleteProduct::class)->handle($product->id);
+```
+
+`UpdateCategory` no longer accepts `parent_id` or `position`; use
+`MoveCategory`, which refuses to put a category below itself or one of its
+descendants (`CategoryCycle`). `DeleteProduct` throws `ProductInUse` while
+an open order contains the product or units of it are reserved.
+
+After bulk writes that bypassed the actions, bring the URLs up to date:
+
+```bash
+php artisan larasell:regenerate-seo-urls
+```
+
+#### Entry points serve a locale; the currency comes from the visit
+
+An entry point (a host plus an optional path prefix) now serves one locale,
+not one locale and one currency. Tying a URL to a currency meant a shop
+selling in EUR and CHF needed a domain per currency, which search engines see
+as duplicate pages. A visit starts in the entry point's optional
+`default_currency`, else the channel's default, and can switch to any other
+currency the channel sells in through the same URL.
+
+##### Who is affected
+
+Apps that call `AddEntryPoint`, read `EntryPoint::$currency` or the
+`currency` column of `larasell_storefront_entry_points`, or listen to
+`EntryPointCreated`. Apps that only use `StorefrontContext` are not affected.
+
+##### How to upgrade
+
+| Before | After |
+| --- | --- |
+| `AddEntryPoint` input `currency` | `default_currency` (optional) |
+| `EntryPoint::$currency`, column `currency` | `EntryPoint::$defaultCurrency`, nullable column `default_currency` |
+| `EntryPointCreated::$currency` | `EntryPointCreated::$defaultCurrency` (nullable) |
+| one primary entry point per channel, locale and currency | one primary entry point per channel and locale |
+| a currency needs its own entry point | `$storefront->withCurrency(Currency::EUR)` on the same entry point |
+
+```php
+// Before
+$addEntryPoint->handle($channelId, ['url' => 'https://shop.ch', 'locale' => 'de', 'currency' => 'CHF']);
+
+// After
+$addEntryPoint->handle($channelId, ['url' => 'https://shop.ch', 'locale' => 'de', 'default_currency' => 'CHF']);
+$storefront = $storefront->withCurrency(Currency::EUR); // the visitor picked EUR
+```
+
+Where the visitor's pick comes from, such as a switcher or their cart's
+`currency`, is up to the app: call `withCurrency()` with it.
+
+#### Larasell's models can no longer be swapped
+
+The `larasell.models` and `larasell.seo.models` config keys are gone, together
+with `Larasell\Larasell\Models\ModelRegistry` and `ModelEntry`. Core code now
+always uses its own models, such as `Product` and `Order`.
+
+Swapping a model let an app change core behaviour from the outside, and every
+module had to look its models up at runtime. That made identities unstable (a
+swapped product got new SEO URLs) and made module boundaries impossible to
+check. Apps now keep their own data in their own models and link them to core
+records by ID.
+
+##### Who is affected
+
+Apps that set `larasell.models.*` or `larasell.seo.models.seo_url` in
+`config/larasell.php` or `config/larasell/seo.php`, or that resolve
+`ModelRegistry` from the container. Apps that never swapped a model are not
+affected; you may delete the `models` section from published config files.
+
+##### How to upgrade
+
+Remove the `models` section from your published config. Move the fields and
+relations your subclass added into a model of your own with a foreign key to
+the core table:
+
+```php
+// Before: config/larasell.php
+'models' => [
+    'product' => App\Models\Product::class, // extends Larasell\Larasell\Catalog\Models\Product
+],
+
+// After: a model of your own, linked by product ID
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Larasell\Larasell\Catalog\Models\Product;
+
+class ProductDetails extends Model
+{
+    protected $fillable = ['product_id', 'care_instructions'];
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
+
+// Read it next to the product
+$details = ProductDetails::query()->where('product_id', $product->id)->first();
+```
+
+```php
+// Migration for the app's own table
+Schema::create('product_details', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('product_id')->unique()->constrained('larasell_products')->cascadeOnDelete();
+    $table->text('care_instructions')->nullable();
+    $table->timestamps();
+});
+```
+
+To react to changes of core records, listen to their domain events, such as
+`Larasell\Larasell\Catalog\Events\ProductDeleted`, instead of overriding model
+methods.
+
+#### Product and category slugs are replaced by SEO URLs
+
+The `slug` columns of `larasell_products` and `larasell_categories` are
+dropped, together with the routing built on them. Storefront URLs now live in
+the new SEO module (`larasell_seo_urls`): each product and category gets a URL
+per channel and locale, renames keep the old URL as a redirect, and deleted
+pages answer 410 or redirect to a replacement.
+
+**Existing slugs are not carried over.** After migrating, products live at
+`p/{name}` and categories at `{parent path}/{name}`, built from their names.
+Links to old slug URLs answer 404 unless you redirect them yourself.
+
+##### Who is affected
+
+Apps that use any of these:
+
+- the `slug` attribute of `Product` or `Category`, including `'slug' => …` in
+  `create()` or `update()` calls and queries such as `where('slug->en', …)`;
+- `Larasell\Larasell\Routing\ProductDetailRoute`,
+  `Larasell\Larasell\Routing\ProductListingRoute`, or
+  `Larasell\Larasell\Routing\CategoryUrl`;
+- `Larasell\Larasell\Http\Requests\ProductDetailRequest`;
+- `ProductListingRequest` with a `{category}` slug path;
+- `OrderItem::$product_slug`. Checkout no longer writes it; the column stays,
+  so orders placed before the upgrade keep their value.
+
+Attribute and attribute value slugs (`ProductAttribute::$slug`,
+`ProductAttributeValue::$slug`) are unchanged.
+
+##### How to upgrade
+
+Run the migrations, then create URLs for your existing products and
+categories:
+
+```bash
+php artisan migrate
+php artisan larasell:regenerate-seo-urls
+```
+
+Stop passing `slug` when creating products and categories, and create them
+through the catalog's actions, which give them their URLs (see
+`catalog-writes-through-actions.md`):
+
+```php
+// Before
+Product::create(['slug' => 'boots', 'name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+
+// After
+app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
+```
+
+Register storefront routes inside `Route::storefront()`. Typed parameters are
+resolved from SEO URLs, and `Route::seo()` serves categories at any depth and
+custom URLs:
+
+```php
+// Before
+use Larasell\Larasell\Routing\ProductDetailRoute;
+use Larasell\Larasell\Routing\ProductListingRoute;
+
+ProductDetailRoute::get(ShowProduct::class, prefix: 'p');
+ProductListingRoute::get(ShowCategory::class, prefix: 'c');
+
+// After
+use Illuminate\Support\Facades\Route;
+use Larasell\Larasell\Catalog\Models\Category;
+use Larasell\Larasell\Catalog\Models\Product;
+
+Route::storefront(function () {
+    Route::get('p/{product}', ShowProduct::class);
+    Route::seo([Category::class => ShowCategory::class]);
+});
+```
+
+Controllers that used `ProductDetailRequest` take the product directly.
+`ProductListingRequest` keeps working and reads the category the route bound:
+
+```php
+// Before
+public function __invoke(ProductDetailRequest $request)
+{
+    $product = $request->product();
+}
+
+// After
+public function __invoke(Product $product) {}
+```
+
+Generate links with the `Seo` facade instead of `CategoryUrl` or slugs:
+
+```php
+// Before
+CategoryUrl::make($category);
+url('p/'.$product->slug->get());
+
+// After
+use Larasell\Larasell\Seo\Facades\Seo;
+
+Seo::url($category);
+Seo::url($product);
+```
+
+Deleted and hidden pages throw `SeoPageGone` (410) and `SeoPageHidden` (404).
+Render them like any exception, e.g. in `bootstrap/app.php`:
+
+```php
+use Larasell\Larasell\Seo\Exceptions\SeoPageGone;
+
+$exceptions->render(fn (SeoPageGone $e) => response()->view('discontinued', $e->snapshot, 410));
+```
+
+#### Absolute URLs need a `StorefrontContext`
+
+A sales channel no longer has to be a web shop: POS, headless or marketplace
+channels have no URL. So `SalesContext` now holds only channel, locale and
+currency, and everything that builds an absolute URL takes a
+`Larasell\Larasell\Storefront\StorefrontContext`: a sales context plus the
+entry point (host and prefix) it is reached through. Entry points, storefront
+routing and `storefront_route()` moved to the `Larasell\Larasell\Storefront`
+namespace; its service provider is auto-discovered.
+
+| Before | After |
+| --- | --- |
+| `SalesContext::for('default', 'en')->url($path)` | `StorefrontContext::for('default', 'en')->url($path)` |
+| `$context->entryPoint` on `SalesContext` | `$storefront->entryPoint`, `$storefront->sales` for the rest |
+| `storefront_route($name, $params, SalesContext $context)` | `storefront_route($name, $params, StorefrontContext $context)` |
+| `Seo::url($page, SalesContext $context)`, `availableUrl`, `preload`, `resolve` | the same with a `StorefrontContext` |
+| `GoneStrategy`, `HiddenPagePolicy`, `SeoPageGone::$context`, `SeoPageHidden::$context` | typed with `StorefrontContext` |
+| `Larasell\Larasell\SalesChannels\Actions\AddEntryPoint`, `DeleteEntryPoint` | `Larasell\Larasell\Storefront\Actions\…` |
+| `Larasell\Larasell\SalesChannels\Events\EntryPointCreated`, `EntryPointDeleted` | `Larasell\Larasell\Storefront\Events\…` |
+| `SalesChannelType` enum | a string type registered with `SalesChannelTypes`, e.g. `'storefront'` |
+| `CreateSalesChannel` with `entry_points` | `CreateSalesChannel` with `type`, then `AddEntryPoint` per entry point |
+| table `larasell_sales_channel_entry_points`, column `entry_point_id` on carts and orders | table `larasell_storefront_entry_points`; carts and orders store no entry point |
+
+##### Who is affected
+
+Apps that build URLs with a context they pass themselves, implement a gone
+strategy or hidden page policy, or create channels and entry points in
+seeders. Storefront controllers that rely on the current request's context
+keep working.
+
+##### How to upgrade
+
+```php
+// Before
+use Larasell\Larasell\SalesChannels\SalesContext;
+
+$url = Seo::url($product, SalesContext::for('default', 'de'));
+$link = storefront_route('order', ['order' => $order->public_id], $order->sales_context);
+
+// After
+use Larasell\Larasell\Storefront\StorefrontContext;
+
+$url = Seo::url($product, StorefrontContext::for('default', 'de'));
+// An order links back through the primary entry point of its channel, locale and currency.
+$link = storefront_route('order', ['order' => $order->public_id], StorefrontContext::for($order->sales_context));
+```
+
+To sell through another kind of channel, register its type, e.g. in a service
+provider:
+
+```php
+$this->callAfterResolving(SalesChannelTypes::class, fn (SalesChannelTypes $types) => $types->register('pos'));
+```
+
+#### Actions, events, jobs and sales contexts use typed IDs
+
+The catalog, sales channel and storefront actions, the workflows, and the jobs
+that release expired orders now take typed IDs such as `ProductId` or
+`CategoryId` instead of bare numbers. Their events and `SalesContext`
+carry typed IDs too. A number meant for one kind of record can no longer be
+passed where another is expected, e.g. a variant ID to `DeleteProduct`.
+
+Each ID class wraps a positive `int` (`->value`) and is named after its record:
+
+| Module | IDs |
+| --- | --- |
+| Catalog (`Larasell\Larasell\Catalog`) | `ProductId`, `VariantId`, `CategoryId`, `AttributeId`, `AttributeValueId`, `ImageId` |
+| Sales channels (`Larasell\Larasell\SalesChannels`) | `SalesChannelId` |
+| Storefront (`Larasell\Larasell\Storefront`) | `EntryPointId` |
+| Carts (`Larasell\Larasell\Carts`) | `CartId`, `CartItemId` |
+| Checkout (`Larasell\Larasell\Checkout`) | `OrderId` |
+
+Models keep their `int` keys; nothing changes inside a module.
+
+##### Who is affected
+
+Apps that call these actions or workflows, listen to their events, construct
+`SalesContext` or `EntryPoint` themselves, or pass a channel ID to
+`SalesContext::for()`.
+
+##### How to upgrade
+
+Wrap IDs where you call an action, and read `->value` where you need the number:
+
+```php
+use Larasell\Larasell\Catalog\Actions\SetProductCategories;
+use Larasell\Larasell\Catalog\Actions\UpdateProduct;
+use Larasell\Larasell\Catalog\CategoryId;
+use Larasell\Larasell\Catalog\ProductId;
+
+// Before
+app(UpdateProduct::class)->handle($product->id, ['sku' => 'B-2']);
+app(SetProductCategories::class)->handle($product->id, [$shoes->id, $sale->id]);
+
+// After
+app(UpdateProduct::class)->handle(ProductId::of($product), ['sku' => 'B-2']);
+app(SetProductCategories::class)->handle(ProductId::of($product), CategoryId::many([$shoes->id, $sale->id]));
+
+// From request input; throws Larasell\Larasell\Ids\InvalidId for anything but a positive whole number
+app(UpdateProduct::class)->handle(ProductId::fromString($request->route('product')), $attributes);
+```
+
+In listeners, compare IDs with `equals()` or their `->value`, never with `===`,
+which compares instances:
+
+```php
+// Before
+if ($event->productId === $product->id) { /* ... */ }
+
+// After
+if ($event->productId->value === $product->id) { /* ... */ }
+if ($event->productId->equals(ProductId::of($product))) { /* ... */ }
+```
+
+`CreateProductVariant` now returns a `VariantId` and `GenerateProductVariants`
+a `list<VariantId>`. `SalesContext::for()` and `StorefrontContext::for()` take
+a channel key or a `SalesChannelId`, no longer an `int`.
+`ReleaseExpiredInventoryForOrder` and `ReleaseExpiredPromotionRedemptionsForOrder`
+take an `OrderId`. In `CartMerged`, `$sourceCartId` is a `CartId`; in
+`CartMergeLineAdjustment`, `$variantId` is a `VariantId`.
+
 ## [1.23.0](https://github.com/Larasell-dev/larasell/compare/v1.22.0...v1.23.0) (2026-11-03)
 
 
