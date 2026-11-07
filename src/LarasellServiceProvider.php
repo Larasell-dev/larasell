@@ -14,7 +14,6 @@ use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Checkout\Listeners\KeepChannelsWithOrders;
 use Larasell\Larasell\Checkout\Listeners\KeepProductsOfOpenOrders;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
-use Larasell\Larasell\Contracts\PlaceholderGenerator;
 use Larasell\Larasell\Contracts\PlanResolver;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Contracts\TaxCalculator;
@@ -22,8 +21,6 @@ use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
 use Larasell\Larasell\Contracts\TaxRateResolver;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
-use Larasell\Larasell\Images\Commands\RefreshPlaceholdersCommand;
-use Larasell\Larasell\Images\NullPlaceholderGenerator;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
 use Larasell\Larasell\Inventory\Listeners\KeepReservedProducts;
 use Larasell\Larasell\Licensing\Commands\ActivateLicenseCommand;
@@ -76,9 +73,6 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
         ));
-        $this->app->bind(PlaceholderGenerator::class, fn ($app) => $app->make(
-            $app['config']->get('larasell.images.placeholder', NullPlaceholderGenerator::class)
-        ));
         // Production always uses the lease, so LARASELL_LICENSE_DRIVER=env cannot unlock Pro on a live shop.
         $this->app->bind(PlanResolver::class, fn ($app) => $app->make(
             $app->isProduction() ? LeasePlanResolver::class : match ($app['config']->get('larasell.licensing.driver', 'env')) {
@@ -116,7 +110,6 @@ class LarasellServiceProvider extends ServiceProvider
                 ActivateLicenseCommand::class,
                 MakeOrderNumberGeneratorCommand::class,
                 MakeOrderNumberSequenceCommand::class,
-                RefreshPlaceholdersCommand::class,
                 ReleaseExpiredInventoryCommand::class,
                 ReleaseExpiredPromotionRedemptionsCommand::class,
                 RenewLicenseCommand::class,
