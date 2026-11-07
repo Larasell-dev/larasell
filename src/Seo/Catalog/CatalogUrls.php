@@ -15,6 +15,8 @@ use Larasell\Larasell\Catalog\Events\ProductUpdated;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\SalesChannels\SalesContext;
+use Larasell\Larasell\Seo\Exceptions\CustomUrlRejected;
+use Larasell\Larasell\Seo\Exceptions\InvalidSeoPath;
 use Larasell\Larasell\Seo\SeoResources;
 use Larasell\Larasell\Seo\SeoUrlManager;
 
@@ -83,9 +85,13 @@ final readonly class CatalogUrls
         $page = $class::query()->findOrFail($id);
 
         foreach ($plan as [$context, $path]) {
-            $path === null
-                ? $this->urls->resetToAutomatic($page, $context)
-                : $this->urls->setCustom($page, $context, $path);
+            try {
+                $path === null
+                    ? $this->urls->resetToAutomatic($page, $context)
+                    : $this->urls->setCustom($page, $context, $path);
+            } catch (InvalidSeoPath $exception) {
+                throw CustomUrlRejected::in($context, $exception);
+            }
         }
     }
 }

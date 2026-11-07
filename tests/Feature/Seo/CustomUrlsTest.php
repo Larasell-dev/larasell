@@ -16,11 +16,17 @@ use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\SalesChannels\Actions\CreateSalesChannel;
+use Larasell\Larasell\SalesChannels\Models\SalesChannel;
+use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Seo\Catalog\CustomUrls;
+use Larasell\Larasell\Seo\Exceptions\CustomUrlRejected;
 use Larasell\Larasell\Seo\Exceptions\InvalidSeoPath;
 use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;
+use Larasell\Larasell\Settings\CurrencySettings;
+use Larasell\Larasell\Storefront\Actions\AddEntryPoint;
 use Larasell\Larasell\Storefront\StorefrontContext;
 use Larasell\Larasell\Translatable;
 
@@ -30,9 +36,19 @@ function customUrl(string $path, string $locale = 'en'): mixed
 }
 
 /** @param  array<string, string|null>  $paths */
+function ukChannel(): SalesChannelId
+{
+    $channel = app(CreateSalesChannel::class)->handle([
+        'key' => 'uk', 'name' => 'UK', 'type' => 'storefront', 'locales' => ['en'], 'currencies' => app(CurrencySettings::class)->enabled(),
+    ]);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.co.uk', 'locale' => 'en']);
+
+    return SalesChannelId::of($channel);
+}
+
 function withUrls(array $paths): Attachments
 {
-    return new Attachments(new CustomUrls($paths));
+    return new Attachments(CustomUrls::byLocale($paths));
 }
 
 it('creates a product with custom URLs per locale, next to its automatic ones', function () {
@@ -52,7 +68,7 @@ it('creates no product when its custom URL is taken', function () {
     app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Sale'], 'price' => Price::of(1000)], withUrls(['en' => 'sale'])));
 
     expect(fn () => app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)], withUrls(['en' => 'sale']))))
-        ->toThrow(InvalidSeoPath::class)
+        ->toThrow(CustomUrlRejected::class)
         ->and(Product::query()->count())->toBe(1)
         ->and(SeoUrl::query()->where('path', 'p/boots')->exists())->toBeFalse();
 });
@@ -89,9 +105,9 @@ it('rolls back the category when its custom URL is taken', function () {
     $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
 
     expect(fn () => app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: withUrls(['en' => 'sale']))))
-        ->toThrow(InvalidSeoPath::class)
+        ->toThrow(CustomUrlRejected::class)
         ->and(fn () => app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'Footwear']), attachments: withUrls(['en' => 'sale']))))
-        ->toThrow(InvalidSeoPath::class)
+        ->toThrow(CustomUrlRejected::class)
         ->and(Category::query()->pluck('id')->all())->toBe([$sale->id, $shoes->id])
         ->and(Category::query()->findOrFail($shoes->id)->name->get('en'))->toBe('Shoes');
 });
@@ -108,3 +124,43 @@ it('refuses a locale no channel serves before anything is written', function () 
         ->and($queries)->toBe(0)
         ->and(Category::query()->count())->toBe(0);
 });
+
+it('gives each channel of a locale its own custom URL', function () {
+    $uk = ukChannel();
+    $default = SalesChannelId::of(SalesChannel::query()->where('key', 'default')->sole());
+
+    $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(
+        new Translatable(['en' => 'Shoes']),
+        attachments: new Attachments(CustomUrls::byChannel('en', [$default->value => 'footwear', $uk->value => 'trainers'])),
+    ));
+
+    expect(customUrl('footwear')->resource?->is($shoes))->toBeTrue()
+        ->and(app(SeoPages::class)->resolve('trainers', StorefrontContext::for('uk', 'en'))->resource?->is($shoes))->toBeTrue()
+        ->and(app(SeoPages::class)->resolve('footwear', StorefrontContext::for('uk', 'en'))->resource)->toBeNull();
+});
+
+it('names the channel and reason of a rejected custom URL', function () {
+    $uk = ukChannel();
+    app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Sale']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))));
+
+    try {
+        app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))));
+        $this->fail('The taken path was accepted.');
+    } catch (CustomUrlRejected $exception) {
+        expect($exception->context->channelId->equals($uk))->toBeTrue()
+            ->and($exception->reason)->toBe(InvalidSeoPath::TAKEN)
+            ->and($exception->path)->toBe('sale')
+            ->and($exception->getPrevious())->toBeInstanceOf(InvalidSeoPath::class);
+    }
+
+    expect(Category::query()->count())->toBe(1);
+});
+
+it('refuses a channel that does not serve the locale, or does not exist', function (Closure $channelId) {
+    shopLocales(['en', 'de']);
+
+    expect(fn () => CustomUrls::byChannel('fr', [$channelId() => 'chaussures']))->toThrow(InvalidArgumentException::class);
+})->with([
+    'wrong locale' => [fn () => SalesChannel::query()->where('key', 'default')->value('id')],
+    'unknown channel' => [fn () => 999],
+]);
