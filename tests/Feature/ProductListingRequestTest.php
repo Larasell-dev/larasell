@@ -2,11 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
+use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Http\Requests\ProductListingRequest;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\Translatable;
 
 beforeEach(function () {
     config()->set('queue.default', 'sync');
@@ -134,9 +138,11 @@ it('lists the products of the category at a nested URL in the current locale', f
 
 function categoryForListing(array $attributes = []): Category
 {
-    return app(CreateCategory::class)->handle(array_merge([
-        'name' => 'Shirts',
-    ], $attributes));
+    return app(CreateCategory::class)->handle(new CreateCategoryPayload(
+        name: is_array($attributes['name'] ?? null) ? new Translatable($attributes['name']) : Translatable::fromString($attributes['name'] ?? 'Shirts'),
+        status: $attributes['status'] ?? Visibility::Visible,
+        parentId: isset($attributes['parent_id']) ? new CategoryId($attributes['parent_id']) : null,
+    ));
 }
 
 function productForListing(array $attributes, Category $category): Product

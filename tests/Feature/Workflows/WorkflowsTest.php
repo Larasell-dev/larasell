@@ -2,7 +2,9 @@
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\Actions\UpdateCategoryPayload;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Exceptions\ProductInUse;
 use Larasell\Larasell\Catalog\Models\Category;
@@ -18,6 +20,7 @@ use Larasell\Larasell\Seo\Models\SeoUrl;
 use Larasell\Larasell\Seo\ResolutionKind;
 use Larasell\Larasell\Seo\SeoPages;
 use Larasell\Larasell\Storefront\StorefrontContext;
+use Larasell\Larasell\Translatable;
 use Larasell\Larasell\Workflows\CreateCategoryWithUrls;
 use Larasell\Larasell\Workflows\CreateProductWithUrls;
 use Larasell\Larasell\Workflows\DiscontinueProduct;
@@ -118,12 +121,12 @@ it('updates a product and its custom URL together, and null goes back to the aut
 });
 
 it('creates and updates a category with a custom URL, and its subcategories follow', function () {
-    $shoes = app(CreateCategoryWithUrls::class)->handle(['name' => ['en' => 'Shoes']], ['en' => 'footwear']);
-    $boots = app(CreateCategory::class)->handle(['name' => ['en' => 'Boots'], 'parent_id' => $shoes->id]);
+    $shoes = app(CreateCategoryWithUrls::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])), ['en' => 'footwear']);
+    $boots = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), parentId: CategoryId::of($shoes)));
 
     expect(resolveUrl('footwear/boots')->resource?->is($boots))->toBeTrue();
 
-    app(UpdateCategoryWithUrls::class)->handle(CategoryId::of($shoes), ['name' => ['en' => 'All Shoes']], ['en' => 'all-shoes']);
+    app(UpdateCategoryWithUrls::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'All Shoes'])), ['en' => 'all-shoes']);
 
     expect(resolveUrl('all-shoes/boots')->resource?->is($boots))->toBeTrue()
         ->and(resolveUrl('footwear/boots')->redirect?->url)->toBe('http://localhost/all-shoes/boots')

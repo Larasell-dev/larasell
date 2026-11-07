@@ -11,18 +11,21 @@ final readonly class CreateCategory
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    /** @param  array<string, mixed>  $attributes  Category attributes, e.g. name, parent_id, status, position */
-    public function handle(array $attributes): Category
+    public function handle(CreateCategoryPayload $payload): Category
     {
-        return $this->db->transaction(function () use ($attributes): Category {
-            if (isset($attributes['parent_id'])) {
+        return $this->db->transaction(function () use ($payload): Category {
+            if ($payload->parentId !== null) {
                 // Holds the parent until the new child is in, so a concurrent delete or move waits.
-                Category::query()->lockForUpdate()->findOrFail($attributes['parent_id']);
+                Category::query()->lockForUpdate()->findOrFail($payload->parentId->value);
             }
 
-            $category = Category::query()->create($attributes);
+            $category = Category::query()->create([
+                'name' => $payload->name,
+                'status' => $payload->status,
+                'parent_id' => $payload->parentId?->value,
+            ]);
 
-            CategoryCreated::dispatch(CategoryId::of($category), $category->parent_id === null ? null : new CategoryId($category->parent_id));
+            CategoryCreated::dispatch(CategoryId::of($category), $payload->parentId, $payload->extensions);
 
             return $category;
         });

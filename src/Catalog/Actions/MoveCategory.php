@@ -14,25 +14,42 @@ final readonly class MoveCategory
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    /** @param  int|null  $position  null puts it after its new siblings */
-    public function handle(CategoryId $categoryId, ?CategoryId $parentId, ?int $position = null): Category
+    /**
+     * Numbers its new siblings again from 0, with it at the payload's position.
+     *
+     * @throws CategoryCycle when the new parent is the category or one below it
+     */
+    public function handle(CategoryId $categoryId, MoveCategoryPayload $payload): Category
     {
-        return $this->db->transaction(function () use ($categoryId, $parentId, $position): Category {
+        $parentId = $payload->parentId;
+
+        return $this->db->transaction(function () use ($categoryId, $parentId, $payload): Category {
             $category = Category::query()->lockForUpdate()->findOrFail($categoryId->value);
             if ($parentId !== null) {
                 $this->assertNoCycle($category, $parentId);
             }
 
             $oldParentId = $category->parent_id;
-            $category->parent_id = $parentId?->value;
-            $category->position = $position ?? ($oldParentId === $parentId?->value ? $category->position : $this->nextPosition($parentId?->value));
+            $siblings = Category::query()
+                ->where('parent_id', $parentId?->value)
+                ->whereKeyNot($category->id)
+                ->orderBy('position')->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $siblings->splice(min($payload->position ?? $siblings->count(), $siblings->count()), 0, [$category]);
 
-            if (! $category->isDirty()) {
-                return $category;
+            $category->parent_id = $parentId?->value;
+            $moved = $category->isDirty('parent_id');
+
+            // Saving only writes the categories whose parent or position changed.
+            foreach ($siblings->values() as $position => $sibling) {
+                $sibling->position = $position;
+                $sibling->save();
             }
 
-            $category->save();
-            CategoryMoved::dispatch($categoryId, $oldParentId === null ? null : new CategoryId($oldParentId), $parentId);
+            if ($moved || $category->wasChanged('position')) {
+                CategoryMoved::dispatch($categoryId, $oldParentId === null ? null : new CategoryId($oldParentId), $parentId);
+            }
 
             return $category;
         });
@@ -58,12 +75,5 @@ final readonly class MoveCategory
 
             $seen[$id] = true;
         }
-    }
-
-    private function nextPosition(?int $parentId): int
-    {
-        $last = Category::query()->where('parent_id', $parentId)->max('position');
-
-        return $last === null ? 0 : (int) $last + 1;
     }
 }

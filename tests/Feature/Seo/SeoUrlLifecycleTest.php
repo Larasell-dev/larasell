@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Larasell\Larasell\Catalog\Actions\CreateCategory;
+use Larasell\Larasell\Catalog\Actions\CreateCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
+use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Models\Category;
 use Larasell\Larasell\Catalog\Models\Product;
@@ -47,11 +49,11 @@ function seoProduct(string|array $name, Visibility $status = Visibility::Visible
 
 function seoCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
 {
-    return app(CreateCategory::class)->handle([
-        'parent_id' => $parent?->getKey(),
-        'name' => ['en' => $name],
-        'status' => $status,
-    ]);
+    return app(CreateCategory::class)->handle(new CreateCategoryPayload(
+        name: new Translatable(['en' => $name]),
+        status: $status,
+        parentId: $parent === null ? null : CategoryId::of($parent),
+    ));
 }
 
 /**
@@ -94,7 +96,7 @@ it('keeps the old URL as history when a public product is renamed', function () 
 
 it('treats products and categories created without a status as public', function () {
     $product = app(CreateProduct::class)->handle(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]);
-    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes']]);
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
 
     updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
     updateCatalog($category, ['name' => ['en' => 'Footwear']]);
@@ -547,7 +549,7 @@ it('gives existing pages their URLs in a locale a channel gains, in a queued job
     config()->set('queue.default', 'sync');
     config()->set('larasell.locale.supported', ['en', 'de']);
     $product = seoProduct(['en' => 'Boots', 'de' => 'Stiefel']);
-    $category = app(CreateCategory::class)->handle(['name' => ['en' => 'Shoes', 'de' => 'Schuhe']]);
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes', 'de' => 'Schuhe'])));
 
     expect(seoPaths($product, 'de'))->toBe([]);
 

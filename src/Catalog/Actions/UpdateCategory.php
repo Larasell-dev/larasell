@@ -3,7 +3,6 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
-use InvalidArgumentException;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryUpdated;
 use Larasell\Larasell\Catalog\Models\Category;
@@ -12,20 +11,22 @@ final readonly class UpdateCategory
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    /** @param  array<string, mixed>  $attributes  Anything but its place in the tree; see MoveCategory */
-    public function handle(CategoryId $categoryId, array $attributes): Category
+    public function handle(CategoryId $categoryId, UpdateCategoryPayload $payload): Category
     {
-        if (array_key_exists('parent_id', $attributes) || array_key_exists('position', $attributes)) {
-            throw new InvalidArgumentException('Move a category with '.MoveCategory::class.', which keeps the tree free of cycles.');
-        }
-
-        return $this->db->transaction(function () use ($categoryId, $attributes): Category {
+        return $this->db->transaction(function () use ($categoryId, $payload): Category {
             $category = Category::query()->lockForUpdate()->findOrFail($categoryId->value);
-            $changed = array_keys($category->fill($attributes)->getDirty());
+            $changed = array_keys($category->fill(array_filter(
+                ['name' => $payload->name, 'status' => $payload->status],
+                fn (mixed $value): bool => $value !== null,
+            ))->getDirty());
 
             if ($changed !== []) {
                 $category->save();
-                CategoryUpdated::dispatch($categoryId, $changed);
+            }
+
+            // Extensions are what the app saves with the category, so their listeners run either way.
+            if ($changed !== [] || ! $payload->extensions->isEmpty()) {
+                CategoryUpdated::dispatch($categoryId, $changed, $payload->extensions);
             }
 
             return $category;

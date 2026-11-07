@@ -1,12 +1,15 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Larasell\Larasell\Catalog\Actions\MoveCategoryPayload;
+use Larasell\Larasell\Catalog\Actions\UpdateCategoryPayload;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Storefront\EntryPointId;
 use Larasell\Larasell\Tests\ConcurrencyTestCase;
 use Larasell\Larasell\Tests\TestCase;
+use Larasell\Larasell\Translatable;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,12 +73,15 @@ function updateCatalog(Product|Category $model, array $attributes): void
     }
 
     if (array_key_exists('parent_id', $attributes)) {
-        app(MoveCategory::class)->handle(CategoryId::of($model), $attributes['parent_id'] === null ? null : new CategoryId($attributes['parent_id']));
+        app(MoveCategory::class)->handle(CategoryId::of($model), new MoveCategoryPayload($attributes['parent_id'] === null ? null : new CategoryId($attributes['parent_id'])));
         unset($attributes['parent_id']);
     }
 
     if ($attributes !== []) {
-        app(UpdateCategory::class)->handle(CategoryId::of($model), $attributes);
+        app(UpdateCategory::class)->handle(CategoryId::of($model), new UpdateCategoryPayload(
+            name: isset($attributes['name']) ? (is_array($attributes['name']) ? new Translatable($attributes['name']) : Translatable::fromString($attributes['name'])) : null,
+            status: $attributes['status'] ?? null,
+        ));
     }
 }
 
