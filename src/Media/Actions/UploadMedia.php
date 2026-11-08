@@ -5,8 +5,10 @@ namespace Larasell\Larasell\Media\Actions;
 use Illuminate\Database\ConnectionInterface;
 use Larasell\Larasell\Media\Contracts\MediaStorage;
 use Larasell\Larasell\Media\Events\MediaUploaded;
+use Larasell\Larasell\Media\Exceptions\MediaFolderNotFound;
 use Larasell\Larasell\Media\Exceptions\UnsupportedMedia;
 use Larasell\Larasell\Media\Jobs\GenerateThumbnail;
+use Larasell\Larasell\Media\MediaFolders;
 use Larasell\Larasell\Media\MediaId;
 use Larasell\Larasell\Media\MediaType;
 use Larasell\Larasell\Media\Models\Media;
@@ -16,10 +18,11 @@ use Throwable;
 /** Stores an image or video and adds it to the media library, with the file as its original asset. */
 final readonly class UploadMedia
 {
-    public function __construct(private ConnectionInterface $db, private MediaStorage $storage) {}
+    public function __construct(private ConnectionInterface $db, private MediaStorage $storage, private MediaFolders $folders) {}
 
     /**
      * @throws UnsupportedMedia when the file is not an image or video of a supported type
+     * @throws MediaFolderNotFound when the folder doesn't exist (any more); the stored file is removed
      */
     public function handle(UploadMediaPayload $payload): Media
     {
@@ -32,7 +35,12 @@ final readonly class UploadMedia
 
         try {
             return $this->db->transaction(function () use ($payload, $file, $mimeType, $type, $dimensions, $stored): Media {
-                $media = Media::query()->create(['type' => $type, 'title' => $payload->title, 'description' => $payload->description, 'alt' => $payload->alt]);
+                // Checked here, not before storing: only the lock keeps the folder from going until commit.
+                if ($payload->folderId !== null) {
+                    $this->folders->lockTarget($payload->folderId);
+                }
+
+                $media = Media::query()->create(['folder_id' => $payload->folderId?->value, 'type' => $type, 'title' => $payload->title, 'description' => $payload->description, 'alt' => $payload->alt]);
                 $media->setRelation('original', $media->assets()->create([
                     'role' => MediaAsset::ORIGINAL,
                     'visibility' => $payload->visibility,
@@ -46,7 +54,7 @@ final readonly class UploadMedia
                     'checksum' => (string) hash_file('sha256', $file->getRealPath()),
                 ]));
 
-                MediaUploaded::dispatch(MediaId::of($media), $payload->attachments);
+                MediaUploaded::dispatch(MediaId::of($media), $payload->attachments, $payload->folderId);
 
                 // Once committed, so the worker finds the media.
                 GenerateThumbnail::dispatch(MediaId::of($media))->afterCommit();

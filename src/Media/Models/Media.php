@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Media\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Larasell\Larasell\Casts\NullableTranslatableCast;
@@ -15,6 +16,7 @@ use Larasell\Larasell\Translatable;
  * Larasell\Larasell\Media\Actions; they keep the files in step with the rows.
  *
  * @property int $id
+ * @property int|null $folder_id null at the top level of the library
  * @property MediaType $type
  * @property Translatable|null $title a short name, e.g. in the library or as a caption
  * @property Translatable|null $description longer text, e.g. a caption or notes on its use
@@ -34,6 +36,12 @@ class Media extends Model
         'description' => NullableTranslatableCast::class,
         'alt' => NullableTranslatableCast::class,
     ];
+
+    /** @return BelongsTo<MediaFolder, $this> */
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(MediaFolder::class, 'folder_id');
+    }
 
     /** @return HasMany<MediaAsset, $this> */
     public function assets(): HasMany
