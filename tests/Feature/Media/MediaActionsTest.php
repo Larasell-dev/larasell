@@ -109,7 +109,8 @@ it('changes the alt text, and announces only real changes', function () {
     app(UpdateMedia::class)->handle(MediaId::of($media), new UpdateMediaPayload(alt: new Translatable(['en' => 'Boots', 'de' => 'Stiefel']), title: null, description: null));
 
     // Assert
-    expect($updated->alt?->all())->toBe(['en' => 'Boots', 'de' => 'Stiefel'])
+    // MySQL's JSON columns keep their own key order.
+    expect($updated->alt?->all())->toEqual(['en' => 'Boots', 'de' => 'Stiefel'])
         ->and($media->fresh()?->alt?->get('de'))->toBe('Stiefel');
     Event::assertDispatchedTimes(MediaUpdated::class, 1);
     Event::assertDispatched(MediaUpdated::class, fn (MediaUpdated $event): bool => $event->changed === ['alt']);
@@ -248,7 +249,8 @@ it('changes the title and description, and names only those as changed', functio
 
     // Assert
     $fresh = $media->fresh();
-    expect($fresh?->title?->all())->toBe(['en' => 'Front', 'de' => 'Vorne'])
+    // MySQL's JSON columns keep their own key order.
+    expect($fresh?->title?->all())->toEqual(['en' => 'Front', 'de' => 'Vorne'])
         ->and($fresh?->description?->get('en'))->toBe('Licensed until 2027.')
         ->and($fresh?->alt?->get('en'))->toBe('Boots');
     Event::assertDispatched(MediaUpdated::class, fn (MediaUpdated $event): bool => $event->changed === ['title', 'description']);

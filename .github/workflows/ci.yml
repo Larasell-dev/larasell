@@ -163,5 +163,9 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # Video thumbnails are frames FFmpeg takes; the media tests make and read real videos.
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
       - name: Run Pest
         run: composer pest:ci
