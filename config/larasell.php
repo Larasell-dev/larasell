@@ -3,6 +3,7 @@
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
+use Larasell\Larasell\Media\DiskMediaStorage;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\OfflinePaymentProvider;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
@@ -13,6 +14,25 @@ use Larasell\Larasell\Taxes\NoTaxCalculator;
 return [
     'carts' => [
         'merge_strategy' => CombineQuantities::class,
+    ],
+
+    'media' => [
+        // The MediaStorage that keeps uploaded files; the default writes them to the disks below.
+        'storage' => DiskMediaStorage::class,
+        // Public files go to a disk the browser can reach; private ones to one it can't.
+        'disks' => [
+            'public' => env('LARASELL_MEDIA_PUBLIC_DISK', 'public'),
+            'private' => env('LARASELL_MEDIA_PRIVATE_DISK', 'local'),
+        ],
+        'path' => env('LARASELL_MEDIA_PATH', 'larasell/media'),
+        'thumbnails' => [
+            // The longer side, in pixels.
+            'size' => 400,
+            // Workers on other servers need disks they share with the app, e.g. S3.
+            'queue' => env('LARASELL_MEDIA_QUEUE', 'media'),
+        ],
+        // Takes the frame a video's thumbnail is made of; needed where the queue worker runs.
+        'ffmpeg' => env('LARASELL_FFMPEG', 'ffmpeg'),
     ],
 
     'licensing' => [

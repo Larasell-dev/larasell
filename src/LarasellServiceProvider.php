@@ -29,6 +29,9 @@ use Larasell\Larasell\Licensing\Entitlements;
 use Larasell\Larasell\Licensing\EnvPlanResolver;
 use Larasell\Larasell\Licensing\LeasePlanResolver;
 use Larasell\Larasell\Licensing\License;
+use Larasell\Larasell\Media\Commands\GenerateThumbnailsCommand;
+use Larasell\Larasell\Media\Contracts\MediaStorage;
+use Larasell\Larasell\Media\DiskMediaStorage;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberGeneratorCommand;
 use Larasell\Larasell\OrderNumbers\Commands\MakeOrderNumberSequenceCommand;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
@@ -70,6 +73,9 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->bind(CartMergeStrategy::class, fn ($app) => $app->make(
             $app['config']->get('larasell.carts.merge_strategy', CombineQuantities::class)
         ));
+        $this->app->bind(MediaStorage::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.media.storage', DiskMediaStorage::class)
+        ));
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
         ));
@@ -108,6 +114,7 @@ class LarasellServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ActivateLicenseCommand::class,
+                GenerateThumbnailsCommand::class,
                 MakeOrderNumberGeneratorCommand::class,
                 MakeOrderNumberSequenceCommand::class,
                 ReleaseExpiredInventoryCommand::class,

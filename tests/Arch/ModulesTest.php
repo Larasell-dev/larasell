@@ -8,7 +8,11 @@
  */
 
 const MODULE_TIERS = [
-    ['SalesChannels' => ['Larasell\Larasell\SalesChannels']],
+    [
+        'SalesChannels' => ['Larasell\Larasell\SalesChannels'],
+        // Builds on nothing, so the catalog can show media without media knowing about products.
+        'Media' => ['Larasell\Larasell\Media'],
+    ],
     ['Storefront' => ['Larasell\Larasell\Storefront']],
     ['Catalog' => ['Larasell\Larasell\Catalog']],
     [
