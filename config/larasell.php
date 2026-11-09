@@ -15,6 +15,52 @@ return [
         'merge_strategy' => CombineQuantities::class,
     ],
 
+    'media' => [
+        // The provider new files go to, unless their type has its own below. Each asset remembers
+        // its provider, so changing these leaves earlier files where they are.
+        'provider' => env('LARASELL_MEDIA_PROVIDER', 'local'),
+        'provider_for' => [
+            'image' => env('LARASELL_MEDIA_IMAGE_PROVIDER'),
+            'video' => env('LARASELL_MEDIA_VIDEO_PROVIDER'),
+        ],
+        'providers' => [
+            // On the disks below.
+            'local' => ['driver' => 'local'],
+            's3' => [
+                'driver' => 's3',
+                'disks' => [
+                    'public' => env('LARASELL_MEDIA_S3_PUBLIC_DISK', 's3'),
+                    'private' => env('LARASELL_MEDIA_S3_PRIVATE_DISK', 's3'),
+                ],
+            ],
+            // Videos only. Mux tells the app when a video is ready with a webhook, which the app
+            // passes to HandleMuxWebhook once MuxWebhookSignature accepted it.
+            'mux' => [
+                'driver' => 'mux',
+                'token_id' => env('MUX_TOKEN_ID'),
+                'token_secret' => env('MUX_TOKEN_SECRET'),
+                'webhook_secret' => env('MUX_WEBHOOK_SECRET'),
+                // For private videos, which play by signed URLs.
+                'signing_key_id' => env('MUX_SIGNING_KEY_ID'),
+                'signing_key' => env('MUX_SIGNING_KEY'),
+            ],
+        ],
+        // The local provider's disks: public files go to one the browser can reach; private ones to one it can't.
+        'disks' => [
+            'public' => env('LARASELL_MEDIA_PUBLIC_DISK', 'public'),
+            'private' => env('LARASELL_MEDIA_PRIVATE_DISK', 'local'),
+        ],
+        'path' => env('LARASELL_MEDIA_PATH', 'larasell/media'),
+        'thumbnails' => [
+            // The longer side, in pixels.
+            'size' => 400,
+            // Workers on other servers need disks they share with the app, e.g. S3.
+            'queue' => env('LARASELL_MEDIA_QUEUE', 'media'),
+        ],
+        // Takes the frame a video's thumbnail is made of; needed where the queue worker runs.
+        'ffmpeg' => env('LARASELL_FFMPEG', 'ffmpeg'),
+    ],
+
     'licensing' => [
         'driver' => env('LARASELL_LICENSE_DRIVER', 'env'),
         'plan' => env('LARASELL_PLAN', 'pro'),

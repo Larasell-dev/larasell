@@ -23,6 +23,8 @@ final readonly class MoveCategory
     {
         $parentId = $payload->parentId;
 
+        // Retried on deadlock: two opposite moves (A below B, B below A) lock the same categories in
+        // reverse order, and the retry sees the other's move and refuses the cycle.
         return $this->db->transaction(function () use ($categoryId, $parentId, $payload): Category {
             $category = Category::query()->lockForUpdate()->findOrFail($categoryId->value);
             if ($parentId !== null) {
@@ -52,7 +54,7 @@ final readonly class MoveCategory
             }
 
             return $category;
-        });
+        }, attempts: 3);
     }
 
     /**
