@@ -16,7 +16,6 @@ const MODULE_TIERS = [
         'Taxes' => ['Larasell\Larasell\Taxes'],
         'Shipping' => ['Larasell\Larasell\Shipping'],
         'Promotions' => ['Larasell\Larasell\Promotions', 'Larasell\Larasell\Discounts', 'Larasell\Larasell\Models\PromotionRedemption'],
-        'Customers' => ['Larasell\Larasell\Customers', 'Larasell\Larasell\Models\Customer'],
     ],
     ['Carts' => ['Larasell\Larasell\Carts', 'Larasell\Larasell\Models\Cart']],
     ['Checkout' => ['Larasell\Larasell\Checkout', 'Larasell\Larasell\OrderNumbers', 'Larasell\Larasell\Models\Order']],
@@ -64,14 +63,6 @@ const BASELINE = [
             'Larasell\Larasell\Discounts\PromotionContext',
             'Larasell\Larasell\Discounts\DiscountResult',
             'Larasell\Larasell\Discounts\PromotionManager',
-        ],
-    ],
-    'Customers' => [
-        'Carts' => [
-            'Larasell\Larasell\Customers\StorefrontUser',
-        ],
-        'Checkout' => [
-            'Larasell\Larasell\Models\Customer',
         ],
     ],
     'Checkout' => [

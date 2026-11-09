@@ -20,7 +20,6 @@ parameters:
             Taxes: ['Larasell\Larasell\Taxes\']
             Shipping: ['Larasell\Larasell\Shipping\']
             Promotions: ['Larasell\Larasell\Promotions\', 'Larasell\Larasell\Discounts\', 'Larasell\Larasell\Models\PromotionRedemption']
-            Customers: ['Larasell\Larasell\Customers\', 'Larasell\Larasell\Models\Customer']
             Carts: ['Larasell\Larasell\Carts\', 'Larasell\Larasell\Models\Cart']
             Checkout: ['Larasell\Larasell\Checkout\', 'Larasell\Larasell\OrderNumbers\', 'Larasell\Larasell\Models\Order']
             Payments: ['Larasell\Larasell\Payments\', 'Larasell\Larasell\Models\Payment']

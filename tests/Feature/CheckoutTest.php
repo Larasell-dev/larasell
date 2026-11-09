@@ -65,7 +65,7 @@ class RecoveringCheckoutPaymentProvider implements PaymentProvider
 }
 
 /** @return array<string, mixed> */
-function checkoutData(?int $customerId = null): array
+function checkoutData(): array
 {
     return [
         'customer_email' => 'buyer@example.com',
@@ -88,7 +88,6 @@ function checkoutData(?int $customerId = null): array
             'postcode' => '10117',
             'phone' => '+49 30 123456',
         ],
-        'customer_id' => $customerId,
     ];
 }
 
@@ -111,7 +110,6 @@ it('checks out a guest cart with the default cash payment method', function () {
         ->and($order->public_id)->not->toBe((string) $order->getKey())
         ->and($order->currency)->toBe(Currency::EUR)
         ->and($order->status)->toBe(OrderStatus::PendingPayment)
-        ->and($order->customer_id)->toBeNull()
         ->and($order->customer_email)->toBe('buyer@example.com')
         ->and($order->total->amount())->toBe('2598')
         ->and($order->total->toArray())->toBe(['amount' => '2598'])
@@ -176,7 +174,7 @@ it('keeps snapshots after the source product changes', function () {
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 42]);
     $cart->add($product);
 
-    $order = app(Checkout::class)->create($cart, checkoutData(42))->order;
+    $order = app(Checkout::class)->create($cart, checkoutData())->order;
     $product->update([
         'name' => 'Changed Tea',
         'sku' => 'TEA-002',
@@ -186,8 +184,7 @@ it('keeps snapshots after the source product changes', function () {
     $product->delete();
 
     $item = $order->items()->first();
-    expect($order->customer_id)->toBe(42)
-        ->and($order->billing_address)->toBeInstanceOf(Address::class)
+    expect($order->billing_address)->toBeInstanceOf(Address::class)
         ->and($order->billing_address->city)->toBe('Berlin')
         ->and($order->billing_address->street)->toBe(['Main Street 1'])
         ->and($order->shipping_address->street)->toBe(['Shipping Street 2', 'Second floor'])

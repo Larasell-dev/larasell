@@ -50,7 +50,7 @@ final class LimitedPromotion implements HasRedemptionLimit, Promotion
 
 final class TestPromotionCustomerResolver implements PromotionCustomerResolver
 {
-    public function resolve(?int $customerId, string $email): string
+    public function resolve(string $email): string
     {
         return 'resolved:'.strstr($email, '@', true);
     }
@@ -265,19 +265,6 @@ it('supports customer-only redemption limits and a custom customer resolver', fu
         'customer_identifier' => 'resolved:buyer',
         'reserved_count' => 1,
     ]);
-});
-
-it('uses the customer id as the default redemption identity when available', function () {
-    LimitedPromotion::$limit = ['customer' => 1];
-    app(PromotionManager::class)->register(LimitedPromotion::class);
-
-    $order = app(Checkout::class)->create(promotionRedemptionCart(), [
-        'customer_id' => 42,
-        'customer_email' => 'buyer@example.com',
-        'customer_name' => 'Buyer',
-    ])->order;
-
-    expect($order->promotionRedemptions()->sole()->customer_identifier)->toBe('customer:42');
 });
 
 it('redeems reserved promotion capacity when payment succeeds', function () {

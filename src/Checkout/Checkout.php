@@ -61,8 +61,7 @@ class Checkout
      *     customer_name: string,
      *     customer_phone?: string|null,
      *     billing_address?: Address|array<string, mixed>|null,
-     *     shipping_address?: Address|array<string, mixed>|null,
-     *     customer_id?: int|null
+     *     shipping_address?: Address|array<string, mixed>|null
      * } $data
      * @param  array<string, mixed>  $paymentOptions
      */
@@ -170,9 +169,7 @@ class Checkout
                     cart: $lockedCart,
                     shippingAddress: $data['shipping_address'],
                     billingAddress: $data['billing_address'],
-                    customerIdentifier: isset($data['customer_id'])
-                        ? (string) $data['customer_id']
-                        : $data['customer_email'],
+                    customerIdentifier: $data['customer_email'],
                     metadata: ['checkout' => true],
                     discounts: $discounts,
                 );
@@ -206,7 +203,6 @@ class Checkout
                     'idempotency_key' => $idempotencyKey,
                     'idempotency_fingerprint' => $fingerprint,
                     'currency' => $lockedCart->currency,
-                    'customer_id' => $data['customer_id'] ?? null,
                     'customer_email' => $data['customer_email'],
                     'customer_name' => $data['customer_name'],
                     'customer_phone' => $data['customer_phone'] ?? null,
@@ -505,10 +501,6 @@ class Checkout
 
             $this->address($data[$type]);
         }
-
-        if (isset($data['customer_id']) && ! is_int($data['customer_id'])) {
-            throw new InvalidArgumentException('The customer_id must be an integer or null.');
-        }
     }
 
     /** @param Address|array<string, mixed>|null $address */
@@ -533,7 +525,7 @@ class Checkout
     }
 
     /**
-     * @param  array{customer_email: string, customer_id?: int|null}  $data
+     * @param  array{customer_email: string}  $data
      */
     private function reservePromotionRedemption(
         Order $order,
@@ -542,10 +534,7 @@ class Checkout
         ?int $reservationMinutes,
     ): void {
         $now = now();
-        $customerIdentifier = $this->promotionCustomers->resolve(
-            $data['customer_id'] ?? null,
-            $data['customer_email'],
-        );
+        $customerIdentifier = $this->promotionCustomers->resolve($data['customer_email']);
 
         if (trim($customerIdentifier) === '') {
             throw new InvalidArgumentException('The promotion customer resolver must return a customer identifier.');
