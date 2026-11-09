@@ -32,6 +32,7 @@ final readonly class UpdateMedia
                 $changed = array_keys($media->getDirty());
                 $media->save();
                 $moved = [];
+                $visibilityChanged = false;
 
                 foreach ($media->assets()->lockForUpdate()->get() as $asset) {
                     if ($payload->visibility === null || $asset->visibility === $payload->visibility) {
@@ -39,12 +40,18 @@ final readonly class UpdateMedia
                     }
 
                     $old = $asset->file();
-                    $copies[] = $copy = $this->storage->copy($old, $payload->visibility);
-                    $asset->update(['visibility' => $payload->visibility, 'disk' => $copy->disk, 'path' => $copy->path]);
-                    $moved[] = $old;
+                    $copy = $this->storage->copy($old, $payload->visibility);
+                    $asset->update(['visibility' => $payload->visibility, 'disk' => $copy->disk, 'path' => $copy->path, 'metadata' => $copy->metadata ?: null]);
+                    $visibilityChanged = true;
+
+                    // Some providers, e.g. Mux, change the file itself instead of copying it: nothing to remove.
+                    if ([$copy->provider, $copy->disk, $copy->path] !== [$old->provider, $old->disk, $old->path]) {
+                        $copies[] = $copy;
+                        $moved[] = $old;
+                    }
                 }
 
-                if ($moved !== []) {
+                if ($visibilityChanged) {
                     $changed[] = 'visibility';
                 }
 

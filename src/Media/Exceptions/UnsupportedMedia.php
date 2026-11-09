@@ -20,4 +20,14 @@ final class UnsupportedMedia extends InvalidArgumentException implements Structu
             fix: 'Convert the file to one of these types, or check it before uploading with MediaType::forMimeType().',
         );
     }
+
+    public static function byProvider(string $provider, string $fileName, string $mimeType): self
+    {
+        return self::structured(
+            errorCode: 'larasell.media.unsupported-by-provider',
+            message: "The media provider [{$provider}] can't keep [{$fileName}], of the type [{$mimeType}].",
+            why: 'Not every provider takes every kind of media; Mux only takes videos.',
+            fix: 'Send it to another provider, e.g. with larasell.media.provider_for.image.',
+        );
+    }
 }

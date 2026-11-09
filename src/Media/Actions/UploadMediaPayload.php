@@ -21,5 +21,7 @@ final readonly class UploadMediaPayload
         public Attachments $attachments = new Attachments,
         /** The folder it goes in; null for the top level of the library. */
         public ?MediaFolderId $folderId = null,
+        /** The provider in larasell.media.providers that keeps it; null for the one configured for its type. */
+        public ?string $provider = null,
     ) {}
 }
