@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.27.0](https://github.com/Larasell-dev/larasell/compare/v1.26.0...v1.27.0) (2026-11-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove customers
+
+### Code Refactoring
+
+* remove customers ([0d3f688](https://github.com/Larasell-dev/larasell/commit/0d3f68848add327b7d81cf00dde53070ceebe9ec))
+
 ## [1.26.0](https://github.com/Larasell-dev/larasell/compare/v1.25.0...v1.26.0) (2026-11-07)
 
 
