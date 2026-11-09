@@ -4,5 +4,5 @@ namespace Larasell\Larasell\Contracts\Promotions;
 
 interface PromotionCustomerResolver
 {
-    public function resolve(?int $customerId, string $email): string;
+    public function resolve(string $email): string;
 }

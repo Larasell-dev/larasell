@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
@@ -43,7 +42,6 @@ use Larasell\Larasell\SalesChannels\HasSalesContext;
  * @property string|null $idempotency_key
  * @property string|null $idempotency_fingerprint
  * @property Currency $currency
- * @property int|null $customer_id
  * @property string $customer_email
  * @property string $customer_name
  * @property string|null $customer_phone
@@ -91,7 +89,6 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'customer_id' => 'integer',
         'currency' => Currency::class,
         'billing_address' => AddressCast::class,
         'shipping_address' => AddressCast::class,
@@ -120,12 +117,6 @@ class Order extends Model
     public function newUniqueId(): string
     {
         return (string) Str::uuid();
-    }
-
-    /** @return BelongsTo<Customer, $this> */
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
     }
 
     /** @return HasMany<OrderItem, $this> */
