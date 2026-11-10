@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Larasell\Larasell\Customers\Enums\CustomerSource;
 use Larasell\Larasell\Customers\Enums\CustomerStatus;
 use Larasell\Larasell\Customers\Enums\CustomerType;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\Locale;
 
 /**
  * Who a customer is in commerce: a person or a company, with or without a login. Logins stay with
@@ -21,7 +23,7 @@ use Larasell\Larasell\Enums\Currency;
  * @property CustomerType $type
  * @property CustomerStatus $status
  * @property CustomerSource $source
- * @property string|null $preferred_locale
+ * @property Locale|null $preferred_locale
  * @property Currency|null $preferred_currency
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -46,6 +48,7 @@ class Customer extends Model
         'type' => CustomerType::class,
         'status' => CustomerStatus::class,
         'source' => CustomerSource::class,
+        'preferred_locale' => Locale::class,
         'preferred_currency' => Currency::class,
     ];
 

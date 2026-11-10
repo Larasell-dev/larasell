@@ -22,6 +22,7 @@ use Larasell\Larasell\Customers\Exceptions\ProfileDoesNotMatchType;
 use Larasell\Larasell\Customers\Models\Customer;
 use Larasell\Larasell\Enums\Country;
 use Larasell\Larasell\Enums\Currency;
+use Larasell\Larasell\Enums\Locale;
 
 it('creates an individual customer from a person profile', function () {
     Event::fake([CustomerCreated::class]);
@@ -29,7 +30,7 @@ it('creates an individual customer from a person profile', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: 'erika@example.com'),
         source: CustomerSource::Pos,
-        preferredLocale: 'de-DE',
+        preferredLocale: Locale::GERMAN_GERMANY,
         preferredCurrency: Currency::EUR,
     ));
 
@@ -37,7 +38,7 @@ it('creates an individual customer from a person profile', function () {
     expect($customer->type)->toBe(CustomerType::Individual)
         ->and($customer->status)->toBe(CustomerStatus::Active)
         ->and($customer->source)->toBe(CustomerSource::Pos)
-        ->and($customer->preferred_locale)->toBe('de-DE')
+        ->and($customer->preferred_locale)->toBe(Locale::GERMAN_GERMANY)
         ->and($customer->preferred_currency)->toBe(Currency::EUR)
         ->and($customer->personProfile?->last_name)->toBe('Musterfrau')
         ->and($customer->personProfile?->email)->toBe('erika@example.com')
@@ -107,14 +108,14 @@ it('updates the profile and preferences of a customer', function () {
 
     app(UpdateCustomer::class)->handle(CustomerId::of($customer), new UpdateCustomerPayload(
         profile: new CompanyProfileData(legalName: 'Muster AG', countryCode: Country::AT, website: 'https://muster.example'),
-        preferredLocale: 'de-AT',
+        preferredLocale: Locale::GERMAN_AUSTRIA,
     ));
 
     $customer = Customer::query()->findOrFail($customer->id);
     expect($customer->companyProfile?->legal_name)->toBe('Muster AG')
         ->and($customer->companyProfile?->country_code)->toBe(Country::AT)
         ->and($customer->companyProfile?->website)->toBe('https://muster.example')
-        ->and($customer->preferred_locale)->toBe('de-AT');
+        ->and($customer->preferred_locale)->toBe(Locale::GERMAN_AUSTRIA);
     Event::assertDispatched(CustomerUpdated::class, fn (CustomerUpdated $event): bool => $event->customerId->value === $customer->id);
 });
 
