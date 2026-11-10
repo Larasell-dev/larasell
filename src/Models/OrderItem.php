@@ -37,6 +37,8 @@ use Larasell\Larasell\Translatable;
  * @property Price|null $tax_total
  * @property array<string, mixed>|null $tax_snapshot
  * @property SupportCollection<string, mixed> $metadata
+ * @property string|null $product_type Effective type at checkout; null on orders placed before product types
+ * @property list<string>|null $capabilities Capabilities at checkout; null on orders placed before product types
  */
 class OrderItem extends Model
 {
@@ -66,6 +68,7 @@ class OrderItem extends Model
         'taxable_amount' => NullablePriceCast::class,
         'tax_total' => NullablePriceCast::class,
         'tax_snapshot' => 'array',
+        'capabilities' => 'array',
     ];
 
     /** @return BelongsTo<Order, $this> */
@@ -78,6 +81,12 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    /** Reads the checkout snapshot; orders placed before product types were physical. */
+    public function has(string $capability): bool
+    {
+        return in_array($capability, $this->capabilities ?? ['stock', 'shipping', 'dimensions'], true);
     }
 
     /** @return HasOne<InventoryReservation, $this> */

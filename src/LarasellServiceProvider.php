@@ -10,7 +10,11 @@ use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Listeners\KeepChannelsWithCarts;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
+use Larasell\Larasell\Catalog\CoreProductType;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Catalog\ProductCapabilities;
+use Larasell\Larasell\Catalog\ProductType;
+use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Checkout\Listeners\KeepChannelsWithOrders;
 use Larasell\Larasell\Checkout\Listeners\KeepProductsOfOpenOrders;
 use Larasell\Larasell\Contracts\CustomerNumberGenerator;
@@ -24,6 +28,7 @@ use Larasell\Larasell\Customers\CustomerNumbers\SequentialCustomerNumberGenerato
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
+use Larasell\Larasell\Inventory\InventoryCapabilities;
 use Larasell\Larasell\Inventory\Listeners\KeepReservedProducts;
 use Larasell\Larasell\Licensing\Commands\ActivateLicenseCommand;
 use Larasell\Larasell\Licensing\Commands\RenewLicenseCommand;
@@ -41,6 +46,7 @@ use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
+use Larasell\Larasell\Shipping\ShippingCapabilities;
 use Larasell\Larasell\Shipping\ShippingManager;
 use Larasell\Larasell\Taxes\CartTaxEstimator;
 use Larasell\Larasell\Taxes\TaxRounding;
@@ -61,6 +67,24 @@ class LarasellServiceProvider extends ServiceProvider
         $this->app->singleton(License::class);
         $this->app->singleton(SalesChannels::class);
         $this->app->singleton(SalesChannelTypes::class);
+        $this->app->singleton(ProductCapabilities::class, function (): ProductCapabilities {
+            $capabilities = new ProductCapabilities;
+            $capabilities->register(InventoryCapabilities::STOCK);
+            $capabilities->register(ShippingCapabilities::SHIPPING);
+            $capabilities->register(ShippingCapabilities::DIMENSIONS);
+
+            return $capabilities;
+        });
+        $this->app->singleton(ProductTypes::class, function ($app): ProductTypes {
+            $types = new ProductTypes($app->make(ProductCapabilities::class));
+            $types->register(ProductType::make(CoreProductType::Physical)->label('Physical product')->capabilities([
+                InventoryCapabilities::STOCK,
+                ShippingCapabilities::SHIPPING,
+                ShippingCapabilities::DIMENSIONS,
+            ]));
+
+            return $types;
+        });
         // Only a storefront request or a job it queued has a current context; elsewhere, pass one.
         $this->app->bind(SalesContext::class, fn (): SalesContext => SalesContext::current()
             ?? throw new LogicException('There is no current SalesContext outside a request or job that set one; pass one, e.g. SalesContext::for(\'default\', \'en\').'));

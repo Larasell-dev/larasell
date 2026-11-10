@@ -20,6 +20,9 @@ use Larasell\Larasell\Casts\NullableWeightCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Casts\TranslatableRichTextCast;
+use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
+use Larasell\Larasell\Catalog\ProductType;
+use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
@@ -43,7 +46,10 @@ use Larasell\Larasell\Weight;
  * @property int|null $max_quantity
  * @property bool $allow_backorders
  * @property Visibility $status
+ * @property string $type
  *
+ * @method static Builder<static> ofType(string|\BackedEnum $type)
+ * @method static Builder<static> withCapability(string $capability)
  * @method static Builder<static> visible()
  * @method static Builder<static> inCategory(Category $category)
  * @method static Builder<static> inCategoryTree(Category $category)
@@ -61,6 +67,7 @@ class Product extends Model
     protected $attributes = [
         'tax_category' => 'standard',
         'status' => 'visible',
+        'type' => 'physical',
     ];
 
     protected $casts = [
@@ -77,6 +84,14 @@ class Product extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Product $product): void {
+            if ($product->exists && $product->isDirty('type')) {
+                throw InvalidProductType::immutable((string) $product->getOriginal('type'));
+            }
+
+            app(ProductTypes::class)->get($product->type);
+        });
+
         static::created(function (Product $product): void {
             $product->variants()->create($product->defaultVariantAttributes());
         });
@@ -146,6 +161,36 @@ class Product extends Model
                 return $value;
             },
         );
+    }
+
+    public function productType(): ProductType
+    {
+        return app(ProductTypes::class)->get($this->type);
+    }
+
+    public function has(string $capability): bool
+    {
+        return $this->productType()->has($capability);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    #[Scope]
+    protected function ofType(Builder $query, string|\BackedEnum $type): Builder
+    {
+        return $query->where('type', ProductTypes::keyOf($type));
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    #[Scope]
+    protected function withCapability(Builder $query, string $capability): Builder
+    {
+        return $query->whereIn('type', app(ProductTypes::class)->keysWith($capability));
     }
 
     /**
