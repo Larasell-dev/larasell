@@ -36,11 +36,12 @@ it('accepts a string product name for the current locale', function () {
     expect($product->fresh()->name->all())->toBe(['de' => 'Schreibtischlampe']);
 });
 
-it('reads a product description as rich text per locale, with plain text as paragraphs', function () {
+it('reads a product description as rich text per locale', function () {
+    $english = [['_type' => 'block', '_key' => 'a', 'style' => 'normal', 'markDefs' => [], 'children' => [['_type' => 'span', '_key' => 'b', 'text' => 'A focused task light.', 'marks' => []]]]];
     $german = [['_type' => 'block', '_key' => 'a', 'style' => 'h2', 'markDefs' => [], 'children' => [['_type' => 'span', '_key' => 'b', 'text' => 'Leuchte', 'marks' => []]]]];
     $product = Product::query()->create([
         'name' => 'Desk lamp',
-        'description' => ['en' => 'A focused task light.', 'de' => json_encode($german)],
+        'description' => ['en' => json_encode($english), 'de' => json_encode($german)],
         'price' => Price::of(4999),
     ]);
 
@@ -58,7 +59,7 @@ it('reads a product description as rich text per locale, with plain text as para
 it('changes one locale of a product description, and drops it when emptied', function () {
     $product = Product::query()->create([
         'name' => 'Desk lamp',
-        'description' => ['en' => 'Light.', 'de' => 'Licht.'],
+        'description' => ['en' => RichText::fromArray([]), 'de' => RichText::fromArray([])],
         'price' => Price::of(4999),
     ]);
 

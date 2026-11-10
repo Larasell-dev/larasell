@@ -74,13 +74,6 @@ it('stores itself as the JSON it is read from', function () {
         ->and(json_decode($text->toJson(), true))->toBe($document);
 });
 
-it('reads a description saved as plain text as one paragraph per line', function () {
-    expect(RichText::fromStored("Warm boots.\n\nMade in Portugal.")->toArray())->toBe([
-        ptBlock('b0', [['Warm boots.']]),
-        ptBlock('b1', [['Made in Portugal.']]),
-    ]);
-});
-
 it('is empty without any text', function (array $blocks, bool $empty) {
     expect(RichText::fromArray($blocks)->isEmpty())->toBe($empty);
 })->with([

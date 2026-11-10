@@ -10,8 +10,7 @@ use Larasell\Larasell\RichText\TranslatableRichText;
 use Larasell\Larasell\Translatable;
 
 /**
- * Stores rich text per locale like a nullable Translatable, one Portable Text document per locale. Plain
- * text, stored or set, is read as one paragraph per line.
+ * Stores rich text per locale like a nullable Translatable, one Portable Text document per locale.
  *
  * @implements CastsAttributes<TranslatableRichText|null, TranslatableRichText|RichText|Translatable|array<string, RichText|string>|string|null>
  */
@@ -30,9 +29,9 @@ class TranslatableRichTextCast implements CastsAttributes, ComparesCastableAttri
             $value === null, $value instanceof TranslatableRichText => $value,
             $value instanceof RichText => TranslatableRichText::of($value),
             $value instanceof Translatable => TranslatableRichText::fromTranslatable($value),
-            is_string($value) => TranslatableRichText::of(RichText::fromStored($value)),
+            is_string($value) => TranslatableRichText::of(RichText::fromJson($value)),
             default => new TranslatableRichText(array_map(
-                fn (RichText|string $text): RichText => $text instanceof RichText ? $text : RichText::fromStored($text),
+                fn (RichText|string $text): RichText => $text instanceof RichText ? $text : RichText::fromJson($text),
                 $value,
             )),
         };

@@ -28,11 +28,11 @@ final readonly class TranslatableRichText implements JsonSerializable
     }
 
     /**
-     * Reads stored translations, each a document or plain text from before descriptions were formatted.
+     * Reads stored translations, each a Portable Text document as JSON.
      */
     public static function fromTranslatable(Translatable $stored): self
     {
-        return new self(array_map(RichText::fromStored(...), $stored->all()));
+        return new self(array_map(RichText::fromJson(...), $stored->all()));
     }
 
     public function get(?string $locale = null): RichText

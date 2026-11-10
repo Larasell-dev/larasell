@@ -69,29 +69,6 @@ final readonly class RichText
     }
 
     /**
-     * Reads a stored text, which may still be plain text from before descriptions were
-     * formatted: that becomes one paragraph per line.
-     */
-    public static function fromStored(string $stored): self
-    {
-        $decoded = json_decode($stored, true);
-
-        if (is_array($decoded) && array_is_list($decoded)) {
-            return self::fromArray($decoded);
-        }
-
-        $lines = array_values(array_filter(array_map(trim(...), preg_split('/\R/', $stored) ?: []), fn (string $line): bool => $line !== ''));
-
-        return new self(array_map(fn (string $line, int $index): array => [
-            '_type' => 'block',
-            '_key' => "b{$index}",
-            'style' => 'normal',
-            'markDefs' => [],
-            'children' => [['_type' => 'span', '_key' => "b{$index}s0", 'text' => $line, 'marks' => []]],
-        ], $lines, array_keys($lines)));
-    }
-
-    /**
      * @return list<Block>
      */
     public function toArray(): array
