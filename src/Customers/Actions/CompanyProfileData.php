@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Customers\Actions;
 
 use Larasell\Larasell\Enums\Country;
 use Larasell\Larasell\Url;
+use Larasell\Larasell\VatId;
 
 /** The company a company customer is. Only its legal name and country are required. */
 final readonly class CompanyProfileData
@@ -11,7 +12,7 @@ final readonly class CompanyProfileData
     public function __construct(
         public string $legalName,
         public Country $countryCode,
-        public ?string $vatId = null,
+        public ?VatId $vatId = null,
         public ?string $legalForm = null,
         public ?string $companyNumber = null,
         public ?string $industry = null,

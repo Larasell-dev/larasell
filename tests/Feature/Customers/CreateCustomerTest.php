@@ -26,6 +26,7 @@ use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\PhoneNumber;
 use Larasell\Larasell\Url;
+use Larasell\Larasell\VatId;
 
 it('creates an individual customer from a person profile', function () {
     Event::fake([CustomerCreated::class]);
@@ -53,12 +54,12 @@ it('creates an individual customer from a person profile', function () {
 
 it('creates a company customer from a company profile', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
-        profile: new CompanyProfileData(legalName: 'Muster GmbH', countryCode: Country::DE, vatId: 'DE123456789', legalForm: 'GmbH'),
+        profile: new CompanyProfileData(legalName: 'Muster GmbH', countryCode: Country::DE, vatId: VatId::of('DE 123 456 789'), legalForm: 'GmbH'),
         source: CustomerSource::Admin,
     ));
 
     expect($customer->type)->toBe(CustomerType::Company)
-        ->and($customer->companyProfile?->vat_id)->toBe('DE123456789')
+        ->and($customer->companyProfile?->vat_id)->toEqual(VatId::of('DE123456789'))
         ->and($customer->companyProfile?->legal_form)->toBe('GmbH')
         ->and($customer->personProfile)->toBeNull()
         ->and($customer->displayName())->toBe('Muster GmbH');

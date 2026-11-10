@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Larasell\Larasell\Enums\Country;
 use Larasell\Larasell\Url;
+use Larasell\Larasell\VatId;
 
 /**
  * The company a company customer is.
@@ -15,7 +16,7 @@ use Larasell\Larasell\Url;
  * @property string $legal_name
  * @property string|null $legal_form
  * @property string|null $company_number
- * @property string|null $vat_id
+ * @property VatId|null $vat_id
  * @property Country $country_code
  * @property string|null $industry
  * @property Url|null $website
@@ -28,6 +29,7 @@ class CompanyProfile extends Model
 
     protected $casts = [
         'website' => Url::class,
+        'vat_id' => VatId::class,
         'country_code' => Country::class,
     ];
 
