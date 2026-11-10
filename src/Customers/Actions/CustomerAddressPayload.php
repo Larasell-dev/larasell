@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Larasell\Larasell\Enums\Country;
+use Larasell\Larasell\PhoneNumber;
 
 /** A customer address. Which address is a default is set with SetDefaultCustomerAddress. */
 final readonly class CustomerAddressPayload
@@ -17,7 +18,7 @@ final readonly class CustomerAddressPayload
         public Country $countryCode,
         public ?string $company = null,
         public ?string $region = null,
-        public ?string $phone = null,
+        public ?PhoneNumber $phone = null,
     ) {}
 
     /** @return array<string, mixed> */

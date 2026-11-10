@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Larasell\Larasell\Enums\Country;
+use Larasell\Larasell\Url;
 
 /** The company a company customer is. Only its legal name and country are required. */
 final readonly class CompanyProfileData
@@ -14,7 +15,7 @@ final readonly class CompanyProfileData
         public ?string $legalForm = null,
         public ?string $companyNumber = null,
         public ?string $industry = null,
-        public ?string $website = null,
+        public ?Url $website = null,
     ) {}
 
     /** @return array<string, Country|string|null> */

@@ -20,15 +20,18 @@ use Larasell\Larasell\Customers\Events\CustomerStatusChanged;
 use Larasell\Larasell\Customers\Events\CustomerUpdated;
 use Larasell\Larasell\Customers\Exceptions\ProfileDoesNotMatchType;
 use Larasell\Larasell\Customers\Models\Customer;
+use Larasell\Larasell\EmailAddress;
 use Larasell\Larasell\Enums\Country;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
+use Larasell\Larasell\PhoneNumber;
+use Larasell\Larasell\Url;
 
 it('creates an individual customer from a person profile', function () {
     Event::fake([CustomerCreated::class]);
 
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
-        profile: new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: 'erika@example.com'),
+        profile: new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: EmailAddress::of('erika@example.com'), phone: PhoneNumber::of('+49 30 123')),
         source: CustomerSource::Pos,
         preferredLocale: Locale::GERMAN_GERMANY,
         preferredCurrency: Currency::EUR,
@@ -41,7 +44,8 @@ it('creates an individual customer from a person profile', function () {
         ->and($customer->preferred_locale)->toBe(Locale::GERMAN_GERMANY)
         ->and($customer->preferred_currency)->toBe(Currency::EUR)
         ->and($customer->personProfile?->last_name)->toBe('Musterfrau')
-        ->and($customer->personProfile?->email)->toBe('erika@example.com')
+        ->and($customer->personProfile?->email)->toEqual(EmailAddress::of('erika@example.com'))
+        ->and($customer->personProfile?->phone?->value())->toBe('+49 30 123')
         ->and($customer->companyProfile)->toBeNull()
         ->and($customer->displayName())->toBe('Erika Musterfrau');
     Event::assertDispatched(CustomerCreated::class, fn (CustomerCreated $event): bool => $event->customerId->value === $customer->id);
@@ -87,7 +91,7 @@ it('stores the number returned by a custom generator', function () {
 });
 
 it('creates a new guest customer every time, even for a known email', function () {
-    $profile = new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: 'erika@example.com');
+    $profile = new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: EmailAddress::of('erika@example.com'));
 
     $first = app(CreateGuestCustomer::class)->handle($profile);
     $second = app(CreateGuestCustomer::class)->handle($profile);
@@ -107,14 +111,14 @@ it('updates the profile and preferences of a customer', function () {
     Event::fake([CustomerUpdated::class]);
 
     app(UpdateCustomer::class)->handle(CustomerId::of($customer), new UpdateCustomerPayload(
-        profile: new CompanyProfileData(legalName: 'Muster AG', countryCode: Country::AT, website: 'https://muster.example'),
+        profile: new CompanyProfileData(legalName: 'Muster AG', countryCode: Country::AT, website: Url::of('muster.example')),
         preferredLocale: Locale::GERMAN_AUSTRIA,
     ));
 
     $customer = Customer::query()->findOrFail($customer->id);
     expect($customer->companyProfile?->legal_name)->toBe('Muster AG')
         ->and($customer->companyProfile?->country_code)->toBe(Country::AT)
-        ->and($customer->companyProfile?->website)->toBe('https://muster.example')
+        ->and($customer->companyProfile?->website)->toEqual(Url::of('https://muster.example'))
         ->and($customer->preferred_locale)->toBe(Locale::GERMAN_AUSTRIA);
     Event::assertDispatched(CustomerUpdated::class, fn (CustomerUpdated $event): bool => $event->customerId->value === $customer->id);
 });

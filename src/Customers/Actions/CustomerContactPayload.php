@@ -2,14 +2,17 @@
 
 namespace Larasell\Larasell\Customers\Actions;
 
+use Larasell\Larasell\EmailAddress;
+use Larasell\Larasell\PhoneNumber;
+
 /** A person who acts for a company customer. */
 final readonly class CustomerContactPayload
 {
     public function __construct(
         public string $firstName,
         public string $lastName,
-        public ?string $email = null,
-        public ?string $phone = null,
+        public ?EmailAddress $email = null,
+        public ?PhoneNumber $phone = null,
         public ?string $jobTitle = null,
     ) {}
 

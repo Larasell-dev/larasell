@@ -31,6 +31,7 @@ use Larasell\Larasell\Customers\Exceptions\CustomerNotActive;
 use Larasell\Larasell\Customers\HasCustomerAccounts;
 use Larasell\Larasell\Customers\Models\Customer;
 use Larasell\Larasell\Customers\Models\CustomerAccount;
+use Larasell\Larasell\EmailAddress;
 use Larasell\Larasell\Enums\Country;
 
 /** The app's own user model: login and passwords stay with the app. */
@@ -61,7 +62,7 @@ function companyCustomer(string $name = 'Muster GmbH'): Customer
 
 function contactPayload(string $firstName = 'Max'): CustomerContactPayload
 {
-    return new CustomerContactPayload(firstName: $firstName, lastName: 'Mustermann', email: 'max@muster.example', jobTitle: 'Einkauf');
+    return new CustomerContactPayload(firstName: $firstName, lastName: 'Mustermann', email: EmailAddress::of('max@muster.example'), jobTitle: 'Einkauf');
 }
 
 function testUser(string $email = 'max@muster.example'): CustomerTestUser

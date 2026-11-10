@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Customers\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Larasell\Larasell\Enums\Country;
+use Larasell\Larasell\Url;
 
 /**
  * The company a company customer is.
@@ -17,7 +18,7 @@ use Larasell\Larasell\Enums\Country;
  * @property string|null $vat_id
  * @property Country $country_code
  * @property string|null $industry
- * @property string|null $website
+ * @property Url|null $website
  */
 class CompanyProfile extends Model
 {
@@ -26,6 +27,7 @@ class CompanyProfile extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'website' => Url::class,
         'country_code' => Country::class,
     ];
 
