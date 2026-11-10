@@ -129,3 +129,12 @@ it('snapshots the effective type and capabilities on order items', function () {
 it('reads legacy order items without a snapshot as physical', function () {
     expect((new OrderItem(['product_type' => null, 'capabilities' => null]))->has('shipping'))->toBeTrue();
 });
+
+it('registers and reads types through the facades', function () {
+    Larasell\Larasell\Facades\ProductCapabilities::register('download');
+    Larasell\Larasell\Facades\ProductTypes::register(ProductType::make('download')->capabilities(['download']));
+
+    expect(Larasell\Larasell\Facades\ProductTypes::has('download'))->toBeTrue()
+        ->and(app(ProductTypes::class)->get('download')->has('download'))->toBeTrue()
+        ->and(Larasell\Larasell\Facades\ProductTypes::has('nope'))->toBeFalse();
+});
