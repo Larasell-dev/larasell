@@ -1,6 +1,7 @@
 <?php
 
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
+use Larasell\Larasell\Customers\CustomerNumbers\SequentialCustomerNumberGenerator;
 use Larasell\Larasell\Enums\TaxPriceMode;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
@@ -18,6 +19,12 @@ return [
     'licensing' => [
         'driver' => env('LARASELL_LICENSE_DRIVER', 'env'),
         'plan' => env('LARASELL_PLAN', 'pro'),
+    ],
+
+    'customer_numbers' => [
+        'generator' => SequentialCustomerNumberGenerator::class,
+        'prefix' => 'C-',
+        'padding' => 6,
     ],
 
     'order_numbers' => [

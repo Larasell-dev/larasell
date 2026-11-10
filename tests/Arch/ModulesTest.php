@@ -2,7 +2,7 @@
 
 /*
  * L8: dependencies between modules point one way. A module may use the modules in earlier tiers,
- * never those in later ones. SEO and the workflows are leaves: nothing else may use them.
+ * never those in later ones. SEO, the workflows and customers are leaves: nothing else may use them.
  * Classes that break a rule today are listed in BASELINE, so new violations fail; remove an entry
  * once its class follows the rule.
  */
@@ -28,6 +28,7 @@ const MODULE_TIERS = [
 const LEAF_MODULES = [
     'Seo' => ['Larasell\Larasell\Seo'],
     'Workflows' => ['Larasell\Larasell\Workflows'],
+    'Customers' => ['Larasell\Larasell\Customers'],
 ];
 
 /** What SEO may use besides the shared kernel. */
@@ -96,6 +97,8 @@ function forbiddenDependencies(): array
 
     $forbidden['Seo'] = [LEAF_MODULES['Seo'], array_diff_key($all, array_flip([...SEO_DEPENDS_ON, 'Seo']))];
     $forbidden['Workflows'] = [LEAF_MODULES['Workflows'], []];
+    // Customers stand alone for now: they use no other module, and no other module uses them.
+    $forbidden['Customers'] = [LEAF_MODULES['Customers'], array_diff_key($all, ['Customers' => true])];
 
     return $forbidden;
 }

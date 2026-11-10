@@ -13,12 +13,14 @@ use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Checkout\Listeners\KeepChannelsWithOrders;
 use Larasell\Larasell\Checkout\Listeners\KeepProductsOfOpenOrders;
+use Larasell\Larasell\Contracts\CustomerNumberGenerator;
 use Larasell\Larasell\Contracts\OrderNumberGenerator;
 use Larasell\Larasell\Contracts\PlanResolver;
 use Larasell\Larasell\Contracts\Promotions\PromotionCustomerResolver;
 use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
 use Larasell\Larasell\Contracts\TaxRateResolver;
+use Larasell\Larasell\Customers\CustomerNumbers\SequentialCustomerNumberGenerator;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
@@ -69,6 +71,9 @@ class LarasellServiceProvider extends ServiceProvider
 
         $this->app->bind(CartMergeStrategy::class, fn ($app) => $app->make(
             $app['config']->get('larasell.carts.merge_strategy', CombineQuantities::class)
+        ));
+        $this->app->bind(CustomerNumberGenerator::class, fn ($app) => $app->make(
+            $app['config']->get('larasell.customer_numbers.generator', SequentialCustomerNumberGenerator::class)
         ));
         $this->app->bind(OrderNumberGenerator::class, fn ($app) => $app->make(
             $app['config']->get('larasell.order_numbers.generator', SequentialOrderNumberGenerator::class)
