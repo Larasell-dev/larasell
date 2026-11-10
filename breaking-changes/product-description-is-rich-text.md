@@ -1,7 +1,7 @@
 # `Product::$description` is now rich text
 
-A product's description is now formatted text in Larasell's own JSON format, one document per
-locale. It used to be a plain `Translatable` string, which can't hold headings, lists or links,
+A product's description is now formatted text stored as [Portable Text](https://portabletext.org),
+one document per locale. It used to be a plain `Translatable` string, which can't hold headings, lists or links,
 and HTML stored instead would be unsafe for storefronts to print.
 
 ## Who is affected

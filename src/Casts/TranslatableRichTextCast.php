@@ -10,7 +10,7 @@ use Larasell\Larasell\RichText\TranslatableRichText;
 use Larasell\Larasell\Translatable;
 
 /**
- * Stores rich text per locale like a nullable Translatable, one JSON document per locale. Plain
+ * Stores rich text per locale like a nullable Translatable, one Portable Text document per locale. Plain
  * text, stored or set, is read as one paragraph per line.
  *
  * @implements CastsAttributes<TranslatableRichText|null, TranslatableRichText|RichText|Translatable|array<string, RichText|string>|string|null>

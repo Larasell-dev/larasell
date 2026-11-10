@@ -6,55 +6,54 @@ use JsonException;
 use Larasell\Larasell\Exceptions\InvalidRichText;
 
 /**
- * Formatted text in Larasell's own JSON format, independent of the editor that writes it:
+ * Formatted text as Portable Text (https://portabletext.org), limited to what storefronts can
+ * render safely:
  *
- *     {"version": 1, "blocks": [
- *         {"type": "heading", "level": 2, "children": [{"text": "Care"}]},
- *         {"type": "paragraph", "children": [{"text": "Wash ", "marks": ["bold"], "link": {"href": "https://…"}}]},
- *         {"type": "list", "style": "bullet", "items": [[{"text": "No dryer"}]]}
- *     ]}
+ *     [
+ *         {"_type": "block", "_key": "b0", "style": "h2", "markDefs": [],
+ *          "children": [{"_type": "span", "_key": "b0s0", "text": "Care", "marks": []}]},
+ *         {"_type": "block", "_key": "b1", "style": "normal", "listItem": "bullet", "level": 1,
+ *          "markDefs": [{"_type": "link", "_key": "b1l0", "href": "https://…"}],
+ *          "children": [{"_type": "span", "_key": "b1s0", "text": "No dryer", "marks": ["strong", "b1l0"]}]}
+ *     ]
  *
- * Only these blocks, the marks bold, italic and underline, and absolute http, https and mailto
- * links are allowed. It stores no HTML: toHtml() builds it and escapes every text.
+ * Styles normal, h2, h3 and h4; flat bullet and number lists; the decorators strong, em and
+ * underline; and link annotations to absolute http, https and mailto addresses. It stores no
+ * HTML: toHtml() builds it and escapes every text.
  *
- * @phpstan-type Span array{text: string, marks?: list<string>, link?: array{href: string}}
- * @phpstan-type Block array{type: 'paragraph', children: list<Span>}|array{type: 'heading', level: int, children: list<Span>}|array{type: 'list', style: string, items: list<list<Span>>}
- * @phpstan-type Document array{version: int, blocks: list<Block>}
+ * @phpstan-type Span array{_type: 'span', _key: string, text: string, marks?: list<string>}
+ * @phpstan-type Link array{_type: 'link', _key: string, href: string}
+ * @phpstan-type Block array{_type: 'block', _key: string, style: string, listItem?: string, level?: int, markDefs?: list<Link>, children: list<Span>}
  */
 final readonly class RichText
 {
-    public const int VERSION = 1;
+    public const array STYLES = ['normal', 'h2', 'h3', 'h4'];
 
-    public const array MARKS = ['bold', 'italic', 'underline'];
+    public const array LIST_ITEMS = ['bullet', 'number'];
 
-    private const array TAGS = ['bold' => 'strong', 'italic' => 'em', 'underline' => 'u'];
+    /** The decorators, with the tag each renders as, in the order they nest. */
+    private const array DECORATORS = ['strong' => 'strong', 'em' => 'em', 'underline' => 'u'];
 
     /**
-     * @param  Document  $document
+     * @param  list<Block>  $blocks
      */
-    private function __construct(private array $document) {}
+    private function __construct(private array $blocks) {}
 
     /**
      * @throws InvalidRichText
      */
-    public static function fromArray(mixed $document): self
+    public static function fromArray(mixed $blocks): self
     {
-        self::object($document, 'document', ['version', 'blocks']);
-
-        if (($document['version'] ?? null) !== self::VERSION) {
-            throw InvalidRichText::at('version', 'only version '.self::VERSION.' is supported.');
+        if (! is_array($blocks) || ! array_is_list($blocks)) {
+            throw InvalidRichText::at('document', 'must be a list of blocks.');
         }
 
-        if (! is_array($document['blocks'] ?? null) || ! array_is_list($document['blocks'])) {
-            throw InvalidRichText::at('blocks', 'must be a list.');
+        foreach ($blocks as $index => $block) {
+            self::block($block, (string) $index);
         }
 
-        foreach ($document['blocks'] as $index => $block) {
-            self::block($block, "blocks.{$index}");
-        }
-
-        /** @var Document $document */
-        return new self($document);
+        /** @var list<Block> $blocks */
+        return new self($blocks);
     }
 
     /**
@@ -77,103 +76,106 @@ final readonly class RichText
     {
         $decoded = json_decode($stored, true);
 
-        if (is_array($decoded) && array_key_exists('version', $decoded)) {
+        if (is_array($decoded) && array_is_list($decoded)) {
             return self::fromArray($decoded);
         }
 
-        $lines = array_filter(array_map(trim(...), preg_split('/\R/', $stored) ?: []), fn (string $line): bool => $line !== '');
+        $lines = array_values(array_filter(array_map(trim(...), preg_split('/\R/', $stored) ?: []), fn (string $line): bool => $line !== ''));
 
-        return new self(['version' => self::VERSION, 'blocks' => array_map(
-            fn (string $line): array => ['type' => 'paragraph', 'children' => [['text' => $line]]],
-            array_values($lines),
-        )]);
+        return new self(array_map(fn (string $line, int $index): array => [
+            '_type' => 'block',
+            '_key' => "b{$index}",
+            'style' => 'normal',
+            'markDefs' => [],
+            'children' => [['_type' => 'span', '_key' => "b{$index}s0", 'text' => $line, 'marks' => []]],
+        ], $lines, array_keys($lines)));
     }
 
     /**
-     * @return Document
+     * @return list<Block>
      */
     public function toArray(): array
     {
-        return $this->document;
+        return $this->blocks;
     }
 
     public function toJson(): string
     {
-        return json_encode($this->document, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode($this->blocks, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function isEmpty(): bool
     {
-        return implode('', array_map(
-            fn (array $line): string => implode('', array_column($line, 'text')),
-            $this->lines(),
-        )) === '';
+        foreach ($this->blocks as $block) {
+            if (implode('', array_column($block['children'], 'text')) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
+    /** One line per block. */
     public function toPlainText(): string
     {
         return implode("\n", array_map(
-            fn (array $line): string => implode('', array_column($line, 'text')),
-            $this->lines(),
+            fn (array $block): string => implode('', array_column($block['children'], 'text')),
+            $this->blocks,
         ));
     }
 
     /**
-     * HTML that's safe to show as it is.
+     * HTML that's safe to show as it is. Neighboring list items of one kind form one list.
      */
     public function toHtml(): string
     {
         $html = '';
+        $list = null;
 
-        foreach ($this->document['blocks'] as $block) {
-            $html .= match ($block['type']) {
-                'paragraph' => '<p>'.self::inline($block['children']).'</p>',
-                'heading' => "<h{$block['level']}>".self::inline($block['children'])."</h{$block['level']}>",
-                'list' => ($block['style'] === 'bullet' ? '<ul>' : '<ol>')
-                    .implode('', array_map(fn (array $item): string => '<li>'.self::inline($item).'</li>', $block['items']))
-                    .($block['style'] === 'bullet' ? '</ul>' : '</ol>'),
-            };
+        foreach ($this->blocks as $block) {
+            $item = $block['listItem'] ?? null;
+
+            if ($item !== $list) {
+                $html .= match ($list) {
+                    'bullet' => '</ul>', 'number' => '</ol>', default => ''
+                };
+                $html .= match ($item) {
+                    'bullet' => '<ul>', 'number' => '<ol>', default => ''
+                };
+                $list = $item;
+            }
+
+            $tag = $item !== null ? 'li' : ($block['style'] === 'normal' ? 'p' : $block['style']);
+            $html .= "<{$tag}>".self::inline($block)."</{$tag}>";
         }
 
-        return $html;
+        return $html.match ($list) {
+            'bullet' => '</ul>', 'number' => '</ol>', default => ''
+        };
     }
 
     /**
-     * Every paragraph, heading and list item's spans, in order.
-     *
-     * @return list<list<Span>>
+     * @param  Block  $block
      */
-    private function lines(): array
+    private static function inline(array $block): string
     {
-        $lines = [];
-
-        foreach ($this->document['blocks'] as $block) {
-            array_push($lines, ...($block['type'] === 'list' ? $block['items'] : [$block['children']]));
-        }
-
-        return $lines;
-    }
-
-    /**
-     * @param  list<Span>  $spans
-     */
-    private static function inline(array $spans): string
-    {
+        $links = array_column($block['markDefs'] ?? [], 'href', '_key');
         $html = '';
 
-        foreach ($spans as $span) {
+        foreach ($block['children'] as $span) {
             $text = e($span['text']);
             $marks = $span['marks'] ?? [];
 
-            // In a fixed order, so the same marks always nest the same way.
-            foreach (array_reverse(self::TAGS) as $mark => $tag) {
-                if (in_array($mark, $marks, true)) {
+            foreach (array_reverse(self::DECORATORS) as $decorator => $tag) {
+                if (in_array($decorator, $marks, true)) {
                     $text = "<{$tag}>{$text}</{$tag}>";
                 }
             }
 
-            if (isset($span['link'])) {
-                $text = '<a href="'.e($span['link']['href']).'">'.$text.'</a>';
+            foreach ($marks as $mark) {
+                if (isset($links[$mark])) {
+                    $text = '<a href="'.e($links[$mark]).'">'.$text.'</a>';
+                }
             }
 
             $html .= $text;
@@ -184,66 +186,80 @@ final readonly class RichText
 
     private static function block(mixed $block, string $path): void
     {
-        $type = is_array($block) ? ($block['type'] ?? null) : null;
+        self::object($block, $path, ['_type', '_key', 'style', 'listItem', 'level', 'markDefs', 'children']);
+        /** @var array<string, mixed> $block */
+        self::type($block, $path, 'block');
 
-        match ($type) {
-            'paragraph' => self::object($block, $path, ['type', 'children']),
-            'heading' => self::object($block, $path, ['type', 'level', 'children']),
-            'list' => self::object($block, $path, ['type', 'style', 'items']),
-            default => throw InvalidRichText::at("{$path}.type", 'must be paragraph, heading or list.'),
-        };
-
-        if ($type === 'heading' && ! in_array($block['level'] ?? null, [2, 3, 4], true)) {
-            throw InvalidRichText::at("{$path}.level", 'must be 2, 3 or 4.');
+        if (! in_array($block['style'] ?? null, self::STYLES, true)) {
+            throw InvalidRichText::at("{$path}.style", 'must be normal, h2, h3 or h4.');
         }
 
-        if ($type === 'list') {
-            if (! in_array($block['style'] ?? null, ['bullet', 'numbered'], true)) {
-                throw InvalidRichText::at("{$path}.style", 'must be bullet or numbered.');
+        if (array_key_exists('listItem', $block)) {
+            if (! in_array($block['listItem'], self::LIST_ITEMS, true)) {
+                throw InvalidRichText::at("{$path}.listItem", 'must be bullet or number.');
             }
 
-            if (! is_array($block['items'] ?? null) || ! array_is_list($block['items'])) {
-                throw InvalidRichText::at("{$path}.items", 'must be a list.');
+            if ($block['style'] !== 'normal' || ($block['level'] ?? 1) !== 1) {
+                throw InvalidRichText::at($path, 'list items must be normal text at level 1.');
             }
-
-            foreach ($block['items'] as $index => $item) {
-                self::spans($item, "{$path}.items.{$index}");
-            }
-
-            return;
+        } elseif (array_key_exists('level', $block)) {
+            throw InvalidRichText::at("{$path}.level", 'is only allowed on list items.');
         }
 
-        self::spans($block['children'] ?? null, "{$path}.children");
+        $links = [];
+
+        foreach (self::list($block['markDefs'] ?? [], "{$path}.markDefs") as $index => $link) {
+            self::object($link, "{$path}.markDefs.{$index}", ['_type', '_key', 'href']);
+            /** @var array<string, mixed> $link */
+            self::type($link, "{$path}.markDefs.{$index}", 'link');
+
+            if (! is_string($link['href'] ?? null) || ! preg_match('#^(https?://\S+|mailto:\S+)$#i', $link['href'])) {
+                throw InvalidRichText::at("{$path}.markDefs.{$index}.href", 'must be an absolute http, https or mailto address.');
+            }
+
+            $links[] = $link['_key'];
+        }
+
+        foreach (self::list($block['children'] ?? null, "{$path}.children") as $index => $span) {
+            self::object($span, "{$path}.children.{$index}", ['_type', '_key', 'text', 'marks']);
+            /** @var array<string, mixed> $span */
+            self::type($span, "{$path}.children.{$index}", 'span');
+
+            if (! is_string($span['text'] ?? null)) {
+                throw InvalidRichText::at("{$path}.children.{$index}.text", 'must be a string.');
+            }
+
+            $marks = self::list($span['marks'] ?? [], "{$path}.children.{$index}.marks");
+
+            if (array_diff($marks, array_keys(self::DECORATORS), $links) !== []) {
+                throw InvalidRichText::at("{$path}.children.{$index}.marks", 'may only be strong, em, underline and the block\'s links.');
+            }
+        }
     }
 
-    private static function spans(mixed $spans, string $path): void
+    /**
+     * @return list<mixed>
+     */
+    private static function list(mixed $value, string $path): array
     {
-        if (! is_array($spans) || ! array_is_list($spans)) {
+        if (! is_array($value) || ! array_is_list($value)) {
             throw InvalidRichText::at($path, 'must be a list.');
         }
 
-        foreach ($spans as $index => $span) {
-            self::object($span, "{$path}.{$index}", ['text', 'marks', 'link']);
+        return $value;
+    }
 
-            if (! is_string($span['text'] ?? null)) {
-                throw InvalidRichText::at("{$path}.{$index}.text", 'must be a string.');
-            }
+    /**
+     * @param  array<string, mixed>  $value
+     */
+    private static function type(array $value, string $path, string $type): void
+    {
+        if (($value['_type'] ?? null) !== $type) {
+            throw InvalidRichText::at("{$path}._type", "must be {$type}.");
+        }
 
-            $marks = $span['marks'] ?? [];
-
-            if (! is_array($marks) || ! array_is_list($marks) || array_diff($marks, self::MARKS) !== []) {
-                throw InvalidRichText::at("{$path}.{$index}.marks", 'may only be bold, italic and underline.');
-            }
-
-            if (array_key_exists('link', $span)) {
-                self::object($span['link'], "{$path}.{$index}.link", ['href']);
-
-                $href = $span['link']['href'] ?? null;
-
-                if (! is_string($href) || ! preg_match('#^(https?://[^\s]+|mailto:[^\s]+)$#i', $href)) {
-                    throw InvalidRichText::at("{$path}.{$index}.link.href", 'must be an absolute http, https or mailto address.');
-                }
-            }
+        if (! is_string($value['_key'] ?? null) || $value['_key'] === '') {
+            throw InvalidRichText::at("{$path}._key", 'must be a non-empty string.');
         }
     }
 

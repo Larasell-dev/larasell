@@ -74,7 +74,7 @@ final readonly class TranslatableRichText implements JsonSerializable
         return $this->documents;
     }
 
-    /** @return non-empty-array<string, array<string, mixed>> */
+    /** @return non-empty-array<string, list<array<string, mixed>>> */
     public function jsonSerialize(): array
     {
         return array_map(fn (RichText $text): array => $text->toArray(), $this->all());

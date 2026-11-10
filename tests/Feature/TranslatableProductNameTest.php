@@ -37,7 +37,7 @@ it('accepts a string product name for the current locale', function () {
 });
 
 it('reads a product description as rich text per locale, with plain text as paragraphs', function () {
-    $german = ['version' => 1, 'blocks' => [['type' => 'heading', 'level' => 2, 'children' => [['text' => 'Leuchte']]]]];
+    $german = [['_type' => 'block', '_key' => 'a', 'style' => 'h2', 'markDefs' => [], 'children' => [['_type' => 'span', '_key' => 'b', 'text' => 'Leuchte', 'marks' => []]]]];
     $product = Product::query()->create([
         'name' => 'Desk lamp',
         'description' => ['en' => 'A focused task light.', 'de' => json_encode($german)],
@@ -52,7 +52,7 @@ it('reads a product description as rich text per locale, with plain text as para
         ->and($description->get()->toArray())->toBe($german)
         ->and($description->get('en')->toHtml())->toBe('<p>A focused task light.</p>')
         ->and(json_decode($stored['de'], true))->toBe($german)
-        ->and(json_decode($stored['en'], true)['blocks'][0]['children'][0]['text'])->toBe('A focused task light.');
+        ->and(json_decode($stored['en'], true)[0]['children'][0]['text'])->toBe('A focused task light.');
 });
 
 it('changes one locale of a product description, and drops it when emptied', function () {
@@ -62,7 +62,7 @@ it('changes one locale of a product description, and drops it when emptied', fun
         'price' => Price::of(4999),
     ]);
 
-    $product->update(['description' => $product->description->with('de', RichText::fromArray(['version' => 1, 'blocks' => []]))]);
+    $product->update(['description' => $product->description->with('de', RichText::fromArray([]))]);
 
     expect(array_keys($product->fresh()->description->all()))->toBe(['en']);
 });
@@ -70,7 +70,7 @@ it('changes one locale of a product description, and drops it when emptied', fun
 it('rejects a product description that is not valid rich text', function () {
     Product::query()->create([
         'name' => 'Desk lamp',
-        'description' => json_encode(['version' => 1, 'blocks' => [['type' => 'table']]]),
+        'description' => json_encode([['_type' => 'table', '_key' => 'a']]),
         'price' => Price::of(4999),
     ]);
 })->throws(InvalidRichText::class);
