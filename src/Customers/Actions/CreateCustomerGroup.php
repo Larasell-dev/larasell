@@ -15,14 +15,14 @@ final readonly class CreateCustomerGroup
     public function handle(CustomerGroupPayload $payload): CustomerGroup
     {
         return $this->db->transaction(function () use ($payload): CustomerGroup {
-            if (CustomerGroup::query()->where('code', $payload->code)->exists()) {
-                throw DuplicateCustomerGroupCode::code($payload->code);
+            if (CustomerGroup::query()->where('code', $payload->code->value())->exists()) {
+                throw DuplicateCustomerGroupCode::code($payload->code->value());
             }
 
             $group = CustomerGroup::query()->create([
-                'code' => $payload->code,
+                'code' => $payload->code->value(),
                 'name' => $payload->name,
-                'description' => $payload->description,
+                'description' => $payload->description?->value(),
             ]);
 
             CustomerGroupCreated::dispatch(CustomerGroupId::of($group));

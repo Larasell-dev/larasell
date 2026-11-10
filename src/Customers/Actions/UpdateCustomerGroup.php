@@ -17,14 +17,14 @@ final readonly class UpdateCustomerGroup
         return $this->db->transaction(function () use ($groupId, $payload): CustomerGroup {
             $group = CustomerGroup::query()->findOrFail($groupId->value);
 
-            if (CustomerGroup::query()->where('code', $payload->code)->whereKeyNot($group->id)->exists()) {
-                throw DuplicateCustomerGroupCode::code($payload->code);
+            if (CustomerGroup::query()->where('code', $payload->code->value())->whereKeyNot($group->id)->exists()) {
+                throw DuplicateCustomerGroupCode::code($payload->code->value());
             }
 
             $group->update([
-                'code' => $payload->code,
+                'code' => $payload->code->value(),
                 'name' => $payload->name,
-                'description' => $payload->description,
+                'description' => $payload->description?->value(),
             ]);
 
             CustomerGroupUpdated::dispatch($groupId);

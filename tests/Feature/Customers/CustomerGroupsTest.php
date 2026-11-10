@@ -9,6 +9,8 @@ use Larasell\Larasell\Customers\Actions\DeleteCustomerGroup;
 use Larasell\Larasell\Customers\Actions\PersonProfileData;
 use Larasell\Larasell\Customers\Actions\RemoveCustomerFromGroup;
 use Larasell\Larasell\Customers\Actions\UpdateCustomerGroup;
+use Larasell\Larasell\Customers\CustomerGroupCode;
+use Larasell\Larasell\Customers\CustomerGroupDescription;
 use Larasell\Larasell\Customers\CustomerGroupId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerJoinedGroup;
@@ -21,7 +23,7 @@ use Larasell\Larasell\Translatable;
 
 function group(string $code, string $name = 'Wholesale'): CustomerGroup
 {
-    return app(CreateCustomerGroup::class)->handle(new CustomerGroupPayload(code: $code, name: new Translatable(['en' => $name])));
+    return app(CreateCustomerGroup::class)->handle(new CustomerGroupPayload(code: CustomerGroupCode::of($code), name: new Translatable(['en' => $name])));
 }
 
 function groupCustomer(): Customer
@@ -33,9 +35,9 @@ it('creates and updates groups with unique codes', function () {
     $wholesale = group('wholesale');
 
     app(UpdateCustomerGroup::class)->handle(CustomerGroupId::of($wholesale), new CustomerGroupPayload(
-        code: 'wholesale-premium',
+        code: CustomerGroupCode::of('wholesale-premium'),
         name: new Translatable(['en' => 'Wholesale Premium']),
-        description: 'Our biggest resellers',
+        description: CustomerGroupDescription::of('Our biggest resellers'),
     ));
 
     $wholesale = CustomerGroup::query()->findOrFail($wholesale->id);
@@ -48,7 +50,7 @@ it('creates and updates groups with unique codes', function () {
 it('allows a group to keep its own code on update', function () {
     $vip = group('vip', 'VIP');
 
-    app(UpdateCustomerGroup::class)->handle(CustomerGroupId::of($vip), new CustomerGroupPayload(code: 'vip', name: new Translatable(['en' => 'Very important'])));
+    app(UpdateCustomerGroup::class)->handle(CustomerGroupId::of($vip), new CustomerGroupPayload(code: CustomerGroupCode::of('vip'), name: new Translatable(['en' => 'Very important'])));
 
     expect($vip->fresh()?->name->get('en'))->toBe('Very important');
 });
