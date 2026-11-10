@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.1](https://github.com/Larasell-dev/larasell/compare/v1.27.0...v1.27.1) (2026-11-10)
+
+
+### Features
+
+* add a customers module ([5b509cc](https://github.com/Larasell-dev/larasell/commit/5b509ccc704ab7cea8db1178d71a16a01cae0dc9))
+
 ## [1.27.0](https://github.com/Larasell-dev/larasell/compare/v1.26.0...v1.27.0) (2026-11-09)
 
 
