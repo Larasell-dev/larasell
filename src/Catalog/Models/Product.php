@@ -16,13 +16,14 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
-use Larasell\Larasell\Casts\NullableTranslatableCast;
 use Larasell\Larasell\Casts\NullableWeightCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
+use Larasell\Larasell\Casts\TranslatableRichTextCast;
 use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\RichText\TranslatableRichText;
 use Larasell\Larasell\Translatable;
 use Larasell\Larasell\Weight;
 
@@ -31,7 +32,7 @@ use Larasell\Larasell\Weight;
  * @property string|null $sku
  * @property string|null $barcode
  * @property Translatable $name
- * @property Translatable|null $description
+ * @property TranslatableRichText|null $description
  * @property Price $price
  * @property Price|null $compare_at
  * @property Weight|null $weight
@@ -64,7 +65,7 @@ class Product extends Model
 
     protected $casts = [
         'name' => TranslatableCast::class,
-        'description' => NullableTranslatableCast::class,
+        'description' => TranslatableRichTextCast::class,
         'price' => PriceCast::class,
         'compare_at' => NullablePriceCast::class,
         'weight' => NullableWeightCast::class,
