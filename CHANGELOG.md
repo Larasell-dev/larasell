@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.2](https://github.com/Larasell-dev/larasell/compare/v1.27.1...v1.27.2) (2026-11-10)
+
+
+### Features
+
+* store product descriptions as rich text ([#176](https://github.com/Larasell-dev/larasell/issues/176)) ([de75af2](https://github.com/Larasell-dev/larasell/commit/de75af24ebea80f4ca448aa2f804f85833dc10c9))
+
 ## [1.27.1](https://github.com/Larasell-dev/larasell/compare/v1.27.0...v1.27.1) (2026-11-10)
 
 
