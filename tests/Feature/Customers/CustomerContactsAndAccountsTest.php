@@ -1,9 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use Larasell\Larasell\Customers\Actions\AddCustomerContact;
 use Larasell\Larasell\Customers\Actions\ChangeCustomerStatus;
 use Larasell\Larasell\Customers\Actions\CompanyProfileData;
@@ -39,18 +37,10 @@ class CustomerTestUser extends Authenticatable
 {
     use HasCustomerAccounts;
 
-    protected $table = 'customer_test_users';
+    protected $table = 'test_users';
 
     protected $guarded = [];
 }
-
-beforeEach(function () {
-    Schema::create('customer_test_users', function (Blueprint $table) {
-        $table->id();
-        $table->string('email');
-        $table->timestamps();
-    });
-});
 
 function companyCustomer(string $name = 'Muster GmbH'): Customer
 {

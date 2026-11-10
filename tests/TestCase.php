@@ -26,6 +26,12 @@ abstract class TestCase extends BaseTestCase
         ];
     }
 
+    /** Tables only the tests use, such as an app's users. */
+    protected function defineDatabaseMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+    }
+
     protected function getEnvironmentSetUp($app): void
     {
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));

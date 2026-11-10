@@ -61,7 +61,7 @@ return new class extends Migration
             $table->foreignId('contact_id')->nullable()->constrained('larasell_customer_contacts')->nullOnDelete();
             $table->morphs('account');
             $table->timestamps();
-            $table->unique(['customer_id', 'account_type', 'account_id']);
+            $table->unique(['customer_id', 'account_type', 'account_id'], 'larasell_customer_accounts_unique');
         });
 
         Schema::create('larasell_customer_addresses', function (Blueprint $table) {
@@ -94,7 +94,7 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('larasell_customers')->cascadeOnDelete();
             $table->foreignId('customer_group_id')->constrained('larasell_customer_groups')->restrictOnDelete();
             $table->timestamps();
-            $table->unique(['customer_id', 'customer_group_id']);
+            $table->unique(['customer_id', 'customer_group_id'], 'larasell_customer_group_memberships_unique');
         });
 
         Schema::create('larasell_customer_number_sequences', function (Blueprint $table) {
