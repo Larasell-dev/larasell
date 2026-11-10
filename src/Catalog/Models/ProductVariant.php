@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableWeightCast;
+use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
+use Larasell\Larasell\Catalog\ProductType;
+use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
@@ -34,6 +37,7 @@ use Larasell\Larasell\Weight;
  * @property int|null $max_quantity
  * @property Visibility $status
  * @property bool $is_default
+ * @property string|null $type Null inherits the product's type
  * @property int $position
  * @property string $combination_key
  * @property array<string, mixed>|null $metadata
@@ -65,6 +69,29 @@ class ProductVariant extends Model
         'position' => 'integer',
         'metadata' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (ProductVariant $variant): void {
+            if ($variant->exists && $variant->isDirty('type')) {
+                throw InvalidProductType::immutable((string) ($variant->getOriginal('type') ?? 'inherited'));
+            }
+
+            if ($variant->type !== null) {
+                app(ProductTypes::class)->get($variant->type);
+            }
+        });
+    }
+
+    public function effectiveType(): ProductType
+    {
+        return app(ProductTypes::class)->get($this->type ?? $this->product->type);
+    }
+
+    public function has(string $capability): bool
+    {
+        return $this->effectiveType()->has($capability);
+    }
 
     /**
      * @param  Builder<self>  $query

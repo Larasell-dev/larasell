@@ -255,6 +255,8 @@ class Checkout
                         'product_barcode' => $item->barcode(),
                         'variant_name' => $item->variant->name(),
                         'variant_options' => $item->variant->options(),
+                        'product_type' => $item->variant->effectiveType()->key(),
+                        'capabilities' => $item->variant->effectiveType()->capabilities(),
                         'unit_price' => $item->unitPrice(),
                         'quantity' => $item->quantity,
                         'inventory_quantity' => $item->availableStock() === null ? 0 : $item->quantity,
