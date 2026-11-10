@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.3](https://github.com/Larasell-dev/larasell/compare/v1.27.2...v1.27.3) (2026-11-10)
+
+
+### Features
+
+* add product types with capabilities ([#178](https://github.com/Larasell-dev/larasell/issues/178)) ([00d5d0e](https://github.com/Larasell-dev/larasell/commit/00d5d0e41bd5f66975a3d5ebadbad6fa3be3e273))
+
 ## [1.27.2](https://github.com/Larasell-dev/larasell/compare/v1.27.1...v1.27.2) (2026-11-10)
 
 
