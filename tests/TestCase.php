@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Tests;
 
+use Illuminate\Database\Migrations\Migrator;
 use Larasell\Larasell\LarasellServiceProvider;
 use Larasell\Larasell\Seo\SeoServiceProvider;
 use Larasell\Larasell\Storefront\StorefrontServiceProvider;
@@ -28,6 +29,8 @@ abstract class TestCase extends BaseTestCase
 
     protected function getEnvironmentSetUp($app): void
     {
+        // Tables only the tests use, such as an app's users; migrated with the package's own.
+        $app->afterResolving('migrator', fn (Migrator $migrator) => $migrator->path(__DIR__.'/database/migrations'));
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
         $connection = env('DB_CONNECTION', 'sqlite');
         $app['config']->set('database.default', $connection);

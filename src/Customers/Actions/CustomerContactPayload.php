@@ -1,0 +1,30 @@
+<?php
+
+namespace Larasell\Larasell\Customers\Actions;
+
+use Larasell\Larasell\EmailAddress;
+use Larasell\Larasell\PhoneNumber;
+
+/** A person who acts for a company customer. */
+final readonly class CustomerContactPayload
+{
+    public function __construct(
+        public string $firstName,
+        public string $lastName,
+        public ?EmailAddress $email = null,
+        public ?PhoneNumber $phone = null,
+        public ?string $jobTitle = null,
+    ) {}
+
+    /** @return array<string, string|null> */
+    public function toAttributes(): array
+    {
+        return [
+            'first_name' => $this->firstName,
+            'last_name' => $this->lastName,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'job_title' => $this->jobTitle,
+        ];
+    }
+}
