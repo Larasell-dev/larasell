@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.4](https://github.com/Larasell-dev/larasell/compare/v1.27.3...v1.27.4) (2026-11-11)
+
+
+### Features
+
+* add ProductTypes and ProductCapabilities facades ([#180](https://github.com/Larasell-dev/larasell/issues/180)) ([63f27f1](https://github.com/Larasell-dev/larasell/commit/63f27f1057c15c3335a8116cba8dad3d2d85e8eb))
+
 ## [1.27.3](https://github.com/Larasell-dev/larasell/compare/v1.27.2...v1.27.3) (2026-11-10)
 
 
