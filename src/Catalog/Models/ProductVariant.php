@@ -10,9 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableWeightCast;
+use Larasell\Larasell\Catalog\AttributeScope;
 use Larasell\Larasell\Catalog\Exceptions\InvalidInheritance;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\InheritanceState;
@@ -302,6 +304,77 @@ class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    private const string ATTRIBUTE_TABLE = 'larasell_product_variant_attribute_values';
+
+    public function attributeInheritance(ProductAttribute $attribute): InheritanceState
+    {
+        $state = DB::table(self::ATTRIBUTE_TABLE)
+            ->where('product_variant_id', $this->id)
+            ->where('product_attribute_id', $attribute->id)
+            ->value('state');
+
+        return $state === null ? InheritanceState::Inherited : InheritanceState::from($state);
+    }
+
+    /** Gives the variant its own value of the value's attribute. */
+    public function overrideAttribute(ProductAttributeValue $value): void
+    {
+        $attribute = $value->attribute;
+
+        if ($attribute->scope === AttributeScope::Product) {
+            throw InvalidInheritance::notInheritable($attribute->slug);
+        }
+
+        $this->writeAttribute($attribute, InheritanceState::Overridden, $value->id);
+    }
+
+    /** Gives the variant no value of an inherited attribute, whatever the product has. */
+    public function clearAttribute(ProductAttribute $attribute): void
+    {
+        if ($attribute->scope !== AttributeScope::Inherited) {
+            throw InvalidInheritance::notClearable($attribute->slug);
+        }
+
+        $this->writeAttribute($attribute, InheritanceState::Cleared, null);
+    }
+
+    /** Uses the product's value of the attribute again. */
+    public function inheritAttribute(ProductAttribute $attribute): void
+    {
+        DB::table(self::ATTRIBUTE_TABLE)
+            ->where('product_variant_id', $this->id)
+            ->where('product_attribute_id', $attribute->id)
+            ->delete();
+    }
+
+    private function writeAttribute(ProductAttribute $attribute, InheritanceState $state, ?int $valueId): void
+    {
+        DB::table(self::ATTRIBUTE_TABLE)->updateOrInsert(
+            ['product_variant_id' => $this->id, 'product_attribute_id' => $attribute->id],
+            ['product_attribute_value_id' => $valueId, 'state' => $state->value],
+        );
+    }
+
+    /**
+     * The attribute values that describe the variant: its own, and the product's values of
+     * inherited attributes it neither overrides nor clears.
+     *
+     * @return Collection<int, ProductAttributeValue>
+     */
+    public function effectiveAttributeValues(): Collection
+    {
+        $rows = DB::table(self::ATTRIBUTE_TABLE)->where('product_variant_id', $this->id)->get();
+        $decided = $rows->pluck('product_attribute_id')->map(fn (mixed $id): int => (int) $id)->all();
+        $own = ProductAttributeValue::query()->with('attribute')
+            ->whereKey($rows->pluck('product_attribute_value_id')->filter()->all())->get();
+        $inherited = $this->product->attributeValues()->with('attribute')->get()->filter(
+            fn (ProductAttributeValue $value): bool => $value->attribute->scope === AttributeScope::Inherited
+                && ! in_array($value->product_attribute_id, $decided, true),
+        );
+
+        return new Collection($inherited->concat($own)->values()->all());
     }
 
     /** @return BelongsToMany<ProductOptionValue, $this> */
