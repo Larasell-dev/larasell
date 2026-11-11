@@ -24,6 +24,7 @@ use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Dimensions;
+use Larasell\Larasell\Enums\Country;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
 use Larasell\Larasell\RichText\TranslatableRichText;
@@ -32,14 +33,14 @@ use Larasell\Larasell\Weight;
 
 /**
  * @property int $id
- * @property string|null $sku
- * @property string|null $barcode
  * @property Translatable $name
  * @property TranslatableRichText|null $description
  * @property Price $price
  * @property Price|null $compare_at
  * @property Weight|null $weight
  * @property Dimensions|null $dimensions
+ * @property Country|null $country_of_origin
+ * @property string|null $hs_code Customs tariff number
  * @property string $tax_category
  * @property int|null $stock
  * @property int|null $min_quantity
@@ -77,6 +78,7 @@ class Product extends Model
         'compare_at' => NullablePriceCast::class,
         'weight' => NullableWeightCast::class,
         'dimensions' => NullableDimensionsCast::class,
+        'country_of_origin' => Country::class,
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'status' => Visibility::class,
@@ -98,12 +100,8 @@ class Product extends Model
 
         static::updated(function (Product $product): void {
             if ($product->wasChanged([
-                'sku',
-                'barcode',
                 'price',
                 'compare_at',
-                'weight',
-                'dimensions',
                 'stock',
                 'allow_backorders',
                 'min_quantity',
@@ -515,12 +513,8 @@ class Product extends Model
     private function defaultVariantAttributes(): array
     {
         return [
-            'sku' => $this->sku,
-            'barcode' => $this->barcode,
             'price' => $this->price,
             'compare_at' => $this->compare_at,
-            'weight' => $this->weight,
-            'dimensions' => $this->dimensions,
             'stock' => $this->stock,
             'allow_backorders' => $this->allow_backorders,
             'min_quantity' => $this->min_quantity,

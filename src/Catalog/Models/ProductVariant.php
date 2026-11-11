@@ -13,12 +13,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableWeightCast;
+use Larasell\Larasell\Catalog\Exceptions\InvalidInheritance;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
+use Larasell\Larasell\Catalog\InheritanceState;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Dimensions;
+use Larasell\Larasell\Enums\Country;
+use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Price;
+use Larasell\Larasell\RichText\RichText;
+use Larasell\Larasell\RichText\TranslatableRichText;
+use Larasell\Larasell\Settings\LocaleSettings;
+use Larasell\Larasell\Translatable;
 use Larasell\Larasell\Weight;
 
 /**
@@ -26,10 +34,19 @@ use Larasell\Larasell\Weight;
  * @property int $product_id
  * @property string|null $sku
  * @property string|null $barcode
+ * @property string|null $mpn Manufacturer part number, not unique
+ * @property array<string, string>|null $name Own names by locale; a missing locale inherits
+ * @property array<string, string|null>|null $description Own descriptions by locale as rich text JSON; null clears, missing inherits
  * @property Price|null $price
  * @property Price|null $compare_at
- * @property Weight|null $weight
- * @property Dimensions|null $dimensions
+ * @property Weight|null $weight Only when overridden
+ * @property InheritanceState $weight_inheritance
+ * @property Dimensions|null $dimensions Only when overridden
+ * @property InheritanceState $dimensions_inheritance
+ * @property Country|null $country_of_origin Only when overridden
+ * @property InheritanceState $country_of_origin_inheritance
+ * @property string|null $hs_code Customs tariff number, only when overridden
+ * @property InheritanceState $hs_code_inheritance
  * @property string|null $tax_category
  * @property int|null $stock
  * @property bool|null $allow_backorders
@@ -37,7 +54,8 @@ use Larasell\Larasell\Weight;
  * @property int|null $max_quantity
  * @property Visibility $status
  * @property bool $is_default
- * @property string|null $type Null inherits the product's type
+ * @property string|null $type Only when overridden
+ * @property InheritanceState $type_inheritance
  * @property int $position
  * @property string $combination_key
  * @property array<string, mixed>|null $metadata
@@ -51,7 +69,24 @@ class ProductVariant extends Model
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
+    /** The fields a variant can inherit from its product, override or clear. */
+    public const array INHERITABLE = ['weight', 'dimensions', 'country_of_origin', 'hs_code', 'type'];
+
+    /** The translatable fields a variant can inherit, override or clear per locale. */
+    public const array TRANSLATED = ['name', 'description'];
+
+    /** Fields every variant has a value of. */
+    private const array NOT_CLEARABLE = ['type', 'name'];
+
     protected $table = 'larasell_product_variants';
+
+    protected $attributes = [
+        'weight_inheritance' => 'inherited',
+        'dimensions_inheritance' => 'inherited',
+        'country_of_origin_inheritance' => 'inherited',
+        'hs_code_inheritance' => 'inherited',
+        'type_inheritance' => 'inherited',
+    ];
 
     protected $guarded = [];
 
@@ -60,6 +95,14 @@ class ProductVariant extends Model
         'compare_at' => NullablePriceCast::class,
         'weight' => NullableWeightCast::class,
         'dimensions' => NullableDimensionsCast::class,
+        'country_of_origin' => Country::class,
+        'weight_inheritance' => InheritanceState::class,
+        'dimensions_inheritance' => InheritanceState::class,
+        'country_of_origin_inheritance' => InheritanceState::class,
+        'hs_code_inheritance' => InheritanceState::class,
+        'type_inheritance' => InheritanceState::class,
+        'name' => 'array',
+        'description' => 'array',
         'stock' => 'integer',
         'allow_backorders' => 'boolean',
         'min_quantity' => 'integer',
@@ -77,15 +120,167 @@ class ProductVariant extends Model
                 throw InvalidProductType::immutable((string) ($variant->getOriginal('type') ?? 'inherited'));
             }
 
+            foreach (self::INHERITABLE as $field) {
+                $state = $variant->inheritance($field);
+
+                if ($state === InheritanceState::Overridden && $variant->{$field} === null) {
+                    throw InvalidInheritance::overrideWithoutValue($field);
+                }
+
+                if ($state !== InheritanceState::Overridden && $variant->{$field} !== null) {
+                    throw InvalidInheritance::valueWithoutOverride($field);
+                }
+
+                if ($state === InheritanceState::Cleared && in_array($field, self::NOT_CLEARABLE, true)) {
+                    throw InvalidInheritance::notClearable($field);
+                }
+            }
+
             if ($variant->type !== null) {
                 app(ProductTypes::class)->get($variant->type);
             }
         });
     }
 
+    public function inheritance(string $field): InheritanceState
+    {
+        self::assertInheritable($field, self::INHERITABLE);
+
+        return $this->{"{$field}_inheritance"};
+    }
+
+    /** Uses the variant's own value of the field. */
+    public function override(string $field, mixed $value): static
+    {
+        self::assertInheritable($field, self::INHERITABLE);
+        $this->{"{$field}_inheritance"} = InheritanceState::Overridden;
+        $this->{$field} = $value;
+
+        return $this;
+    }
+
+    /** Uses the product's value of the field. */
+    public function inherit(string $field): static
+    {
+        self::assertInheritable($field, self::INHERITABLE);
+        $this->{"{$field}_inheritance"} = InheritanceState::Inherited;
+        $this->{$field} = null;
+
+        return $this;
+    }
+
+    /** Uses no value for the field, whatever the product has. */
+    public function clear(string $field): static
+    {
+        self::assertInheritable($field, self::INHERITABLE);
+        self::assertClearable($field);
+        $this->{"{$field}_inheritance"} = InheritanceState::Cleared;
+        $this->{$field} = null;
+
+        return $this;
+    }
+
+    public function translationInheritance(string $field, string $locale): InheritanceState
+    {
+        self::assertInheritable($field, self::TRANSLATED);
+        $own = $this->{$field} ?? [];
+        $locale = Locale::canonicalize($locale);
+
+        return match (true) {
+            ! array_key_exists($locale, $own) => InheritanceState::Inherited,
+            $own[$locale] === null => InheritanceState::Cleared,
+            default => InheritanceState::Overridden,
+        };
+    }
+
+    public function overrideTranslation(string $field, string $locale, string|RichText $value): static
+    {
+        return $this->withTranslation($field, $locale, $value instanceof RichText ? $value->toJson() : $value);
+    }
+
+    public function inheritTranslation(string $field, string $locale): static
+    {
+        self::assertInheritable($field, self::TRANSLATED);
+        $own = $this->{$field} ?? [];
+        unset($own[Locale::canonicalize($locale)]);
+        $this->{$field} = $own === [] ? null : $own;
+
+        return $this;
+    }
+
+    public function clearTranslation(string $field, string $locale): static
+    {
+        self::assertClearable($field);
+
+        return $this->withTranslation($field, $locale, null);
+    }
+
+    private function withTranslation(string $field, string $locale, ?string $value): static
+    {
+        self::assertInheritable($field, self::TRANSLATED);
+        $this->{$field} = [...($this->{$field} ?? []), Locale::canonicalize($locale) => $value];
+
+        return $this;
+    }
+
+    /**
+     * Walks the locale's lookup chain; at each locale the variant's own value or clearing wins
+     * over the product's, so the product in a more specific locale wins over the variant in a
+     * broader one.
+     *
+     * @param  Translatable|TranslatableRichText|null  $product
+     * @return array{0: bool, 1: mixed} Whether the value is the variant's own, and the value
+     */
+    private function resolveTranslation(string $field, ?string $locale, Translatable|TranslatableRichText|null $product): array
+    {
+        $own = $this->{$field} ?? [];
+        $locale = Locale::canonicalize($locale ?? app()->getLocale());
+        $chain = array_unique([
+            ...Locale::lookupChain($locale),
+            ...Locale::lookupChain(app(LocaleSettings::class)->default()->value),
+        ]);
+
+        foreach ($chain as $candidate) {
+            if (array_key_exists($candidate, $own)) {
+                return [true, $own[$candidate]];
+            }
+
+            if ($product?->has($candidate)) {
+                return [false, $product->get($candidate)];
+            }
+        }
+
+        return [false, $product?->get($locale)];
+    }
+
+    /** @param  list<string>  $fields */
+    private static function assertInheritable(string $field, array $fields): void
+    {
+        if (! in_array($field, $fields, true)) {
+            throw InvalidInheritance::notInheritable($field);
+        }
+    }
+
+    private static function assertClearable(string $field): void
+    {
+        if (in_array($field, self::NOT_CLEARABLE, true)) {
+            throw InvalidInheritance::notClearable($field);
+        }
+    }
+
+    /** The field's value as the variant uses it: its own, the product's or none. */
+    private function effective(string $field): mixed
+    {
+        return match ($this->inheritance($field)) {
+            InheritanceState::Overridden => $this->{$field},
+            InheritanceState::Cleared => null,
+            InheritanceState::Inherited => $this->product->{$field},
+        };
+    }
+
     public function effectiveType(): ProductType
     {
-        return app(ProductTypes::class)->get($this->type ?? $this->product->type);
+        return app(ProductTypes::class)->get($this->effective('type'));
     }
 
     public function has(string $capability): bool
@@ -137,16 +332,6 @@ class ProductVariant extends Model
         return $compareAt !== null && $compareAt->greaterThan($this->unitPrice());
     }
 
-    public function effectiveSku(): ?string
-    {
-        return $this->sku ?? $this->product->sku;
-    }
-
-    public function effectiveBarcode(): ?string
-    {
-        return $this->barcode ?? $this->product->barcode;
-    }
-
     public function effectiveTaxCategory(): string
     {
         return $this->tax_category ?? $this->product->tax_category;
@@ -154,12 +339,22 @@ class ProductVariant extends Model
 
     public function effectiveWeight(): ?Weight
     {
-        return $this->weight ?? $this->product->weight;
+        return $this->effective('weight');
     }
 
     public function effectiveDimensions(): ?Dimensions
     {
-        return $this->dimensions ?? $this->product->dimensions;
+        return $this->effective('dimensions');
+    }
+
+    public function effectiveCountryOfOrigin(): ?Country
+    {
+        return $this->effective('country_of_origin');
+    }
+
+    public function effectiveHsCode(): ?string
+    {
+        return $this->effective('hs_code');
     }
 
     public function availableStock(): ?int
@@ -185,7 +380,7 @@ class ProductVariant extends Model
     /**
      * @return array<string, array{attribute_id: int, attribute_slug: string, attribute_name: string, value_id: int, value_slug: string, value_name: string}>
      */
-    public function options(): array
+    public function options(?string $locale = null): array
     {
         if ($this->is_default) {
             return [];
@@ -205,22 +400,35 @@ class ProductVariant extends Model
                 $value->attribute->slug => [
                     'attribute_id' => $value->attribute->id,
                     'attribute_slug' => $value->attribute->slug,
-                    'attribute_name' => $value->attribute->name->get(),
+                    'attribute_name' => $value->attribute->name->get($locale),
                     'value_id' => $value->id,
                     'value_slug' => $value->slug,
-                    'value_name' => $value->name->get(),
+                    'value_name' => $value->name->get($locale),
                 ],
             ])
             ->all();
     }
 
-    public function name(): string
+    /** The variant's own name in the locale, or else its option values, or else the product's name. */
+    public function name(?string $locale = null): string
     {
-        $options = $this->options();
+        [$own, $name] = $this->resolveTranslation('name', $locale, $this->product->name);
 
-        return $options === []
-            ? $this->product->name->get()
-            : collect($options)->pluck('value_name')->implode(' / ');
+        if ($own) {
+            return $name;
+        }
+
+        $options = $this->options($locale);
+
+        return $options === [] ? $name : collect($options)->pluck('value_name')->implode(' / ');
+    }
+
+    /** The variant's own description in the locale, the product's, or none when cleared. */
+    public function description(?string $locale = null): ?RichText
+    {
+        [$own, $description] = $this->resolveTranslation('description', $locale, $this->product->description);
+
+        return $own && $description !== null ? RichText::fromJson($description) : $description;
     }
 
     public function decrementInventory(int $quantity): void

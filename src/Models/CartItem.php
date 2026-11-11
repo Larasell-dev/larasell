@@ -84,12 +84,12 @@ class CartItem extends Model
 
     public function sku(): ?string
     {
-        return $this->variant->effectiveSku();
+        return $this->variant->sku;
     }
 
     public function barcode(): ?string
     {
-        return $this->variant->effectiveBarcode();
+        return $this->variant->barcode;
     }
 
     public function availableStock(): ?int

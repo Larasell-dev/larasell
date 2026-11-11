@@ -46,10 +46,10 @@ final readonly class ProductNote
 it('creates a product with its default variant and announces it by ID', function () {
     Event::fake([ProductCreated::class]);
 
-    $product = createProduct('Boots', ['sku' => 'B-1']);
+    $product = createProduct('Boots');
 
     expect(Product::query()->findOrFail($product->id)->name->get('en'))->toBe('Boots')
-        ->and($product->defaultVariant()->sku)->toBe('B-1');
+        ->and($product->defaultVariant()->is_default)->toBeTrue();
     Event::assertDispatched(ProductCreated::class, fn (ProductCreated $event): bool => $event->productId->value === $product->id);
 });
 
@@ -62,16 +62,16 @@ it('dispatches catalog events inside the write, so a failing listener undoes it'
 });
 
 it('updates the stored product, not a stale copy, and names the changed attributes', function () {
-    $product = createProduct('Boots', ['sku' => 'B-1']);
+    $product = createProduct('Boots', ['status' => Visibility::Visible]);
     $stale = Product::query()->findOrFail($product->id);
-    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['sku' => 'B-2']), origin());
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['status' => Visibility::Hidden]), origin());
     Event::fake([ProductUpdated::class]);
 
     $updated = app(UpdateProduct::class)->handle(ProductId::of($stale), new UpdateProductPayload(['name' => ['en' => 'Leather Boots']]), origin());
 
-    expect($updated->sku)->toBe('B-2')
+    expect($updated->status)->toBe(Visibility::Hidden)
         ->and($updated->name->get('en'))->toBe('Leather Boots')
-        ->and($updated->defaultVariant()->sku)->toBe('B-2');
+        ->and($updated->defaultVariant()->status)->toBe(Visibility::Hidden);
     Event::assertDispatched(ProductUpdated::class, fn (ProductUpdated $event): bool => $event->productId->value === $product->id
         && $event->changed === ['name']);
 });

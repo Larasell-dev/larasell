@@ -18,7 +18,7 @@ beforeEach(function () {
 
     Route::storefront(fn () => Route::seo([
         Category::class => fn (ProductListingRequest $request): array => $request->products()->get()->map(
-            fn (Product $product): string => (string) $product->sku,
+            fn (Product $product): string => (string) $product->defaultVariant()->sku,
         )->all(),
     ]));
 });
@@ -151,10 +151,14 @@ function productForListing(array $attributes, Category $category): Product
         'sku' => fake()->unique()->slug(),
     ], $attributes);
 
+    $sku = $attributes['sku'];
+    unset($attributes['sku']);
+
     $product = Product::create(array_merge([
-        'name' => $attributes['sku'],
+        'name' => $sku,
         'price' => Price::of(1000),
     ], $attributes));
+    $product->defaultVariant()->update(['sku' => $sku]);
 
     $product->categories()->attach($category);
 

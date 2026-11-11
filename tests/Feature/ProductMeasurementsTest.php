@@ -23,7 +23,7 @@ it('defaults products to no weight or dimensions', function () {
         ->and($product->defaultVariant()->effectiveDimensions())->toBeNull();
 });
 
-it('persists product weight and dimensions and copies them to the default variant', function () {
+it('persists product weight and dimensions which the default variant inherits', function () {
     $product = Product::create([
         'name' => 'Parcel tee',
         'price' => Price::of(1000),
@@ -33,11 +33,11 @@ it('persists product weight and dimensions and copies them to the default varian
 
     expect($product->weight?->equals(Weight::of('0.45', WeightUnit::Kilogram)))->toBeTrue()
         ->and($product->dimensions?->equals(Dimensions::of(300, 200, 20, LengthUnit::Millimeter)))->toBeTrue()
-        ->and($product->defaultVariant()->weight?->equals(Weight::of(450, WeightUnit::Gram)))->toBeTrue()
-        ->and($product->defaultVariant()->dimensions?->equals(Dimensions::of(30, 20, 2, LengthUnit::Centimeter)))->toBeTrue();
+        ->and($product->defaultVariant()->effectiveWeight()?->equals(Weight::of(450, WeightUnit::Gram)))->toBeTrue()
+        ->and($product->defaultVariant()->effectiveDimensions()?->equals(Dimensions::of(30, 20, 2, LengthUnit::Centimeter)))->toBeTrue();
 });
 
-it('syncs the default variant measurements when the product measurements change', function () {
+it('lets the default variant follow the product measurements change', function () {
     $product = Product::create([
         'name' => 'Synced parcel',
         'price' => Price::of(1000),
@@ -51,13 +51,13 @@ it('syncs the default variant measurements when the product measurements change'
 
     $variant = $product->defaultVariant()->fresh();
 
-    expect($variant->weight?->equals(Weight::of(500, WeightUnit::Gram)))->toBeTrue()
-        ->and($variant->dimensions?->equals(Dimensions::of(10, 10, 10, LengthUnit::Centimeter)))->toBeTrue();
+    expect($variant->effectiveWeight()?->equals(Weight::of(500, WeightUnit::Gram)))->toBeTrue()
+        ->and($variant->effectiveDimensions()?->equals(Dimensions::of(10, 10, 10, LengthUnit::Centimeter)))->toBeTrue();
 
     $product->update(['weight' => null, 'dimensions' => null]);
 
-    expect($product->defaultVariant()->fresh()->weight)->toBeNull()
-        ->and($product->defaultVariant()->fresh()->dimensions)->toBeNull();
+    expect($product->defaultVariant()->fresh()->effectiveWeight())->toBeNull()
+        ->and($product->defaultVariant()->fresh()->effectiveDimensions())->toBeNull();
 });
 
 it('lets a variant inherit or override the product measurements', function () {
@@ -74,6 +74,8 @@ it('lets a variant inherit or override the product measurements', function () {
     $product->variantDimensions()->sync([$size->id => ['position' => 0]]);
     $inherited = $product->createVariant([$small]);
     $overridden = $product->createVariant([$large], [
+        'weight_inheritance' => 'overridden',
+        'dimensions_inheritance' => 'overridden',
         'weight' => Weight::of(600, WeightUnit::Gram),
         'dimensions' => Dimensions::of(40, 25, 3, LengthUnit::Centimeter),
     ]);

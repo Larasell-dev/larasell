@@ -16,8 +16,6 @@ use Larasell\Larasell\Price;
 
 it('creates an authoritative default variant for a simple product', function () {
     $product = cartVariantProduct([
-        'sku' => 'SIMPLE-SKU',
-        'barcode' => '0012345678905',
         'price' => Price::of(1299),
         'stock' => 8,
         'allow_backorders' => false,
@@ -26,6 +24,7 @@ it('creates an authoritative default variant for a simple product', function () 
     ]);
 
     $variant = $product->defaultVariant();
+    $variant->update(['sku' => 'SIMPLE-SKU', 'barcode' => '0012345678905']);
 
     expect($product->variants)->toHaveCount(1)
         ->and($variant->is_default)->toBeTrue()
@@ -181,14 +180,14 @@ it('resolves commerce values from the selected variant', function () {
         ->toThrow(CartQuantityExceedsMaximumException::class, 'Cart item quantity exceeds the variant maximum quantity.');
 });
 
-it('inherits nullable variant commerce values from the product', function () {
+it('inherits nullable variant commerce values from the product, but not identifiers', function () {
     [$product, $variant] = cartVariantCatalog();
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::USD]);
     $item = $cart->add($variant);
 
     expect($item->unitPrice()->amount())->toBe($product->price->amount())
-        ->and($item->sku())->toBe($product->sku)
-        ->and($item->barcode())->toBe($product->barcode)
+        ->and($item->sku())->toBeNull()
+        ->and($item->barcode())->toBeNull()
         ->and($item->availableStock())->toBe($product->stock)
         ->and($item->allowsBackorders())->toBe($product->allow_backorders);
 });
@@ -197,8 +196,6 @@ function cartVariantProduct(array $attributes = []): Product
 {
     return Product::create(array_merge([
         'name' => fake()->words(3, true),
-        'sku' => fake()->unique()->bothify('PRODUCT-####'),
-        'barcode' => fake()->unique()->numerify('#############'),
         'price' => Price::of(1000),
         'stock' => 10,
         'allow_backorders' => true,

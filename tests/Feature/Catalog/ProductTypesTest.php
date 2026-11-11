@@ -82,7 +82,7 @@ it('lets a variant override the product type', function () {
     $product->attributeValues()->attach([$ebook->id, $hardcover->id]);
     $product->variantDimensions()->attach($format->id, ['position' => 0]);
 
-    $digital = $product->createVariant([$ebook], ['type' => 'download']);
+    $digital = $product->createVariant([$ebook], ['type_inheritance' => 'overridden', 'type' => 'download']);
     $print = $product->createVariant([$hardcover]);
 
     expect($digital->effectiveType()->key())->toBe('download')
