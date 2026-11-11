@@ -6,6 +6,10 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Larasell\Larasell\Audit\Auditor;
+use Larasell\Larasell\Audit\Commands\MakeAuditRecordCommand;
+use Larasell\Larasell\Audit\Commands\PruneAuditLogCommand;
+use Larasell\Larasell\Audit\Commands\VerifyAuditLogCommand;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Listeners\KeepChannelsWithCarts;
@@ -58,7 +62,9 @@ class LarasellServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
         $this->mergeConfigFrom(__DIR__.'/../config/larasell/locale.php', 'larasell.locale');
+        $this->mergeConfigFrom(__DIR__.'/../config/larasell/audit.php', 'larasell.audit');
 
+        $this->app->singleton(Auditor::class);
         $this->app->singleton(ShippingManager::class);
         $this->app->singleton(PaymentManager::class);
         $this->app->singleton(PromotionManager::class);
@@ -136,6 +142,9 @@ class LarasellServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                MakeAuditRecordCommand::class,
+                PruneAuditLogCommand::class,
+                VerifyAuditLogCommand::class,
                 ActivateLicenseCommand::class,
                 MakeOrderNumberGeneratorCommand::class,
                 MakeOrderNumberSequenceCommand::class,
@@ -153,6 +162,7 @@ class LarasellServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/larasell.php' => config_path('larasell.php'),
                 __DIR__.'/../config/larasell/locale.php' => config_path('larasell/locale.php'),
+                __DIR__.'/../config/larasell/audit.php' => config_path('larasell/audit.php'),
             ], 'larasell-config');
 
             $this->publishes([

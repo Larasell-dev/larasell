@@ -68,13 +68,13 @@ use Larasell\Larasell\Catalog\Models\Product;
 function updateCatalog(Product|Category $model, array $attributes): void
 {
     if ($model instanceof Product) {
-        app(UpdateProduct::class)->handle(ProductId::of($model), new UpdateProductPayload($attributes));
+        app(UpdateProduct::class)->handle(ProductId::of($model), new UpdateProductPayload($attributes), origin());
 
         return;
     }
 
     if (array_key_exists('parent_id', $attributes)) {
-        app(MoveCategory::class)->handle(CategoryId::of($model), new MoveCategoryPayload($attributes['parent_id'] === null ? null : new CategoryId($attributes['parent_id'])));
+        app(MoveCategory::class)->handle(CategoryId::of($model), new MoveCategoryPayload($attributes['parent_id'] === null ? null : new CategoryId($attributes['parent_id'])), origin());
         unset($attributes['parent_id']);
     }
 
@@ -82,21 +82,24 @@ function updateCatalog(Product|Category $model, array $attributes): void
         app(UpdateCategory::class)->handle(CategoryId::of($model), new UpdateCategoryPayload(
             name: isset($attributes['name']) ? (is_array($attributes['name']) ? new Translatable($attributes['name']) : Translatable::fromString($attributes['name'])) : null,
             status: $attributes['status'] ?? null,
-        ));
+        ), origin());
     }
 }
 
 function deleteFromCatalog(Product|Category $model): void
 {
     $model instanceof Product
-        ? app(DeleteProduct::class)->handle(ProductId::of($model))
-        : app(DeleteCategory::class)->handle(CategoryId::of($model));
+        ? app(DeleteProduct::class)->handle(ProductId::of($model), origin())
+        : app(DeleteCategory::class)->handle(CategoryId::of($model), origin());
 }
 
 /*
 | Sales channels: tests run as if in a storefront request of the default channel, unless they say otherwise.
 */
 
+use Illuminate\Support\Facades\DB;
+use Larasell\Larasell\Audit\Actors\SystemActor;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\Actions\UpdateSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
@@ -129,18 +132,18 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
     // Keeps the old locales until the new entry points exist, as every locale needs one.
     $all = array_values(array_unique([...$old, ...$locales]));
     config()->set('larasell.locale.supported', $all);
-    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $all]);
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $all], origin());
 
     foreach (EntryPoint::query()->where('sales_channel_id', $channel->id)->pluck('id') as $id) {
-        app(DeleteEntryPoint::class)->handle(new EntryPointId((int) $id));
+        app(DeleteEntryPoint::class)->handle(new EntryPointId((int) $id), origin());
     }
 
     foreach ($entryPoints as $entryPoint) {
-        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), $entryPoint);
+        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), $entryPoint, origin());
     }
 
     config()->set('larasell.locale.supported', $locales);
-    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']]);
+    app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), ['locales' => $locales, 'default_locale' => $entryPoints[0]['locale']], origin());
 
     StorefrontContext::for('default', $entryPoints[0]['locale'])->activate();
 }
@@ -149,4 +152,19 @@ function shopLocales(array $locales, ?array $entryPoints = null): void
 function shopContext(): SalesContext
 {
     return SalesContext::current() ?? SalesContext::for('default', Locale::ENGLISH);
+}
+
+/*
+| Runs code outside the transaction RefreshDatabase wraps each test in, for checks that need to
+| see no transaction at all. Write nothing in it: it would stay for later tests.
+*/
+function outsideTestTransaction(Closure $callback): mixed
+{
+    DB::rollBack();
+
+    try {
+        return $callback();
+    } finally {
+        DB::beginTransaction();
+    }
 }

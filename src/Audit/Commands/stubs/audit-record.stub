@@ -1,0 +1,37 @@
+<?php
+
+namespace {{ namespace }};
+
+use Larasell\Larasell\Audit\Enums\AuditCategory;
+use Larasell\Larasell\Audit\AuditRecord;
+use Larasell\Larasell\Audit\Subject;
+
+class {{ class }} extends AuditRecord
+{
+    public function __construct()
+    {
+        //
+    }
+
+    public function event(): string
+    {
+        return '{{ event }}';
+    }
+
+    public function category(): AuditCategory
+    {
+        return AuditCategory::BusinessCritical;
+    }
+
+    public function subject(): ?Subject
+    {
+        return null;
+    }
+
+    public function properties(): array
+    {
+        return [
+            //
+        ];
+    }
+}
