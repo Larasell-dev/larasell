@@ -11,15 +11,18 @@ return new class extends Migration
     {
         Schema::table('larasell_product_attributes', function (Blueprint $table) {
             $table->string('scope', 16)->default('product');
+            $table->string('cardinality', 16)->default('single');
         });
 
+        // One row per own value; an override without values is one row without a value.
         Schema::create('larasell_product_variant_attribute_values', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('product_variant_id')->constrained('larasell_product_variants', indexName: 'variant_attribute_variant_fk')->cascadeOnDelete();
             $table->foreignId('product_attribute_id')->constrained('larasell_product_attributes', indexName: 'variant_attribute_attribute_fk')->cascadeOnDelete();
             $table->foreignId('product_attribute_value_id')->nullable()->constrained('larasell_product_attribute_values', indexName: 'variant_attribute_value_fk')->cascadeOnDelete();
             $table->string('state', 16);
 
-            $table->primary(['product_variant_id', 'product_attribute_id'], 'variant_attribute_primary');
+            $table->unique(['product_variant_id', 'product_attribute_id', 'product_attribute_value_id'], 'variant_attribute_value_unique');
         });
     }
 
@@ -28,7 +31,7 @@ return new class extends Migration
         Schema::dropIfExists('larasell_product_variant_attribute_values');
 
         Schema::table('larasell_product_attributes', function (Blueprint $table) {
-            $table->dropColumn('scope');
+            $table->dropColumn(['scope', 'cardinality']);
         });
     }
 };

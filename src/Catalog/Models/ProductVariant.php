@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Larasell\Larasell\Casts\NullableDimensionsCast;
 use Larasell\Larasell\Casts\NullablePriceCast;
 use Larasell\Larasell\Casts\NullableWeightCast;
+use Larasell\Larasell\Catalog\AttributeCardinality;
 use Larasell\Larasell\Catalog\AttributeScope;
+use Larasell\Larasell\Catalog\Exceptions\InvalidAttributeValues;
 use Larasell\Larasell\Catalog\Exceptions\InvalidInheritance;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\InheritanceState;
@@ -268,7 +270,16 @@ class ProductVariant extends Model
     #[Scope]
     protected function visible(Builder $query): Builder
     {
-        return $query->where('status', Visibility::Visible->value);
+        return $query
+            ->where('status', Visibility::Visible->value)
+            ->whereHas('product', fn (Builder $product) => $product->where('status', Visibility::Visible->value));
+    }
+
+    /** Visible in the store: only while both the variant and its product are visible. */
+    public function isVisible(): bool
+    {
+        return $this->status === Visibility::Visible
+            && $this->product->status === Visibility::Visible;
     }
 
     /** @return BelongsTo<Product, $this> */
@@ -290,33 +301,45 @@ class ProductVariant extends Model
     }
 
     /**
-     * Gives the variant its own value of the attribute; null gives it none, whatever the
-     * product has.
+     * Gives the variant its own values of the attribute, which replace the product's whole list;
+     * none gives it none, whatever the product has. Single-value attributes take one at most.
      */
-    public function overrideAttribute(ProductAttribute $attribute, ?ProductAttributeValue $value): void
+    public function overrideAttribute(ProductAttribute $attribute, ProductAttributeValue ...$values): void
     {
-        if ($attribute->scope === AttributeScope::Product || ($value !== null && $value->product_attribute_id !== $attribute->id)) {
+        if ($attribute->scope === AttributeScope::Product) {
             throw InvalidInheritance::notInheritable($attribute->slug);
         }
 
-        $this->writeAttribute($attribute, InheritanceState::Overridden, $value?->id);
+        foreach ($values as $value) {
+            if ($value->product_attribute_id !== $attribute->id) {
+                throw InvalidAttributeValues::ofAnotherAttribute($attribute->slug);
+            }
+        }
+
+        $ids = array_values(array_unique(array_map(fn (ProductAttributeValue $value): int => $value->id, $values)));
+
+        if (count($ids) > 1 && $attribute->cardinality === AttributeCardinality::Single) {
+            throw InvalidAttributeValues::tooMany($attribute->slug);
+        }
+
+        DB::transaction(function () use ($attribute, $ids): void {
+            $this->inheritAttribute($attribute);
+            DB::table(self::ATTRIBUTE_TABLE)->insert(array_map(fn (?int $id): array => [
+                'product_variant_id' => $this->id,
+                'product_attribute_id' => $attribute->id,
+                'product_attribute_value_id' => $id,
+                'state' => InheritanceState::Overridden->value,
+            ], $ids === [] ? [null] : $ids));
+        });
     }
 
-    /** Uses the product's value of the attribute again. */
+    /** Uses the product's values of the attribute again. */
     public function inheritAttribute(ProductAttribute $attribute): void
     {
         DB::table(self::ATTRIBUTE_TABLE)
             ->where('product_variant_id', $this->id)
             ->where('product_attribute_id', $attribute->id)
             ->delete();
-    }
-
-    private function writeAttribute(ProductAttribute $attribute, InheritanceState $state, ?int $valueId): void
-    {
-        DB::table(self::ATTRIBUTE_TABLE)->updateOrInsert(
-            ['product_variant_id' => $this->id, 'product_attribute_id' => $attribute->id],
-            ['product_attribute_value_id' => $valueId, 'state' => $state->value],
-        );
     }
 
     /**

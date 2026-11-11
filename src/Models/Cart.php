@@ -434,7 +434,7 @@ class Cart extends Model
 
     public function assertVariantCanBePurchased(ProductVariant $variant, int $quantity): void
     {
-        if ($variant->status !== Visibility::Visible) {
+        if (! $variant->isVisible()) {
             throw new UnavailableCartItemException($variant);
         }
 
@@ -465,7 +465,7 @@ class Cart extends Model
             throw new InvalidCartItemException($variant);
         }
 
-        if ($variant->status !== Visibility::Visible) {
+        if (! $variant->isVisible()) {
             throw new UnavailableCartItemException($variant);
         }
 

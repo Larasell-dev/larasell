@@ -8,7 +8,6 @@ use Larasell\Larasell\Carts\Strategies\CallbackCartMergeStrategy;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Discounts\PromotionManager;
-use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\CartMerged;
 use Larasell\Larasell\Exceptions\Cart\CartMergeException;
 use Larasell\Larasell\Exceptions\Promotions\PromotionException;
@@ -176,7 +175,7 @@ final readonly class CartMerger
      */
     private function acceptedQuantity(Cart $destination, CartMergeLineIntent $intent, ProductVariant $variant): array
     {
-        if ($variant->status !== Visibility::Visible) {
+        if (! $variant->isVisible()) {
             return [0, 'unavailable_cart_item'];
         }
 

@@ -71,7 +71,7 @@ it('updates the stored product, not a stale copy, and names the changed attribut
 
     expect($updated->status)->toBe(Visibility::Hidden)
         ->and($updated->name->get('en'))->toBe('Leather Boots')
-        ->and($updated->defaultVariant()->status)->toBe(Visibility::Hidden);
+        ->and($updated->defaultVariant()->isVisible())->toBeFalse();
     Event::assertDispatched(ProductUpdated::class, fn (ProductUpdated $event): bool => $event->productId->value === $product->id
         && $event->changed === ['name']);
 });

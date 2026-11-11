@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Larasell\Larasell\Casts\TranslatableCast;
+use Larasell\Larasell\Catalog\AttributeCardinality;
 use Larasell\Larasell\Catalog\AttributeScope;
 use Larasell\Larasell\Enums\ProductAttributeType;
 use Larasell\Larasell\Translatable;
@@ -17,6 +18,7 @@ use Larasell\Larasell\Translatable;
  * @property Translatable $name
  * @property ProductAttributeType $type
  * @property AttributeScope $scope
+ * @property AttributeCardinality $cardinality
  */
 class ProductAttribute extends Model
 {
@@ -27,10 +29,11 @@ class ProductAttribute extends Model
 
     protected $guarded = [];
 
-    protected $attributes = ['scope' => 'product'];
+    protected $attributes = ['scope' => 'product', 'cardinality' => 'single'];
 
     protected $casts = [
         'scope' => AttributeScope::class,
+        'cardinality' => AttributeCardinality::class,
         'name' => TranslatableCast::class,
         'type' => ProductAttributeType::class,
     ];
