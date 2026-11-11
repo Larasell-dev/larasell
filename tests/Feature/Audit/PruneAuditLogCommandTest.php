@@ -77,7 +77,10 @@ function remainingRecords(): array
  */
 function pruneProperties(): array
 {
-    return json_decode(DB::table('larasell_audit_log')->where('event', 'audit_log.pruned')->orderByDesc('seq')->value('properties'), true);
+    $properties = json_decode(DB::table('larasell_audit_log')->where('event', 'audit_log.pruned')->orderByDesc('seq')->value('properties'), true);
+
+    // In the order the record writes them; MySQL's JSON column reorders keys.
+    return array_replace(array_intersect_key(array_flip(['legal_hold', 'retention_days', 'deleted', 'starts_after']), $properties), $properties);
 }
 
 it('keeps every record by default', function () {

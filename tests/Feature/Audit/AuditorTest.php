@@ -80,6 +80,20 @@ function audit(AuditRecord $record, Origin $origin = new Origin(new SystemActor(
 }
 
 /**
+ * A stored record's times as UTC with microseconds, however the database returns them; PostgreSQL
+ * drops trailing zeros.
+ *
+ * @return array{occurred_at: string, created_at: string}
+ */
+function storedTimes(object $record): array
+{
+    return [
+        'occurred_at' => Carbon::parse($record->occurred_at, 'UTC')->format('Y-m-d H:i:s.u'),
+        'created_at' => Carbon::parse($record->created_at, 'UTC')->format('Y-m-d H:i:s.u'),
+    ];
+}
+
+/**
  * Someone who acts, as an app's user model would be.
  */
 function librarian(string $id = '7'): Actor
@@ -118,9 +132,8 @@ it('stores a record with its event, origin, subject and properties', function ()
             'subject_type' => 'book',
             'subject_id' => '42',
             'source' => 'cli',
-            'occurred_at' => '2026-10-30 12:00:00.000000',
-            'created_at' => '2026-10-30 12:00:00.000000',
         ])
+        ->and(storedTimes($record))->toBe(['occurred_at' => '2026-10-30 12:00:00.000000', 'created_at' => '2026-10-30 12:00:00.000000'])
         ->and(json_decode($record->properties, true))->toBe(['title' => 'Dune'])
         ->and($record->correlation_id)->toBeString()->not->toBeEmpty();
 });
@@ -174,7 +187,7 @@ it('stores times in UTC, and when it happened apart from when it was recorded', 
         audit(bookArchived(occurredAt: now()->subMinutes(5)));
 
         // Assert
-        expect(DB::table('larasell_audit_log')->sole())->toMatchArray([
+        expect(storedTimes(DB::table('larasell_audit_log')->sole()))->toBe([
             'occurred_at' => '2026-10-30 12:55:00.000000',
             'created_at' => '2026-10-30 13:00:00.000000',
         ]);

@@ -206,7 +206,7 @@ it('reports a record it can\'t read as a break, instead of failing', function (a
 })->with([
     'properties that aren\'t JSON' => [['properties' => '{"title": "Dune"']],
     'a date that isn\'t one' => [['occurred_at' => 'yesterday-ish']],
-]);
+])->skip(fn () => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse such values in their typed columns.');
 
 it('refuses a record the database stores differently from how it was hashed', function () {
     // Arrange
@@ -218,7 +218,7 @@ it('refuses a record the database stores differently from how it was hashed', fu
 
     expect(DB::table('larasell_audit_log')->count())->toBe(0)
         ->and(verifyChain()['passed'])->toBeTrue();
-});
+})->skip(fn () => DB::getDriverName() !== 'sqlite', 'The trigger is written in SQLite\'s dialect.');
 
 it('refuses a record that already has its place in the chain', function (string $column) {
     // Arrange
