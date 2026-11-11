@@ -165,22 +165,20 @@ it('locks product variants in a deterministic order', function () {
 it('keeps snapshots after the source product changes', function () {
     $product = Product::query()->create([
         'name' => 'Tea',
-        'sku' => 'TEA-001',
-        'barcode' => '04012345678901',
         'price' => Price::of(500),
         'allow_backorders' => true,
         'status' => Visibility::Visible,
     ]);
+    $product->defaultVariant()->update(['sku' => 'TEA-001', 'barcode' => '04012345678901']);
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR, 'user_id' => 42]);
     $cart->add($product);
 
     $order = app(Checkout::class)->create($cart, checkoutData())->order;
     $product->update([
         'name' => 'Changed Tea',
-        'sku' => 'TEA-002',
-        'barcode' => '04012345678918',
         'price' => Price::of(900),
     ]);
+    $product->defaultVariant()->update(['sku' => 'TEA-002', 'barcode' => '04012345678918']);
     $product->delete();
 
     $item = $order->items()->first();

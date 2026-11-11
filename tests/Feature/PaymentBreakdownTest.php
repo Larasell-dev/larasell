@@ -134,11 +134,11 @@ function paymentBreakdownCart(int $price, int $quantity = 1): Cart
     $product = Product::query()->create([
         'name' => 'Payment breakdown product',
         'price' => Price::of($price),
-        'sku' => 'PAYMENT-BREAKDOWN',
         'allow_backorders' => true,
         'status' => Visibility::Visible,
         'tax_category' => 'standard',
     ]);
+    $product->defaultVariant()->update(['sku' => 'PAYMENT-BREAKDOWN']);
     $cart = Cart::createIn(shopContext(), ['currency' => Currency::EUR]);
     $cart->add($product, $quantity);
 
