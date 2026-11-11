@@ -21,6 +21,36 @@ final class InvalidAttributeValues extends InvalidArgumentException implements S
         );
     }
 
+    public static function notYesAndNo(string $attribute): self
+    {
+        return self::structured(
+            errorCode: 'larasell.catalog.boolean-attribute-values-fixed',
+            message: "[{$attribute}] is a yes-or-no attribute, but its values aren't exactly its yes and its no.",
+            why: 'A boolean attribute has two values, __boolean_true and __boolean_false; they can be renamed, not added, removed or re-slugged.',
+            fix: 'Pass two drafts with the slugs __boolean_true and __boolean_false, with the existing values\' ids when updating.',
+        );
+    }
+
+    public static function notANumber(string $attribute, string $name): self
+    {
+        return self::structured(
+            errorCode: 'larasell.catalog.attribute-value-not-a-number',
+            message: "[{$attribute}] is a number attribute, but the value [{$name}] isn't a number.",
+            why: 'A number attribute\'s value is the number its name spells, in the default locale.',
+            fix: 'Name the value with a number, e.g. "180" or "2.5".',
+        );
+    }
+
+    public static function typeChanged(string $attribute): self
+    {
+        return self::structured(
+            errorCode: 'larasell.catalog.attribute-type-changed',
+            message: "[{$attribute}]'s type can't change.",
+            why: 'Its values were checked against its type, and products picked them.',
+            fix: 'Pass the attribute\'s own type, or create another attribute.',
+        );
+    }
+
     public static function tooMany(string $attribute): self
     {
         return self::structured(
