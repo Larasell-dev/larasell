@@ -53,7 +53,7 @@ it('inherits the product values of inherited attributes, but not of product-only
         ->and($product->defaultVariant()->attributeInheritance($material))->toBe(InheritanceState::Inherited);
 });
 
-it('overrides and clears an inherited attribute per variant', function () {
+it('overrides an inherited attribute per variant, with a value or with none', function () {
     // Arrange
     $material = scopedAttribute('material', AttributeScope::Inherited, ['cotton', 'polyester']);
     $origin = scopedAttribute('fit', AttributeScope::Inherited, ['regular']);
@@ -62,13 +62,13 @@ it('overrides and clears an inherited attribute per variant', function () {
     $variant = $product->defaultVariant();
 
     // Act
-    $variant->overrideAttribute(attributeValueOf($material, 'polyester'));
-    $variant->clearAttribute($origin);
+    $variant->overrideAttribute($material, attributeValueOf($material, 'polyester'));
+    $variant->overrideAttribute($origin, null);
 
     // Assert
     expect(effectiveSlugs($product))->toBe(['material' => 'polyester'])
         ->and($variant->attributeInheritance($material))->toBe(InheritanceState::Overridden)
-        ->and($variant->attributeInheritance($origin))->toBe(InheritanceState::Cleared);
+        ->and($variant->attributeInheritance($origin))->toBe(InheritanceState::Overridden);
 });
 
 it('inherits again after an override', function () {
@@ -77,7 +77,7 @@ it('inherits again after an override', function () {
     $product = Product::create(['name' => 'Shirt', 'price' => Price::of(1000)]);
     $product->attributeValues()->attach(attributeValueOf($material, 'cotton'));
     $variant = $product->defaultVariant();
-    $variant->overrideAttribute(attributeValueOf($material, 'polyester'));
+    $variant->overrideAttribute($material, attributeValueOf($material, 'polyester'));
 
     // Act
     $variant->inheritAttribute($material);
@@ -93,11 +93,10 @@ it('gives variant-only attributes no product value to inherit', function () {
     $variant = $product->defaultVariant();
 
     // Act
-    $variant->overrideAttribute(attributeValueOf($length, 'long'));
+    $variant->overrideAttribute($length, attributeValueOf($length, 'long'));
 
     // Assert
-    expect(effectiveSlugs($product))->toBe(['length' => 'long'])
-        ->and(fn () => $variant->clearAttribute($length))->toThrow(InvalidInheritance::class);
+    expect(effectiveSlugs($product))->toBe(['length' => 'long']);
 });
 
 it('rejects variant values for product-only attributes', function () {
@@ -106,5 +105,5 @@ it('rejects variant values for product-only attributes', function () {
     $variant = Product::create(['name' => 'Shirt', 'price' => Price::of(1000)])->defaultVariant();
 
     // Act & Assert
-    expect(fn () => $variant->overrideAttribute(attributeValueOf($care, 'hand-wash')))->toThrow(InvalidInheritance::class);
+    expect(fn () => $variant->overrideAttribute($care, attributeValueOf($care, 'hand-wash')))->toThrow(InvalidInheritance::class);
 });

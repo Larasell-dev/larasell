@@ -90,13 +90,13 @@ it('keeps an overridden value when the product changes', function () {
         ->and($variant->effectiveHsCode())->toBe('610990');
 });
 
-it('has no value for a cleared field even though the product has one', function () {
+it('has no value for an empty override even though the product has one', function () {
     $variant = inheritingProduct()->defaultVariant();
 
-    $variant->clear('country_of_origin')->clear('dimensions')->save();
+    $variant->override('country_of_origin', null)->override('dimensions', null)->save();
     $variant = $variant->fresh();
 
-    expect($variant->inheritance('country_of_origin'))->toBe(InheritanceState::Cleared)
+    expect($variant->inheritance('country_of_origin'))->toBe(InheritanceState::Overridden)
         ->and($variant->effectiveCountryOfOrigin())->toBeNull()
         ->and($variant->effectiveDimensions())->toBeNull()
         ->and($variant->effectiveWeight())->not->toBeNull();
@@ -114,10 +114,10 @@ it('inherits again after an override, dropping the variant value', function () {
         ->and($variant->effectiveWeight()?->grams())->toBe('180');
 });
 
-it('rejects an override without a value', function () {
+it('rejects an empty override of a field every variant needs', function () {
     $variant = inheritingProduct()->defaultVariant();
 
-    expect(fn () => $variant->update(['weight_inheritance' => InheritanceState::Overridden]))
+    expect(fn () => $variant->update(['type_inheritance' => InheritanceState::Overridden]))
         ->toThrow(InvalidInheritance::class);
 });
 
@@ -135,7 +135,7 @@ it('rejects inheritance states for fields that are not inheritable', function ()
         ->and(fn () => $variant->inheritance('price'))->toThrow(InvalidInheritance::class);
 });
 
-it('lets a variant have its own type but never clear it', function () {
+it('lets a variant have its own type but never an empty one', function () {
     app(ProductCapabilities::class)->register('download');
     app(ProductTypes::class)->register(ProductType::make('download')->label('Download')->capabilities(['download']));
     $product = inheritingProduct();
@@ -148,7 +148,7 @@ it('lets a variant have its own type but never clear it', function () {
 
     expect($digital->fresh()->effectiveType()->key())->toBe('download')
         ->and($product->defaultVariant()->effectiveType()->key())->toBe('physical')
-        ->and(fn () => $product->defaultVariant()->clear('type'))->toThrow(InvalidInheritance::class)
+        ->and(fn () => $product->defaultVariant()->override('type', null)->save())->toThrow(InvalidInheritance::class)
         ->and(fn () => $digital->fresh()->inherit('type')->save())->toThrow(InvalidProductType::class);
 });
 
@@ -162,10 +162,10 @@ it('resolves the name per locale, an own name for one locale and the inherited o
         ->and($variant->translationInheritance('name', 'en'))->toBe(InheritanceState::Inherited)
         ->and($variant->name('de'))->toBe('T-Shirt, extra lang')
         ->and($variant->name('en'))->toBe('Basic T-Shirt')
-        ->and(fn () => $variant->clearTranslation('name', 'en'))->toThrow(InvalidInheritance::class);
+        ->and(fn () => $variant->overrideTranslation('name', 'en', null))->toThrow(InvalidInheritance::class);
 });
 
-it('resolves the description per locale with all three states', function () {
+it('resolves the description per locale: inherited, own, and own but empty', function () {
     $product = inheritingProduct(['description' => new TranslatableRichText([
         'en' => variantText('Soft cotton.'),
         'de' => variantText('Weiche Baumwolle.'),
@@ -174,14 +174,14 @@ it('resolves the description per locale with all three states', function () {
     $variant = $product->defaultVariant();
 
     $variant->overrideTranslation('description', 'de', variantText('Extra lang.'))
-        ->clearTranslation('description', 'fr')
+        ->overrideTranslation('description', 'fr', null)
         ->save();
     $variant = $variant->fresh();
 
     expect($variant->description('de')?->toPlainText())->toBe('Extra lang.')
         ->and($variant->description('en')?->toPlainText())->toBe('Soft cotton.')
         ->and($variant->description('fr'))->toBeNull()
-        ->and($variant->translationInheritance('description', 'fr'))->toBe(InheritanceState::Cleared);
+        ->and($variant->translationInheritance('description', 'fr'))->toBe(InheritanceState::Overridden);
 });
 
 it('prefers the product in a more specific locale over the variant in a broader one', function () {
@@ -202,7 +202,8 @@ it('updates inheritance through the variant action', function () {
     app(UpdateProductVariant::class)->handle(VariantId::of($variant), [
         'weight_inheritance' => InheritanceState::Overridden,
         'weight' => Weight::of(250, 'g'),
-        'country_of_origin_inheritance' => InheritanceState::Cleared,
+        'country_of_origin_inheritance' => InheritanceState::Overridden,
+        'country_of_origin' => null,
         'name' => ['de' => 'Extra lang'],
     ]);
     $variant = $variant->fresh();
