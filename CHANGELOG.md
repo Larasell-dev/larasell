@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.28.0](https://github.com/Larasell-dev/larasell/compare/v1.27.4...v1.28.0) (2026-11-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* move the audit log into the core and audit changes with an Origin ([#182](https://github.com/Larasell-dev/larasell/issues/182))
+
+### Features
+
+* move the audit log into the core and audit changes with an Origin ([#182](https://github.com/Larasell-dev/larasell/issues/182)) ([741d53c](https://github.com/Larasell-dev/larasell/commit/741d53c6a3364c8981f9cef3e9ed923c4f2c2a4e))
+
 ## [1.27.4](https://github.com/Larasell-dev/larasell/compare/v1.27.3...v1.27.4) (2026-11-11)
 
 
