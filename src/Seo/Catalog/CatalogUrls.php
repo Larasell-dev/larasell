@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Seo\Catalog;
 
 use Illuminate\Database\Eloquent\Model;
 use Larasell\Larasell\Attachments\Attachments;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryCreated;
 use Larasell\Larasell\Catalog\Events\CategoryDeleted;
@@ -34,8 +35,8 @@ final readonly class CatalogUrls
 
     public function productChanged(ProductCreated|ProductUpdated $event): void
     {
-        $this->urls->refreshPage($this->resources->forClass(Product::class), $event->productId->value);
-        $this->saveCustom(Product::class, $event->productId->value, $event->attachments);
+        $this->urls->refreshPage($this->resources->forClass(Product::class), $event->productId->value, $event->origin);
+        $this->saveCustom(Product::class, $event->productId->value, $event->attachments, $event->origin);
     }
 
     public function productDeleted(ProductDeleted $event): void
@@ -50,10 +51,10 @@ final readonly class CatalogUrls
     /** Its subcategories follow in the same transaction. */
     public function categoryChanged(CategoryCreated|CategoryUpdated|CategoryMoved $event): void
     {
-        $this->urls->refreshPage($this->resources->forClass(Category::class), $event->categoryId->value);
+        $this->urls->refreshPage($this->resources->forClass(Category::class), $event->categoryId->value, $event->origin);
 
         if (! $event instanceof CategoryMoved) {
-            $this->saveCustom(Category::class, $event->categoryId->value, $event->attachments);
+            $this->saveCustom(Category::class, $event->categoryId->value, $event->attachments, $event->origin);
         }
     }
 
@@ -69,12 +70,12 @@ final readonly class CatalogUrls
         );
 
         foreach ($event->childIds as $childId) {
-            $this->urls->refreshPage($type, $childId->value);
+            $this->urls->refreshPage($type, $childId->value, $event->origin);
         }
     }
 
     /** @param  class-string<Model>  $class */
-    private function saveCustom(string $class, int $id, Attachments $attachments): void
+    private function saveCustom(string $class, int $id, Attachments $attachments, Origin $origin): void
     {
         $plan = $attachments->get(CustomUrls::class)->plan ?? [];
 
@@ -87,8 +88,8 @@ final readonly class CatalogUrls
         foreach ($plan as [$context, $path]) {
             try {
                 $path === null
-                    ? $this->urls->resetToAutomatic($page, $context)
-                    : $this->urls->setCustom($page, $context, $path);
+                    ? $this->urls->resetToAutomatic($page, $context, $origin)
+                    : $this->urls->setCustom($page, $context, $path, $origin);
             } catch (InvalidSeoPath $exception) {
                 throw CustomUrlRejected::in($context, $exception);
             }

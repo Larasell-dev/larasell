@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Models\Category;
 
@@ -14,9 +15,9 @@ final readonly class DeleteCategoryTree
 {
     public function __construct(private ConnectionInterface $db, private DeleteCategory $delete) {}
 
-    public function handle(CategoryId $categoryId): void
+    public function handle(CategoryId $categoryId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($categoryId): void {
+        $this->db->transaction(function () use ($origin, $categoryId): void {
             $tree = $this->db->table('larasell_categories')->newQuery()->fromRaw(
                 '(with recursive tree (id, depth) as (
                     select id, 0 from larasell_categories where id = ?
@@ -30,7 +31,7 @@ final readonly class DeleteCategoryTree
                 ->joinSub($tree, 'tree', 'tree.id', '=', 'larasell_categories.id')
                 ->orderByDesc('tree.depth')->orderByDesc('larasell_categories.id')
                 ->pluck('larasell_categories.id')
-                ->each(fn (mixed $id) => $this->delete->handle(new CategoryId((int) $id)));
+                ->each(fn (mixed $id) => $this->delete->handle(new CategoryId((int) $id), $origin));
         });
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\CollisionPolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
@@ -77,9 +78,9 @@ final class SeoUrlManager
      * @param  list<SalesContext>|null  $contexts  null for every context
      * @return list<SeoUrlChanged> One change per page and context whose path changed
      */
-    public function refresh(Model $resource, ?array $contexts = null, bool $cascade = true): array
+    public function refresh(Model $resource, Origin $origin, ?array $contexts = null, bool $cascade = true): array
     {
-        return $this->refreshPage($this->resources->for($resource), $resource->getKey(), $contexts, $cascade);
+        return $this->refreshPage($this->resources->for($resource), $resource->getKey(), $origin, $contexts, $cascade);
     }
 
     /**
@@ -90,35 +91,35 @@ final class SeoUrlManager
      * @param  list<SalesContext>|null  $contexts  null for every context
      * @return list<SeoUrlChanged>
      */
-    public function refreshPage(SeoResourceType $type, int|string $id, ?array $contexts = null, bool $cascade = true): array
+    public function refreshPage(SeoResourceType $type, int|string $id, Origin $origin, ?array $contexts = null, bool $cascade = true): array
     {
-        return $this->transaction(fn (): array => $this->refreshTree($type, $id, $contexts ?? $this->contexts(), $cascade, []));
+        return $this->transaction(fn (): array => $this->refreshTree($origin, $type, $id, $contexts ?? $this->contexts(), $cascade, []));
     }
 
     /** Makes the path the resource's custom URL. Renames never change it until resetToAutomatic(). */
-    public function setCustom(Model $resource, SalesContext $context, string $path): SeoUrl
+    public function setCustom(Model $resource, SalesContext $context, string $path, Origin $origin): SeoUrl
     {
         $type = $this->resources->for($resource);
         $path = $this->normalize($path);
 
-        return $this->transaction(function () use ($type, $resource, $context, $path): SeoUrl {
+        return $this->transaction(function () use ($type, $resource, $context, $path, $origin): SeoUrl {
             $resource = $this->lock($type, $resource->getKey()) ?? throw (new ModelNotFoundException)->setModel($resource::class, [$resource->getKey()]);
             $current = $this->canonical($resource, $context);
-            $row = $this->place($type, $resource, $context, $path, true, $current);
+            $row = $this->place($origin, $type, $resource, $context, $path, true, $current);
 
             if ($this->changed($type, $resource, $context, $current?->path, $row->path) !== null) {
-                $this->refreshDependents($type, $resource, [$context], []);
+                $this->refreshDependents($origin, $type, $resource, [$context], []);
             }
 
             return $row;
         });
     }
 
-    public function resetToAutomatic(Model $resource, SalesContext $context): void
+    public function resetToAutomatic(Model $resource, SalesContext $context, Origin $origin): void
     {
         $type = $this->resources->for($resource);
 
-        $this->transaction(function () use ($type, $resource, $context): void {
+        $this->transaction(function () use ($type, $resource, $context, $origin): void {
             $resource = $this->lock($type, $resource->getKey());
             $current = $resource === null ? null : $this->canonical($resource, $context);
 
@@ -128,8 +129,8 @@ final class SeoUrlManager
 
             $current->update(['is_custom' => false]);
 
-            if ($this->refreshIn($type, $resource, $context) !== null) {
-                $this->refreshDependents($type, $resource, [$context], []);
+            if ($this->refreshIn($origin, $type, $resource, $context) !== null) {
+                $this->refreshDependents($origin, $type, $resource, [$context], []);
             }
         });
     }
@@ -169,18 +170,18 @@ final class SeoUrlManager
     }
 
     /** Frees an old or gone URL, so the path is unknown again or can be used by another page. */
-    public function remove(SeoUrl $url): void
+    public function remove(SeoUrl $url, Origin $origin): void
     {
         if ($url->status === SeoUrlStatus::Canonical) {
             throw new LogicException('A canonical URL cannot be removed. Give the page another URL first.');
         }
 
         $url->delete();
-        event(SeoUrlReleased::of($url));
+        event(SeoUrlReleased::of($url, $origin));
     }
 
     /** @param  SeoResourceType<Model>  $type */
-    private function refreshIn(SeoResourceType $type, Model $resource, SalesContext $context): ?SeoUrlChanged
+    private function refreshIn(Origin $origin, SeoResourceType $type, Model $resource, SalesContext $context): ?SeoUrlChanged
     {
         $current = $this->canonical($resource, $context);
         $available = $type->isAvailable($resource, $context);
@@ -202,7 +203,7 @@ final class SeoUrlManager
             return $this->changed($type, $resource, $context, $current?->path, null);
         }
 
-        $row = $this->place($type, $resource, $context, $path, false, $current, $available);
+        $row = $this->place($origin, $type, $resource, $context, $path, false, $current, $available);
 
         return $this->changed($type, $resource, $context, $current?->path, $row->path);
     }
@@ -212,9 +213,9 @@ final class SeoUrlManager
      *
      * @param  SeoResourceType<Model>  $type
      */
-    private function place(SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom, ?SeoUrl $current, ?bool $available = null): SeoUrl
+    private function place(Origin $origin, SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom, ?SeoUrl $current, ?bool $available = null): SeoUrl
     {
-        $path = $this->freePath($type, $resource, $context, $path, $custom);
+        $path = $this->freePath($origin, $type, $resource, $context, $path, $custom);
         $available ??= $type->isAvailable($resource, $context);
 
         if ($current?->path === $path) {
@@ -256,7 +257,7 @@ final class SeoUrlManager
      *
      * @param  SeoResourceType<Model>  $type
      */
-    private function freePath(SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom): string
+    private function freePath(Origin $origin, SeoResourceType $type, Model $resource, SalesContext $context, string $path, bool $custom): string
     {
         $inContext = fn () => SeoUrl::query()->where('sales_channel_id', $context->channelId->value)->where('locale', $context->locale->value);
         $numbered = null;
@@ -298,7 +299,7 @@ final class SeoUrlManager
             if ($row->status !== SeoUrlStatus::Canonical) {
                 // Another page's old or gone URL: the new canonical URL claims it.
                 $row->delete();
-                event(SeoUrlReleased::of($row));
+                event(SeoUrlReleased::of($row, $origin));
 
                 return $candidate;
             }
@@ -343,7 +344,7 @@ final class SeoUrlManager
      * @param  array<string, true>  $ancestors  The pages this refresh came through, to stop at a cycle
      * @return list<SeoUrlChanged>
      */
-    private function refreshTree(SeoResourceType $type, int|string $id, array $contexts, bool $cascade, array $ancestors): array
+    private function refreshTree(Origin $origin, SeoResourceType $type, int|string $id, array $contexts, bool $cascade, array $ancestors): array
     {
         $resource = $this->lock($type, $id);
 
@@ -354,13 +355,13 @@ final class SeoUrlManager
         $changes = [];
 
         foreach ($contexts as $context) {
-            if ($change = $this->refreshIn($type, $resource, $context)) {
+            if ($change = $this->refreshIn($origin, $type, $resource, $context)) {
                 $changes[] = $change;
             }
         }
 
         if ($changes !== [] && $cascade) {
-            array_push($changes, ...$this->refreshDependents($type, $resource, $contexts, $ancestors));
+            array_push($changes, ...$this->refreshDependents($origin, $type, $resource, $contexts, $ancestors));
         }
 
         return $changes;
@@ -374,7 +375,7 @@ final class SeoUrlManager
      * @param  array<string, true>  $ancestors
      * @return list<SeoUrlChanged>
      */
-    private function refreshDependents(SeoResourceType $type, Model $resource, array $contexts, array $ancestors): array
+    private function refreshDependents(Origin $origin, SeoResourceType $type, Model $resource, array $contexts, array $ancestors): array
     {
         $ancestors[$type->key().':'.$resource->getKey()] = true;
         $changes = [];
@@ -387,7 +388,7 @@ final class SeoUrlManager
                 throw new LogicException('['.$dependentType->key().' '.$dependent->getKey().'] depends on itself: the pages form a cycle.');
             }
 
-            array_push($changes, ...$this->refreshTree($dependentType, $dependent->getKey(), $contexts, true, $ancestors));
+            array_push($changes, ...$this->refreshTree($origin, $dependentType, $dependent->getKey(), $contexts, true, $ancestors));
         }
 
         return $changes;

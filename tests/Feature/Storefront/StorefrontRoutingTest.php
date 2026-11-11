@@ -26,9 +26,9 @@ beforeEach(function () {
         'type' => 'storefront',
         'locales' => ['de', 'en'],
         'currencies' => ['EUR'],
-    ]);
-    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de', 'locale' => 'de']);
-    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de/en', 'locale' => 'en']);
+    ], origin());
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de', 'locale' => 'de'], origin());
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($shop), ['url' => 'https://shop.de/en', 'locale' => 'en'], origin());
 });
 
 function shopRoutes(): void
@@ -79,7 +79,7 @@ it('serves a new entry point without registering routes again, also from cached 
 
     app(AddEntryPoint::class)->handle(SalesChannelId::of(SalesChannel::query()->where('key', 'shop')->sole()), [
         'url' => 'https://shop.at/de', 'locale' => 'de',
-    ]);
+    ], origin());
 
     $this->get('https://shop.at/de/warenkorb')->assertOk()->assertSee('cart https://shop.at/de/warenkorb');
     $this->get('https://shop.de/en/cart')->assertOk()->assertSee('cart https://shop.de/en/cart');

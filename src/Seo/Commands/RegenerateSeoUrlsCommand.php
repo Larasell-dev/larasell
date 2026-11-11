@@ -3,6 +3,8 @@
 namespace Larasell\Larasell\Seo\Commands;
 
 use Illuminate\Console\Command;
+use Larasell\Larasell\Audit\Actors\SystemActor;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\SalesContext;
 use Larasell\Larasell\Seo\Contracts\SeoResourceType;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
@@ -43,11 +45,12 @@ class RegenerateSeoUrlsCommand extends Command
         }
 
         $changes = [];
-        $refreshAll = function () use ($types, $contexts, $manager, &$changes): void {
+        $origin = Origin::cli(new SystemActor('larasell:regenerate-seo-urls'));
+        $refreshAll = function () use ($types, $contexts, $manager, $origin, &$changes): void {
             foreach ($types as $type) {
                 // Each page in its own transaction, so admins can keep saving; subcategories follow their parent.
                 foreach ($type->model()::query()->lazyById() as $resource) {
-                    array_push($changes, ...$manager->refresh($resource, $contexts));
+                    array_push($changes, ...$manager->refresh($resource, $origin, $contexts));
                 }
             }
         };

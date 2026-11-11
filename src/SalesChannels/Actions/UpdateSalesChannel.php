@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\SalesChannels\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
@@ -24,9 +25,9 @@ final readonly class UpdateSalesChannel
      *
      * @param  array{name?: string, locales?: list<Locale|string>, currencies?: list<Currency|string>, default_locale?: Locale|string, default_currency?: Currency|string, active?: bool}  $input
      */
-    public function handle(SalesChannelId $channelId, array $input): SalesChannel
+    public function handle(SalesChannelId $channelId, array $input, Origin $origin): SalesChannel
     {
-        $channel = $this->db->transaction(function () use ($channelId, $input): SalesChannel {
+        $channel = $this->db->transaction(function () use ($origin, $channelId, $input): SalesChannel {
             $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId->value);
             $locales = isset($input['locales']) ? array_values(array_unique(array_map($this->rules->locale(...), $input['locales']), SORT_REGULAR)) : $channel->locales();
             $currencies = isset($input['currencies']) ? array_values(array_unique(array_map($this->rules->currency(...), $input['currencies']), SORT_REGULAR)) : $channel->currencies();
@@ -49,7 +50,7 @@ final readonly class UpdateSalesChannel
             }
 
             if ($changed !== []) {
-                SalesChannelUpdated::dispatch($channelId, $changed);
+                SalesChannelUpdated::dispatch($channelId, $changed, $origin);
             }
 
             return $channel;

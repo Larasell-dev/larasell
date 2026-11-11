@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 
 /**
@@ -18,5 +19,7 @@ final readonly class CategoryMoved
         public CategoryId $categoryId,
         public ?CategoryId $oldParentId,
         public ?CategoryId $newParentId,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

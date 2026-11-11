@@ -10,8 +10,11 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
+use Larasell\Larasell\Storefront\Events\EntryPointCreated;
+use Larasell\Larasell\Storefront\Events\EntryPointDeleted;
 use Larasell\Larasell\Storefront\Http\Middleware\RestoreStorefrontPath;
 use Larasell\Larasell\Storefront\Http\Middleware\SetStorefrontContext;
+use Larasell\Larasell\Storefront\Listeners\AuditEntryPointChanges;
 use Larasell\Larasell\Storefront\Listeners\KeepServedLocalesAndCurrencies;
 use LogicException;
 
@@ -44,5 +47,7 @@ final class StorefrontServiceProvider extends ServiceProvider
         });
 
         Event::listen(SalesChannelUpdated::class, KeepServedLocalesAndCurrencies::class);
+        Event::listen(EntryPointCreated::class, [AuditEntryPointChanges::class, 'created']);
+        Event::listen(EntryPointDeleted::class, [AuditEntryPointChanges::class, 'deleted']);
     }
 }

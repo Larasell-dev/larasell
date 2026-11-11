@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\SalesChannels\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
@@ -32,7 +33,7 @@ final readonly class CreateSalesChannel
      * }  $input  The type is a key registered with SalesChannelTypes, e.g. "storefront"; the defaults are the first locale and currency.
      *            How customers reach the channel is up to its type, e.g. Larasell\Larasell\Storefront\Actions\AddEntryPoint.
      */
-    public function handle(array $input): SalesChannel
+    public function handle(array $input, Origin $origin): SalesChannel
     {
         $key = $this->rules->key($input['key']);
         $type = $this->rules->type($input['type']);
@@ -42,7 +43,7 @@ final readonly class CreateSalesChannel
         $defaultCurrency = $this->rules->currency($input['default_currency'] ?? $currencies[0] ?? null);
         $this->rules->defaults($locales, $currencies, $defaultLocale, $defaultCurrency);
 
-        $channel = $this->db->transaction(function () use ($input, $key, $type, $locales, $currencies, $defaultLocale, $defaultCurrency): SalesChannel {
+        $channel = $this->db->transaction(function () use ($origin, $input, $key, $type, $locales, $currencies, $defaultLocale, $defaultCurrency): SalesChannel {
             $channel = SalesChannel::query()->create([
                 'key' => $key,
                 'name' => $input['name'],
@@ -59,7 +60,7 @@ final readonly class CreateSalesChannel
                 fn (Currency $currency): array => ['sales_channel_id' => $channel->id, 'currency' => $currency->value], $currencies,
             ));
 
-            SalesChannelCreated::dispatch(SalesChannelId::of($channel), $channel->key, $type);
+            SalesChannelCreated::dispatch(SalesChannelId::of($channel), $channel->key, $type, $origin);
 
             return $channel;
         });

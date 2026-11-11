@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerGroupId;
 use Larasell\Larasell\Customers\Events\CustomerGroupCreated;
 use Larasell\Larasell\Customers\Exceptions\DuplicateCustomerGroupCode;
@@ -12,9 +13,9 @@ final readonly class CreateCustomerGroup
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerGroupPayload $payload): CustomerGroup
+    public function handle(CustomerGroupPayload $payload, Origin $origin): CustomerGroup
     {
-        return $this->db->transaction(function () use ($payload): CustomerGroup {
+        return $this->db->transaction(function () use ($origin, $payload): CustomerGroup {
             if (CustomerGroup::query()->where('code', $payload->code->value())->exists()) {
                 throw DuplicateCustomerGroupCode::code($payload->code->value());
             }
@@ -25,7 +26,7 @@ final readonly class CreateCustomerGroup
                 'description' => $payload->description?->value(),
             ]);
 
-            CustomerGroupCreated::dispatch(CustomerGroupId::of($group));
+            CustomerGroupCreated::dispatch(CustomerGroupId::of($group), $origin);
 
             return $group;
         });

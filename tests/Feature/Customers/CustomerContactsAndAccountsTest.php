@@ -47,7 +47,7 @@ function companyCustomer(string $name = 'Muster GmbH'): Customer
     return app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new CompanyProfileData(legalName: $name, countryCode: Country::DE),
         source: CustomerSource::Admin,
-    ));
+    ), origin());
 }
 
 function contactPayload(string $firstName = 'Max'): CustomerContactPayload
@@ -64,10 +64,10 @@ it('adds, updates and removes contacts of a company', function () {
     $company = companyCustomer();
     Event::fake([CustomerContactAdded::class]);
 
-    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload('Max'));
-    $anna = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload('Anna'));
-    app(UpdateCustomerContact::class)->handle(CustomerContactId::of($anna), new CustomerContactPayload(firstName: 'Anna', lastName: 'Beispiel', jobTitle: 'Buchhaltung'));
-    app(RemoveCustomerContact::class)->handle(CustomerContactId::of($max));
+    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload('Max'), origin());
+    $anna = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload('Anna'), origin());
+    app(UpdateCustomerContact::class)->handle(CustomerContactId::of($anna), new CustomerContactPayload(firstName: 'Anna', lastName: 'Beispiel', jobTitle: 'Buchhaltung'), origin());
+    app(RemoveCustomerContact::class)->handle(CustomerContactId::of($max), origin());
 
     $contacts = $company->fresh()?->contacts;
     expect($contacts)->toHaveCount(1)
@@ -78,19 +78,19 @@ it('adds, updates and removes contacts of a company', function () {
 });
 
 it('gives contacts only to companies', function () {
-    $person = app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau'));
+    $person = app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau'), origin());
 
-    expect(fn () => app(AddCustomerContact::class)->handle(CustomerId::of($person), contactPayload()))
+    expect(fn () => app(AddCustomerContact::class)->handle(CustomerId::of($person), contactPayload(), origin()))
         ->toThrow(ContactsNeedACompany::class);
 });
 
 it('links an app user to a customer and one of its contacts', function () {
     $company = companyCustomer();
-    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload());
+    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload(), origin());
     $user = testUser();
     Event::fake([CustomerAccountLinked::class]);
 
-    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user, CustomerContactId::of($max));
+    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user, origin(), CustomerContactId::of($max));
 
     expect($account->account?->is($user))->toBeTrue()
         ->and($account->contact_id)->toBe($max->id)
@@ -102,8 +102,8 @@ it('links an app user to a customer and one of its contacts', function () {
 it('lets one user work for several companies', function () {
     $user = testUser();
 
-    app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer('Muster GmbH')), $user);
-    app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer('Beispiel AG')), $user);
+    app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer('Muster GmbH')), $user, origin());
+    app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer('Beispiel AG')), $user, origin());
 
     expect($user->customers()->count())->toBe(2);
 });
@@ -111,43 +111,43 @@ it('lets one user work for several companies', function () {
 it('links a user to the same customer only once', function () {
     $company = companyCustomer();
     $user = testUser();
-    app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user);
+    app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user, origin());
 
-    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user))
+    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of($company), $user, origin()))
         ->toThrow(AccountAlreadyLinked::class);
 });
 
 it('links no accounts to blocked or archived customers', function () {
     $company = companyCustomer();
-    app(ChangeCustomerStatus::class)->handle(CustomerId::of($company), CustomerStatus::Blocked);
+    app(ChangeCustomerStatus::class)->handle(CustomerId::of($company), CustomerStatus::Blocked, origin());
 
-    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of($company), testUser()))
+    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of($company), testUser(), origin()))
         ->toThrow(CustomerNotActive::class);
 });
 
 it('refuses a contact of another customer', function () {
-    $other = app(AddCustomerContact::class)->handle(CustomerId::of(companyCustomer('Beispiel AG')), contactPayload());
+    $other = app(AddCustomerContact::class)->handle(CustomerId::of(companyCustomer('Beispiel AG')), contactPayload(), origin());
 
-    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer()), testUser(), CustomerContactId::of($other)))
+    expect(fn () => app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer()), testUser(), origin(), CustomerContactId::of($other)))
         ->toThrow(ContactBelongsToAnotherCustomer::class);
 });
 
 it('keeps the account when its contact is removed', function () {
     $company = companyCustomer();
-    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload());
-    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of($company), testUser(), CustomerContactId::of($max));
+    $max = app(AddCustomerContact::class)->handle(CustomerId::of($company), contactPayload(), origin());
+    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of($company), testUser(), origin(), CustomerContactId::of($max));
 
-    app(RemoveCustomerContact::class)->handle(CustomerContactId::of($max));
+    app(RemoveCustomerContact::class)->handle(CustomerContactId::of($max), origin());
 
     expect($account->fresh()?->contact_id)->toBeNull();
 });
 
 it('unlinks an account and leaves the user alone', function () {
     $user = testUser();
-    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer()), $user);
+    $account = app(LinkCustomerAccount::class)->handle(CustomerId::of(companyCustomer()), $user, origin());
     Event::fake([CustomerAccountUnlinked::class]);
 
-    app(UnlinkCustomerAccount::class)->handle(CustomerAccountId::of($account));
+    app(UnlinkCustomerAccount::class)->handle(CustomerAccountId::of($account), origin());
 
     expect(CustomerAccount::query()->count())->toBe(0)
         ->and($user->fresh())->not->toBeNull();

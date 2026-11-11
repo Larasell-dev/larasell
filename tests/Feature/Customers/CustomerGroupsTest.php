@@ -23,12 +23,12 @@ use Larasell\Larasell\Translatable;
 
 function group(string $code, string $name = 'Wholesale'): CustomerGroup
 {
-    return app(CreateCustomerGroup::class)->handle(new CustomerGroupPayload(code: CustomerGroupCode::of($code), name: new Translatable(['en' => $name])));
+    return app(CreateCustomerGroup::class)->handle(new CustomerGroupPayload(code: CustomerGroupCode::of($code), name: new Translatable(['en' => $name])), origin());
 }
 
 function groupCustomer(): Customer
 {
-    return app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'A', lastName: 'B'));
+    return app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'A', lastName: 'B'), origin());
 }
 
 it('creates and updates groups with unique codes', function () {
@@ -38,7 +38,7 @@ it('creates and updates groups with unique codes', function () {
         code: CustomerGroupCode::of('wholesale-premium'),
         name: new Translatable(['en' => 'Wholesale Premium']),
         description: CustomerGroupDescription::of('Our biggest resellers'),
-    ));
+    ), origin());
 
     $wholesale = CustomerGroup::query()->findOrFail($wholesale->id);
     expect($wholesale->code)->toBe('wholesale-premium')
@@ -50,7 +50,7 @@ it('creates and updates groups with unique codes', function () {
 it('allows a group to keep its own code on update', function () {
     $vip = group('vip', 'VIP');
 
-    app(UpdateCustomerGroup::class)->handle(CustomerGroupId::of($vip), new CustomerGroupPayload(code: CustomerGroupCode::of('vip'), name: new Translatable(['en' => 'Very important'])));
+    app(UpdateCustomerGroup::class)->handle(CustomerGroupId::of($vip), new CustomerGroupPayload(code: CustomerGroupCode::of('vip'), name: new Translatable(['en' => 'Very important'])), origin());
 
     expect($vip->fresh()?->name->get('en'))->toBe('Very important');
 });
@@ -61,10 +61,10 @@ it('puts a customer in several groups and takes it out again', function () {
     $vip = group('vip', 'VIP');
     Event::fake([CustomerJoinedGroup::class, CustomerLeftGroup::class]);
 
-    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($retail));
-    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($vip));
-    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($vip));
-    app(RemoveCustomerFromGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($retail));
+    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($retail), origin());
+    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($vip), origin());
+    app(AddCustomerToGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($vip), origin());
+    app(RemoveCustomerFromGroup::class)->handle(CustomerId::of($customer), CustomerGroupId::of($retail), origin());
 
     expect($customer->fresh()?->groups->pluck('code')->all())->toBe(['vip']);
     Event::assertDispatchedTimes(CustomerJoinedGroup::class, 2);
@@ -74,10 +74,10 @@ it('puts a customer in several groups and takes it out again', function () {
 it('deletes only groups without members', function () {
     $empty = group('empty');
     $used = group('used');
-    app(AddCustomerToGroup::class)->handle(CustomerId::of(groupCustomer()), CustomerGroupId::of($used));
+    app(AddCustomerToGroup::class)->handle(CustomerId::of(groupCustomer()), CustomerGroupId::of($used), origin());
 
-    app(DeleteCustomerGroup::class)->handle(CustomerGroupId::of($empty));
+    app(DeleteCustomerGroup::class)->handle(CustomerGroupId::of($empty), origin());
 
     expect($empty->fresh())->toBeNull();
-    expect(fn () => app(DeleteCustomerGroup::class)->handle(CustomerGroupId::of($used)))->toThrow(CustomerGroupInUse::class);
+    expect(fn () => app(DeleteCustomerGroup::class)->handle(CustomerGroupId::of($used), origin()))->toThrow(CustomerGroupInUse::class);
 });

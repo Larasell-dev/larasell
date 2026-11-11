@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\SalesChannels\SalesChannels;
@@ -24,7 +25,7 @@ final class BackfillSeoUrls implements ShouldBeUnique, ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
-    public function __construct(public SalesChannelId $channelId, public Locale $locale)
+    public function __construct(public SalesChannelId $channelId, public Locale $locale, public Origin $origin)
     {
         $this->afterCommit();
     }
@@ -40,7 +41,7 @@ final class BackfillSeoUrls implements ShouldBeUnique, ShouldQueue
 
         foreach ($resources->all() as $type) {
             foreach ($type->model()::query()->lazyById() as $resource) {
-                $urls->refresh($resource, [$context]);
+                $urls->refresh($resource, $this->origin, [$context]);
             }
         }
     }

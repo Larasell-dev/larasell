@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\SalesChannels\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 
 /**
@@ -14,5 +15,5 @@ final readonly class SalesChannelDeleted
 {
     use Dispatchable;
 
-    public function __construct(public SalesChannelId $channelId, public string $key, public string $type) {}
+    public function __construct(public SalesChannelId $channelId, public string $key, public string $type, public Origin $origin) {}
 }

@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Enums\CustomerStatus;
 
@@ -19,5 +20,7 @@ final readonly class CustomerStatusChanged
         public CustomerId $customerId,
         public CustomerStatus $from,
         public CustomerStatus $to,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

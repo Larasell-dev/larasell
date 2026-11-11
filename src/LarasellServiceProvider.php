@@ -6,12 +6,19 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Larasell\Larasell\Audit\Auditor;
+use Larasell\Larasell\Audit\Commands\MakeAuditRecordCommand;
+use Larasell\Larasell\Audit\Commands\PruneAuditLogCommand;
+use Larasell\Larasell\Audit\Commands\VerifyAuditLogCommand;
 use Larasell\Larasell\Carts\CartMerger;
 use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Listeners\KeepChannelsWithCarts;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Catalog\CoreProductType;
+use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Catalog\Events\ProductUpdated;
+use Larasell\Larasell\Catalog\Listeners\AuditProductChanges;
 use Larasell\Larasell\Catalog\ProductCapabilities;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
@@ -25,6 +32,7 @@ use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
 use Larasell\Larasell\Contracts\TaxRateResolver;
 use Larasell\Larasell\Customers\CustomerNumbers\SequentialCustomerNumberGenerator;
+use Larasell\Larasell\Customers\Listeners\AuditCustomerChanges;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
@@ -42,7 +50,10 @@ use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
+use Larasell\Larasell\SalesChannels\Listeners\AuditSalesChannelChanges;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
@@ -58,7 +69,9 @@ class LarasellServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/larasell.php', 'larasell');
         $this->mergeConfigFrom(__DIR__.'/../config/larasell/locale.php', 'larasell.locale');
+        $this->mergeConfigFrom(__DIR__.'/../config/larasell/audit.php', 'larasell.audit');
 
+        $this->app->singleton(Auditor::class);
         $this->app->singleton(ShippingManager::class);
         $this->app->singleton(PaymentManager::class);
         $this->app->singleton(PromotionManager::class);
@@ -134,8 +147,20 @@ class LarasellServiceProvider extends ServiceProvider
         Event::listen(SalesChannelDeleted::class, KeepChannelsWithCarts::class);
         Event::listen(SalesChannelDeleted::class, KeepChannelsWithOrders::class);
 
+        // Audited in the action's transaction, so a change that can't be audited rolls back.
+        Event::listen(ProductCreated::class, [AuditProductChanges::class, 'created']);
+        Event::listen(ProductUpdated::class, [AuditProductChanges::class, 'updated']);
+        Event::listen(ProductDeleted::class, [AuditProductChanges::class, 'deleted']);
+        Event::listen(SalesChannelCreated::class, [AuditSalesChannelChanges::class, 'created']);
+        Event::listen(SalesChannelUpdated::class, [AuditSalesChannelChanges::class, 'updated']);
+        Event::listen(SalesChannelDeleted::class, [AuditSalesChannelChanges::class, 'deleted']);
+        Event::listen(AuditCustomerChanges::EVENTS, AuditCustomerChanges::class);
+
         if ($this->app->runningInConsole()) {
             $this->commands([
+                MakeAuditRecordCommand::class,
+                PruneAuditLogCommand::class,
+                VerifyAuditLogCommand::class,
                 ActivateLicenseCommand::class,
                 MakeOrderNumberGeneratorCommand::class,
                 MakeOrderNumberSequenceCommand::class,
@@ -153,6 +178,7 @@ class LarasellServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/larasell.php' => config_path('larasell.php'),
                 __DIR__.'/../config/larasell/locale.php' => config_path('larasell/locale.php'),
+                __DIR__.'/../config/larasell/audit.php' => config_path('larasell/audit.php'),
             ], 'larasell-config');
 
             $this->publishes([

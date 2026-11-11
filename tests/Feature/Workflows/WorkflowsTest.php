@@ -24,7 +24,7 @@ function workflowProduct(string $name, int $stock = 0): Product
         'price' => Price::of(1000),
         'stock' => $stock,
         'status' => Visibility::Visible,
-    ]));
+    ]), origin());
 }
 
 function resolveUrl(string $path, string $locale = 'en'): mixed
@@ -36,7 +36,7 @@ it('discontinues a product and sends its URLs to the replacement', function () {
     $old = workflowProduct('Boots 2026');
     $new = workflowProduct('Boots 2027');
 
-    app(DiscontinueProduct::class)->handle(ProductId::of($old), ProductId::of($new));
+    app(DiscontinueProduct::class)->handle(ProductId::of($old), origin(), ProductId::of($new));
 
     expect(Product::query()->whereKey($old->id)->exists())->toBeFalse()
         ->and(resolveUrl('p/boots-2026')->redirect?->url)->toBe('http://localhost/p/boots-2027')
@@ -46,7 +46,7 @@ it('discontinues a product and sends its URLs to the replacement', function () {
 it('discontinues a product without a replacement, so its URLs answer 410', function () {
     $old = workflowProduct('Boots');
 
-    app(DiscontinueProduct::class)->handle(ProductId::of($old));
+    app(DiscontinueProduct::class)->handle(ProductId::of($old), origin());
 
     expect(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Gone);
 });
@@ -54,7 +54,7 @@ it('discontinues a product without a replacement, so its URLs answer 410', funct
 it('refuses a replacement that is the product itself or does not exist, and keeps the product', function (Closure $replacement, string $exception) {
     $product = workflowProduct('Boots');
 
-    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), $replacement($product)))->toThrow($exception)
+    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), origin(), $replacement($product)))->toThrow($exception)
         ->and(Product::query()->whereKey($product->id)->exists())->toBeTrue()
         ->and(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Found);
 })->with([
@@ -69,7 +69,7 @@ it('keeps a product of an open order with its URL, and sets no replacement', fun
     $cart->add($product, 1);
     app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A']);
 
-    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), ProductId::of($new)))->toThrow(ProductInUse::class)
+    expect(fn () => app(DiscontinueProduct::class)->handle(ProductId::of($product), origin(), ProductId::of($new)))->toThrow(ProductInUse::class)
         ->and(resolveUrl('p/boots')->kind)->toBe(ResolutionKind::Found)
         ->and(SeoUrl::query()->whereNotNull('replacement_id')->exists())->toBeFalse();
 });

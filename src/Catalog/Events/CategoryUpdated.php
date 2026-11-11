@@ -4,6 +4,7 @@ namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Larasell\Larasell\Attachments\Attachments;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 
 /**
@@ -22,6 +23,8 @@ final readonly class CategoryUpdated
     public function __construct(
         public CategoryId $categoryId,
         public array $changed,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
         /** What the app passed along with the action for its own listeners. */
         public Attachments $attachments = new Attachments,
     ) {}

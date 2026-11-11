@@ -2,6 +2,7 @@
 
 namespace Larasell\Larasell\Customers\Actions;
 
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\Enums\CustomerSource;
 use Larasell\Larasell\Customers\Models\Customer;
 
@@ -13,8 +14,8 @@ final readonly class CreateGuestCustomer
 {
     public function __construct(private CreateCustomer $createCustomer) {}
 
-    public function handle(PersonProfileData|CompanyProfileData $profile): Customer
+    public function handle(PersonProfileData|CompanyProfileData $profile, Origin $origin): Customer
     {
-        return $this->createCustomer->handle(new CreateCustomerPayload($profile, CustomerSource::Storefront));
+        return $this->createCustomer->handle(new CreateCustomerPayload($profile, CustomerSource::Storefront), $origin);
     }
 }

@@ -19,7 +19,7 @@ use Larasell\Larasell\Enums\Country;
 
 function addressCustomer(): Customer
 {
-    return app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau'));
+    return app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau'), origin());
 }
 
 function addressPayload(string $city = 'Berlin'): CustomerAddressPayload
@@ -39,7 +39,7 @@ it('adds addresses to a customer and announces them', function () {
     $customer = addressCustomer();
     Event::fake([CustomerAddressAdded::class]);
 
-    $address = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload());
+    $address = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload(), origin());
 
     $address = CustomerAddress::query()->findOrFail($address->id);
     expect($address->customer_id)->toBe($customer->id)
@@ -53,8 +53,8 @@ it('adds addresses to a customer and announces them', function () {
 it('makes the first address the default for billing and shipping', function () {
     $customer = addressCustomer();
 
-    $first = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'));
-    app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'));
+    $first = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'), origin());
+    app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'), origin());
 
     $customer = $customer->fresh();
     expect($customer?->defaultBillingAddress?->id)->toBe($first->id)
@@ -63,10 +63,10 @@ it('makes the first address the default for billing and shipping', function () {
 
 it('moves a default to another address without touching the other default', function () {
     $customer = addressCustomer();
-    $berlin = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'));
-    $hamburg = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'));
+    $berlin = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'), origin());
+    $hamburg = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'), origin());
 
-    app(SetDefaultCustomerAddress::class)->handle(CustomerAddressId::of($hamburg), AddressUse::Shipping);
+    app(SetDefaultCustomerAddress::class)->handle(CustomerAddressId::of($hamburg), AddressUse::Shipping, origin());
 
     $customer = $customer->fresh();
     expect($customer?->defaultBillingAddress?->id)->toBe($berlin->id)
@@ -75,9 +75,9 @@ it('moves a default to another address without touching the other default', func
 });
 
 it('updates an address in place', function () {
-    $address = app(AddCustomerAddress::class)->handle(CustomerId::of(addressCustomer()), addressPayload('Berlin'));
+    $address = app(AddCustomerAddress::class)->handle(CustomerId::of(addressCustomer()), addressPayload('Berlin'), origin());
 
-    app(UpdateCustomerAddress::class)->handle(CustomerAddressId::of($address), addressPayload('München'));
+    app(UpdateCustomerAddress::class)->handle(CustomerAddressId::of($address), addressPayload('München'), origin());
 
     expect($address->fresh()?->city)->toBe('München')
         ->and($address->fresh()?->is_default_billing)->toBeTrue();
@@ -85,11 +85,11 @@ it('updates an address in place', function () {
 
 it('deletes an address and hands its default to no other address', function () {
     $customer = addressCustomer();
-    $berlin = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'));
-    app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'));
+    $berlin = app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Berlin'), origin());
+    app(AddCustomerAddress::class)->handle(CustomerId::of($customer), addressPayload('Hamburg'), origin());
     Event::fake([CustomerAddressDeleted::class]);
 
-    app(DeleteCustomerAddress::class)->handle(CustomerAddressId::of($berlin));
+    app(DeleteCustomerAddress::class)->handle(CustomerAddressId::of($berlin), origin());
 
     $customer = $customer->fresh();
     expect($customer?->addresses)->toHaveCount(1)

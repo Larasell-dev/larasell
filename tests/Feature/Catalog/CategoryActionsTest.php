@@ -33,7 +33,7 @@ function createCategory(string $name, ?Category $parent = null): Category
     return app(CreateCategory::class)->handle(new CreateCategoryPayload(
         name: new Translatable(['en' => $name]),
         parentId: $parent === null ? null : CategoryId::of($parent),
-    ));
+    ), origin());
 }
 
 it('creates a category after its siblings and announces it', function () {
@@ -52,7 +52,7 @@ it('updates a category but leaves moving it to MoveCategory', function () {
     $sale = createCategory('Sale');
     Event::fake([CategoryUpdated::class]);
 
-    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Footwear'])));
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Footwear'])), origin());
 
     $shoes = Category::query()->findOrFail($shoes->id);
     expect($shoes->name->get('en'))->toBe('Footwear')
@@ -67,8 +67,8 @@ it('hands what the app passed along to the category\'s events, even when nothing
     $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(
         name: new Translatable(['en' => 'Shoes']),
         attachments: new Attachments(new CategoryNote('new')),
-    ));
-    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(attachments: new Attachments(new CategoryNote('edited'))));
+    ), origin());
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(attachments: new Attachments(new CategoryNote('edited'))), origin());
 
     Event::assertDispatched(CategoryCreated::class, fn (CategoryCreated $event): bool => $event->attachments->get(CategoryNote::class)?->text === 'new');
     Event::assertDispatched(CategoryUpdated::class, fn (CategoryUpdated $event): bool => $event->changed === []
@@ -79,7 +79,7 @@ it('announces no update when nothing changed and nothing was passed along', func
     $shoes = createCategory('Shoes');
     Event::fake([CategoryUpdated::class]);
 
-    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Shoes'])));
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Shoes'])), origin());
 
     Event::assertNotDispatched(CategoryUpdated::class);
 });
@@ -88,7 +88,7 @@ it('rolls the category back when a listener of its event fails', function () {
     $shoes = createCategory('Shoes');
     Event::listen(CategoryUpdated::class, fn () => throw new RuntimeException('The note is invalid.'));
 
-    expect(fn () => app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Footwear']))))
+    expect(fn () => app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(name: new Translatable(['en' => 'Footwear'])), origin()))
         ->toThrow(RuntimeException::class)
         ->and(Category::query()->findOrFail($shoes->id)->name->get('en'))->toBe('Shoes');
 });
@@ -100,7 +100,7 @@ it('moves a category below another one and announces both parents', function () 
     $boots = createCategory('Boots', $shoes);
     Event::fake([CategoryMoved::class]);
 
-    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($sale)));
+    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($sale)), origin());
 
     $boots = Category::query()->findOrFail($boots->id);
     expect($boots->parent_id)->toBe($sale->id)
@@ -115,7 +115,7 @@ it('refuses to move a category below itself or one of its descendants', function
     $winter = createCategory('Winter boots', $boots);
     $targets = ['itself' => $shoes, 'its child' => $boots, 'its grandchild' => $winter];
 
-    expect(fn () => app(MoveCategory::class)->handle(CategoryId::of($shoes), new MoveCategoryPayload(CategoryId::of($targets[$target]))))->toThrow(CategoryCycle::class)
+    expect(fn () => app(MoveCategory::class)->handle(CategoryId::of($shoes), new MoveCategoryPayload(CategoryId::of($targets[$target])), origin()))->toThrow(CategoryCycle::class)
         ->and(Category::query()->findOrFail($shoes->id)->parent_id)->toBeNull();
 })->with(['itself', 'its child', 'its grandchild']);
 
@@ -124,7 +124,7 @@ it('deletes a category, moves its children to the top, and announces them', func
     $boots = createCategory('Boots', $shoes);
     Event::fake([CategoryDeleted::class]);
 
-    app(DeleteCategory::class)->handle(CategoryId::of($shoes));
+    app(DeleteCategory::class)->handle(CategoryId::of($shoes), origin());
 
     expect(Category::query()->whereKey($shoes->id)->exists())->toBeFalse()
         ->and(Category::query()->findOrFail($boots->id)->parent_id)->toBeNull();
@@ -141,7 +141,7 @@ it('moves a category to a position among its new siblings and numbers them again
     // A gap, as a deleted sibling leaves it.
     $outlet->update(['position' => 5]);
 
-    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($sale), $position));
+    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($sale), $position), origin());
 
     expect(Category::query()->where('parent_id', $sale->id)->orderBy('position')->get()->map(fn (Category $category): array => [$category->name->get('en'), $category->position])->all())
         ->toBe($order);
@@ -158,7 +158,7 @@ it('reorders a category among its own siblings', function () {
     createCategory('Sandals', $shoes);
     createCategory('Sneakers', $shoes);
 
-    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($shoes), 2));
+    app(MoveCategory::class)->handle(CategoryId::of($boots), new MoveCategoryPayload(CategoryId::of($shoes), 2), origin());
 
     expect(Category::query()->where('parent_id', $shoes->id)->orderBy('position')->get()->map(fn (Category $category): string => $category->name->get('en'))->all())
         ->toBe(['Sandals', 'Sneakers', 'Boots']);
@@ -173,7 +173,7 @@ it('deletes a category with every category below it, deepest first, and keeps th
     $product->categories()->attach($winter->id);
     Event::fake([CategoryDeleted::class]);
 
-    app(DeleteCategoryTree::class)->handle(CategoryId::of($shoes));
+    app(DeleteCategoryTree::class)->handle(CategoryId::of($shoes), origin());
 
     expect(Category::query()->pluck('id')->all())->toBe([$sale->id])
         ->and(Product::query()->whereKey($product->id)->exists())->toBeTrue();

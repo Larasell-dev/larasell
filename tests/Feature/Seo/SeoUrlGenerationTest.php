@@ -30,7 +30,7 @@ function linkedProduct(array $name, Visibility $status = Visibility::Visible): P
         'name' => $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]));
+    ]), origin());
 }
 
 function linkContext(string $locale): StorefrontContext
@@ -43,8 +43,8 @@ it('links to a page with the host and prefix of each context', function () {
     foreach (['uk' => ['https://shop.co.uk', 'en'], 'ch' => ['https://shop.ch:8443/de', 'de']] as $key => [$url, $locale]) {
         $channel = app(CreateSalesChannel::class)->handle([
             'key' => $key, 'name' => $key, 'type' => 'storefront', 'locales' => [$locale], 'currencies' => app(CurrencySettings::class)->enabled(),
-        ]);
-        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => $url, 'locale' => $locale]);
+        ], origin());
+        app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => $url, 'locale' => $locale], origin());
     }
     $product = linkedProduct(['en' => 'Boots', 'de' => 'Stiefel']);
 
@@ -73,7 +73,7 @@ it('has no URL where the page has none, and no available URL for hidden pages', 
 
 it('loads the URLs of a listing in one query per kind of page', function () {
     $products = collect(range(1, 5))->map(fn (int $i) => linkedProduct(['en' => "Boots {$i}"]));
-    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])), origin());
     $unsaved = new Product(['name' => ['en' => 'Unsaved']]);
     $unsaved->id = 999;
 

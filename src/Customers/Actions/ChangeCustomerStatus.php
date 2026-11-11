@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Enums\CustomerStatus;
 use Larasell\Larasell\Customers\Events\CustomerStatusChanged;
@@ -13,9 +14,9 @@ final readonly class ChangeCustomerStatus
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerId $customerId, CustomerStatus $status): Customer
+    public function handle(CustomerId $customerId, CustomerStatus $status, Origin $origin): Customer
     {
-        return $this->db->transaction(function () use ($customerId, $status): Customer {
+        return $this->db->transaction(function () use ($origin, $customerId, $status): Customer {
             $customer = Customer::query()->lockForUpdate()->findOrFail($customerId->value);
             $from = $customer->status;
 
@@ -24,7 +25,7 @@ final readonly class ChangeCustomerStatus
             }
 
             $customer->update(['status' => $status]);
-            CustomerStatusChanged::dispatch($customerId, $from, $status);
+            CustomerStatusChanged::dispatch($customerId, $from, $status, $origin);
 
             return $customer;
         });

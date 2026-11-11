@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerGroupId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerJoinedGroup;
@@ -16,9 +17,9 @@ final readonly class AddCustomerToGroup
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerId $customerId, CustomerGroupId $groupId): void
+    public function handle(CustomerId $customerId, CustomerGroupId $groupId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($customerId, $groupId): void {
+        $this->db->transaction(function () use ($origin, $customerId, $groupId): void {
             $customer = Customer::query()->lockForUpdate()->findOrFail($customerId->value);
             $group = CustomerGroup::query()->findOrFail($groupId->value);
 
@@ -27,7 +28,7 @@ final readonly class AddCustomerToGroup
             }
 
             $customer->groups()->attach($group->id);
-            CustomerJoinedGroup::dispatch($customerId, $groupId);
+            CustomerJoinedGroup::dispatch($customerId, $groupId, $origin);
         });
     }
 }

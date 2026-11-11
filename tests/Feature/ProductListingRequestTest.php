@@ -142,7 +142,7 @@ function categoryForListing(array $attributes = []): Category
         name: is_array($attributes['name'] ?? null) ? new Translatable($attributes['name']) : Translatable::fromString($attributes['name'] ?? 'Shirts'),
         status: $attributes['status'] ?? Visibility::Visible,
         parentId: isset($attributes['parent_id']) ? new CategoryId($attributes['parent_id']) : null,
-    ));
+    ), origin());
 }
 
 function productForListing(array $attributes, Category $category): Product

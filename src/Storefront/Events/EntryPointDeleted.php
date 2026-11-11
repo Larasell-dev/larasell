@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Storefront\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Storefront\EntryPointId;
 
@@ -11,5 +12,5 @@ final readonly class EntryPointDeleted
 {
     use Dispatchable;
 
-    public function __construct(public EntryPointId $entryPointId, public SalesChannelId $channelId) {}
+    public function __construct(public EntryPointId $entryPointId, public SalesChannelId $channelId, public Origin $origin) {}
 }

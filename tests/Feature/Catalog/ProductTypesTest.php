@@ -49,7 +49,7 @@ it('creates products of a registered custom type', function () {
     $product = app(CreateProduct::class)->handle(new CreateProductPayload(
         ['name' => 'Ebook', 'price' => Price::of(900)],
         type: 'download',
-    ));
+    ), origin());
 
     expect($product->type)->toBe('download')
         ->and($product->productType()->label())->toBe('Download')
