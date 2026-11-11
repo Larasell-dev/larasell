@@ -111,7 +111,6 @@ class Product extends Model
                 'allow_backorders',
                 'min_quantity',
                 'max_quantity',
-                'status',
             ])) {
                 $product->variants()->where('is_default', true)->first()?->update(
                     $product->defaultVariantAttributes(),
@@ -583,7 +582,7 @@ class Product extends Model
             throw new InvalidArgumentException('The selected product variant does not exist.');
         }
 
-        if ($variant->status !== Visibility::Visible) {
+        if (! $variant->isVisible()) {
             throw new InvalidArgumentException('The selected product variant is unavailable.');
         }
 
@@ -639,7 +638,8 @@ class Product extends Model
             'allow_backorders' => $this->allow_backorders,
             'min_quantity' => $this->min_quantity,
             'max_quantity' => $this->max_quantity,
-            'status' => $this->status ?? Visibility::Visible,
+            // Visible on its own: the product's status already hides it, as it hides every variant.
+            'status' => Visibility::Visible,
             'is_default' => true,
             'position' => 0,
             'combination_key' => 'default',

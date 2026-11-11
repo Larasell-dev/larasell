@@ -1,16 +1,21 @@
 <?php
 
+use Larasell\Larasell\Catalog\Actions\SetProductAttributeValues;
+use Larasell\Larasell\Catalog\AttributeCardinality;
 use Larasell\Larasell\Catalog\AttributeScope;
+use Larasell\Larasell\Catalog\AttributeValueId;
+use Larasell\Larasell\Catalog\Exceptions\InvalidAttributeValues;
 use Larasell\Larasell\Catalog\Exceptions\InvalidInheritance;
 use Larasell\Larasell\Catalog\InheritanceState;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
+use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Price;
 
-function scopedAttribute(string $slug, AttributeScope $scope, array $values): ProductAttribute
+function scopedAttribute(string $slug, AttributeScope $scope, array $values, AttributeCardinality $cardinality = AttributeCardinality::Single): ProductAttribute
 {
-    $attribute = ProductAttribute::create(['slug' => $slug, 'name' => ['en' => ucfirst($slug)], 'scope' => $scope]);
+    $attribute = ProductAttribute::create(['slug' => $slug, 'name' => ['en' => ucfirst($slug)], 'scope' => $scope, 'cardinality' => $cardinality]);
 
     foreach ($values as $value) {
         $attribute->values()->create(['slug' => $value, 'name' => ['en' => ucfirst($value)], 'value' => $value]);
@@ -63,7 +68,7 @@ it('overrides an inherited attribute per variant, with a value or with none', fu
 
     // Act
     $variant->overrideAttribute($material, attributeValueOf($material, 'polyester'));
-    $variant->overrideAttribute($origin, null);
+    $variant->overrideAttribute($origin);
 
     // Assert
     expect(effectiveSlugs($product))->toBe(['material' => 'polyester'])
@@ -106,4 +111,44 @@ it('rejects variant values for product-only attributes', function () {
 
     // Act & Assert
     expect(fn () => $variant->overrideAttribute($care, attributeValueOf($care, 'hand-wash')))->toThrow(InvalidInheritance::class);
+});
+
+it('replaces the product\'s whole list of a multi-value attribute with the variant\'s own values', function () {
+    // Arrange
+    $material = scopedAttribute('material', AttributeScope::Inherited, ['cotton', 'polyester', 'wool'], AttributeCardinality::Multiple);
+    $product = Product::create(['name' => 'Shirt', 'price' => Price::of(1000)]);
+    app(SetProductAttributeValues::class)->handle(ProductId::of($product), AttributeValueId::many([
+        attributeValueOf($material, 'cotton')->id,
+        attributeValueOf($material, 'polyester')->id,
+    ]), origin());
+    $variant = $product->defaultVariant();
+    $slugs = fn (): array => $variant->fresh()->effectiveAttributeValues()->pluck('slug')->sort()->values()->all();
+
+    // Act & Assert
+    expect($slugs())->toBe(['cotton', 'polyester']);
+
+    $variant->overrideAttribute($material, attributeValueOf($material, 'wool'), attributeValueOf($material, 'polyester'));
+    expect($slugs())->toBe(['polyester', 'wool']);
+
+    $variant->overrideAttribute($material);
+    expect($slugs())->toBe([])
+        ->and($variant->attributeInheritance($material))->toBe(InheritanceState::Overridden);
+
+    $variant->inheritAttribute($material);
+    expect($slugs())->toBe(['cotton', 'polyester']);
+});
+
+it('gives single-value attributes one value at most, on products and variants', function () {
+    // Arrange
+    $fit = scopedAttribute('fit', AttributeScope::Inherited, ['slim', 'regular']);
+    $product = Product::create(['name' => 'Shirt', 'price' => Price::of(1000)]);
+
+    // Act & Assert
+    expect(fn () => app(SetProductAttributeValues::class)->handle(ProductId::of($product), AttributeValueId::many([
+        attributeValueOf($fit, 'slim')->id,
+        attributeValueOf($fit, 'regular')->id,
+    ]), origin()))->toThrow(InvalidAttributeValues::class)
+        ->and(fn () => $product->defaultVariant()->overrideAttribute($fit, attributeValueOf($fit, 'slim'), attributeValueOf($fit, 'regular')))
+        ->toThrow(InvalidAttributeValues::class)
+        ->and($product->attributeValues()->exists())->toBeFalse();
 });

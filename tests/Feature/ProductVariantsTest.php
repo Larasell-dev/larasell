@@ -123,6 +123,31 @@ it('rejects selections resolving to an unavailable variant', function () {
     ]))->toThrow(InvalidArgumentException::class);
 });
 
+it('hides every variant of a hidden product, whatever their own status', function () {
+    // Arrange
+    [$product, $small, $black] = variantProduct();
+    $white = variantValue($black->attribute, 'white');
+    $product->attributeValues()->attach($white);
+    $visible = $product->createVariant([$small, $black], ['status' => Visibility::Visible]);
+    $product->createVariant([$small, $white], ['status' => Visibility::Hidden]);
+
+    // Act
+    $product->update(['status' => Visibility::Hidden]);
+
+    // Assert
+    expect($visible->fresh()->isVisible())->toBeFalse()
+        ->and(ProductVariant::query()->visible()->whereBelongsTo($product)->exists())->toBeFalse()
+        ->and(fn () => $product->variantFor(['size' => 'small', 'color' => 'black']))
+        ->toThrow(InvalidArgumentException::class);
+
+    // Act
+    $product->update(['status' => Visibility::Visible]);
+
+    // Assert
+    expect($visible->fresh()->isVisible())->toBeTrue()
+        ->and(ProductVariant::query()->visible()->whereBelongsTo($product)->pluck('id')->all())->toBe([$visible->id]);
+});
+
 it('exposes visible variants with the parent product already set', function () {
     [$product, $small, $black] = variantProduct();
     $white = variantValue($black->attribute, 'white');
