@@ -2,15 +2,12 @@
 
 namespace Larasell\Larasell\Catalog;
 
-/** Where a variant takes the value of a field it can inherit from its product. */
+/** Whether a variant takes a field's value from its product or has its own. */
 enum InheritanceState: string
 {
     /** The product's value. */
     case Inherited = 'inherited';
 
-    /** The variant's own value. */
+    /** The variant's own value, which may be empty: then the variant has none, whatever the product has. */
     case Overridden = 'overridden';
-
-    /** No value, even though the product has one. */
-    case Cleared = 'cleared';
 }

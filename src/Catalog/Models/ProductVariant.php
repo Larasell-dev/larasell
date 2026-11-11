@@ -78,8 +78,8 @@ class ProductVariant extends Model
     /** The translatable fields a variant can inherit, override or clear per locale. */
     public const array TRANSLATED = ['name', 'description'];
 
-    /** Fields every variant has a value of. */
-    private const array NOT_CLEARABLE = ['type', 'name'];
+    /** Fields every variant has a value of, so an override can't be empty. */
+    private const array REQUIRED = ['type', 'name'];
 
     protected $table = 'larasell_product_variants';
 
@@ -126,16 +126,12 @@ class ProductVariant extends Model
             foreach (self::INHERITABLE as $field) {
                 $state = $variant->inheritance($field);
 
-                if ($state === InheritanceState::Overridden && $variant->{$field} === null) {
+                if ($state === InheritanceState::Overridden && $variant->{$field} === null && in_array($field, self::REQUIRED, true)) {
                     throw InvalidInheritance::overrideWithoutValue($field);
                 }
 
-                if ($state !== InheritanceState::Overridden && $variant->{$field} !== null) {
+                if ($state === InheritanceState::Inherited && $variant->{$field} !== null) {
                     throw InvalidInheritance::valueWithoutOverride($field);
-                }
-
-                if ($state === InheritanceState::Cleared && in_array($field, self::NOT_CLEARABLE, true)) {
-                    throw InvalidInheritance::notClearable($field);
                 }
             }
 
@@ -152,7 +148,7 @@ class ProductVariant extends Model
         return $this->{"{$field}_inheritance"};
     }
 
-    /** Uses the variant's own value of the field. */
+    /** Uses the variant's own value of the field; null gives it none, whatever the product has. */
     public function override(string $field, mixed $value): static
     {
         self::assertInheritable($field, self::INHERITABLE);
@@ -172,32 +168,22 @@ class ProductVariant extends Model
         return $this;
     }
 
-    /** Uses no value for the field, whatever the product has. */
-    public function clear(string $field): static
-    {
-        self::assertInheritable($field, self::INHERITABLE);
-        self::assertClearable($field);
-        $this->{"{$field}_inheritance"} = InheritanceState::Cleared;
-        $this->{$field} = null;
-
-        return $this;
-    }
-
     public function translationInheritance(string $field, string $locale): InheritanceState
     {
         self::assertInheritable($field, self::TRANSLATED);
         $own = $this->{$field} ?? [];
         $locale = Locale::canonicalize($locale);
 
-        return match (true) {
-            ! array_key_exists($locale, $own) => InheritanceState::Inherited,
-            $own[$locale] === null => InheritanceState::Cleared,
-            default => InheritanceState::Overridden,
-        };
+        return array_key_exists($locale, $own) ? InheritanceState::Overridden : InheritanceState::Inherited;
     }
 
-    public function overrideTranslation(string $field, string $locale, string|RichText $value): static
+    /** The variant's own text in the locale; null gives it none there, whatever the product has. */
+    public function overrideTranslation(string $field, string $locale, string|RichText|null $value): static
     {
+        if ($value === null && in_array($field, self::REQUIRED, true)) {
+            throw InvalidInheritance::overrideWithoutValue($field);
+        }
+
         return $this->withTranslation($field, $locale, $value instanceof RichText ? $value->toJson() : $value);
     }
 
@@ -211,13 +197,6 @@ class ProductVariant extends Model
         return $this;
     }
 
-    public function clearTranslation(string $field, string $locale): static
-    {
-        self::assertClearable($field);
-
-        return $this->withTranslation($field, $locale, null);
-    }
-
     private function withTranslation(string $field, string $locale, ?string $value): static
     {
         self::assertInheritable($field, self::TRANSLATED);
@@ -227,7 +206,7 @@ class ProductVariant extends Model
     }
 
     /**
-     * Walks the locale's lookup chain; at each locale the variant's own value or clearing wins
+     * Walks the locale's lookup chain; at each locale the variant's own value, empty or not, wins
      * over the product's, so the product in a more specific locale wins over the variant in a
      * broader one.
      *
@@ -263,19 +242,11 @@ class ProductVariant extends Model
         }
     }
 
-    private static function assertClearable(string $field): void
-    {
-        if (in_array($field, self::NOT_CLEARABLE, true)) {
-            throw InvalidInheritance::notClearable($field);
-        }
-    }
-
     /** The field's value as the variant uses it: its own, the product's or none. */
     private function effective(string $field): mixed
     {
         return match ($this->inheritance($field)) {
             InheritanceState::Overridden => $this->{$field},
-            InheritanceState::Cleared => null,
             InheritanceState::Inherited => $this->product->{$field},
         };
     }
@@ -318,26 +289,17 @@ class ProductVariant extends Model
         return $state === null ? InheritanceState::Inherited : InheritanceState::from($state);
     }
 
-    /** Gives the variant its own value of the value's attribute. */
-    public function overrideAttribute(ProductAttributeValue $value): void
+    /**
+     * Gives the variant its own value of the attribute; null gives it none, whatever the
+     * product has.
+     */
+    public function overrideAttribute(ProductAttribute $attribute, ?ProductAttributeValue $value): void
     {
-        $attribute = $value->attribute;
-
-        if ($attribute->scope === AttributeScope::Product) {
+        if ($attribute->scope === AttributeScope::Product || ($value !== null && $value->product_attribute_id !== $attribute->id)) {
             throw InvalidInheritance::notInheritable($attribute->slug);
         }
 
-        $this->writeAttribute($attribute, InheritanceState::Overridden, $value->id);
-    }
-
-    /** Gives the variant no value of an inherited attribute, whatever the product has. */
-    public function clearAttribute(ProductAttribute $attribute): void
-    {
-        if ($attribute->scope !== AttributeScope::Inherited) {
-            throw InvalidInheritance::notClearable($attribute->slug);
-        }
-
-        $this->writeAttribute($attribute, InheritanceState::Cleared, null);
+        $this->writeAttribute($attribute, InheritanceState::Overridden, $value?->id);
     }
 
     /** Uses the product's value of the attribute again. */
@@ -359,7 +321,7 @@ class ProductVariant extends Model
 
     /**
      * The attribute values that describe the variant: its own, and the product's values of
-     * inherited attributes it neither overrides nor clears.
+     * inherited attributes it doesn't override.
      *
      * @return Collection<int, ProductAttributeValue>
      */
@@ -525,7 +487,7 @@ class ProductVariant extends Model
         return $options === [] ? $name : collect($options)->pluck('value_name')->implode(' / ');
     }
 
-    /** The variant's own description in the locale, the product's, or none when cleared. */
+    /** The variant's own description in the locale, the product's, or none when its own is empty. */
     public function description(?string $locale = null): ?RichText
     {
         [$own, $description] = $this->resolveTranslation('description', $locale, $this->product->description);

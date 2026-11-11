@@ -27,8 +27,9 @@ $variant->sku;
 ## Overriding a field
 
 `weight`, `dimensions`, `country_of_origin`, `hs_code` and `type` each have a
-`<field>_inheritance` column (`inherited`, `overridden`, `cleared`, see
-`Larasell\Larasell\Catalog\InheritanceState`). A value without `overridden` is rejected.
+`<field>_inheritance` column (`inherited` or `overridden`, see
+`Larasell\Larasell\Catalog\InheritanceState`). A value on an inherited field is rejected; an
+override may be `null`, which gives the variant no value whatever the product has.
 
 ```php
 // Before
@@ -38,7 +39,7 @@ $variant->update(['weight' => null]); // inherit
 // After
 $variant->override('weight', Weight::of(600, 'g'))->save();
 $variant->inherit('weight')->save();
-$variant->clear('weight')->save(); // no weight, whatever the product has
+$variant->override('weight', null)->save(); // no weight, whatever the product has
 ```
 
 The default variant no longer gets copies of the product's weight and dimensions; it inherits

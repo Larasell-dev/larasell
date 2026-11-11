@@ -6,7 +6,7 @@ use InvalidArgumentException;
 use Larasell\Chronicle\Exceptions\HasStructuredException;
 use Larasell\Chronicle\Exceptions\StructuredException;
 
-/** A variant field was inherited, overridden or cleared in a way its field doesn't allow. */
+/** A variant field was inherited or overridden in a way its field doesn't allow. */
 final class InvalidInheritance extends InvalidArgumentException implements StructuredException
 {
     use HasStructuredException;
@@ -26,8 +26,8 @@ final class InvalidInheritance extends InvalidArgumentException implements Struc
         return self::structured(
             errorCode: 'larasell.catalog.override-without-value',
             message: "The variant overrides [{$field}] but has no value for it.",
-            why: 'An override is the variant\'s own value; no value at all is what clearing the field means.',
-            fix: "Give [{$field}] a value, or clear it instead.",
+            why: 'Every variant needs a value for it, so its own value can\'t be empty.',
+            fix: "Give [{$field}] a value, or inherit the product's.",
         );
     }
 
@@ -38,16 +38,6 @@ final class InvalidInheritance extends InvalidArgumentException implements Struc
             message: "The variant has a value for [{$field}] without overriding it.",
             why: 'A value the variant inherits or clears would never be read.',
             fix: "Set [{$field}_inheritance] to overridden as well, e.g. with \$variant->override('{$field}', \$value).",
-        );
-    }
-
-    public static function notClearable(string $field): self
-    {
-        return self::structured(
-            errorCode: 'larasell.catalog.field-not-clearable',
-            message: "A variant cannot clear [{$field}].",
-            why: 'Every variant needs a value for it.',
-            fix: 'Inherit the product\'s value or override it.',
         );
     }
 }
