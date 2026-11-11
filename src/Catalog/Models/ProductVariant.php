@@ -16,6 +16,7 @@ use Larasell\Larasell\Casts\NullableWeightCast;
 use Larasell\Larasell\Catalog\Exceptions\InvalidInheritance;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\InheritanceState;
+use Larasell\Larasell\Catalog\Options\Models\ProductOptionValue;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
 use Larasell\Larasell\Dimensions;
@@ -228,7 +229,6 @@ class ProductVariant extends Model
      * over the product's, so the product in a more specific locale wins over the variant in a
      * broader one.
      *
-     * @param  Translatable|TranslatableRichText|null  $product
      * @return array{0: bool, 1: mixed} Whether the value is the variant's own, and the value
      */
     private function resolveTranslation(string $field, ?string $locale, Translatable|TranslatableRichText|null $product): array
@@ -302,6 +302,17 @@ class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** @return BelongsToMany<ProductOptionValue, $this> */
+    public function optionValues(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ProductOptionValue::class,
+            'larasell_product_variant_option_values',
+            'product_variant_id',
+            'product_option_value_id',
+        )->withPivot('product_option_id');
     }
 
     /** @return BelongsToMany<ProductAttributeValue, $this> */
@@ -382,6 +393,24 @@ class ProductVariant extends Model
      */
     public function options(?string $locale = null): array
     {
+        $this->loadMissing('optionValues.option.definition', 'optionValues.definitionValue');
+
+        if ($this->optionValues->isNotEmpty()) {
+            return $this->optionValues
+                ->sortBy(fn (ProductOptionValue $value): array => [$value->option->position, $value->option->id])
+                ->mapWithKeys(fn (ProductOptionValue $value): array => [
+                    $value->option->definition->slug => [
+                        'attribute_id' => $value->option->definition->id,
+                        'attribute_slug' => $value->option->definition->slug,
+                        'attribute_name' => $value->option->definition->name->get($locale),
+                        'value_id' => $value->definitionValue->id,
+                        'value_slug' => $value->definitionValue->slug,
+                        'value_name' => $value->definitionValue->name->get($locale),
+                    ],
+                ])
+                ->all();
+        }
+
         if ($this->is_default) {
             return [];
         }
