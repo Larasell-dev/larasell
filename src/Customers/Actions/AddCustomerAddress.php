@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerAddressId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerAddressAdded;
@@ -14,9 +15,9 @@ final readonly class AddCustomerAddress
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerId $customerId, CustomerAddressPayload $payload): CustomerAddress
+    public function handle(CustomerId $customerId, CustomerAddressPayload $payload, Origin $origin): CustomerAddress
     {
-        return $this->db->transaction(function () use ($customerId, $payload): CustomerAddress {
+        return $this->db->transaction(function () use ($origin, $customerId, $payload): CustomerAddress {
             // Locks the customer so two first addresses can't both become the default.
             $customer = Customer::query()->lockForUpdate()->findOrFail($customerId->value);
             $first = ! $customer->addresses()->exists();
@@ -27,7 +28,7 @@ final readonly class AddCustomerAddress
                 'is_default_shipping' => $first,
             ]);
 
-            CustomerAddressAdded::dispatch(CustomerAddressId::of($address), $customerId);
+            CustomerAddressAdded::dispatch(CustomerAddressId::of($address), $customerId, $origin);
 
             return $address;
         });

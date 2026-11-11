@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\CategoryMoved;
 use Larasell\Larasell\Catalog\Exceptions\CategoryCycle;
@@ -19,11 +20,11 @@ final readonly class MoveCategory
      *
      * @throws CategoryCycle when the new parent is the category or one below it
      */
-    public function handle(CategoryId $categoryId, MoveCategoryPayload $payload): Category
+    public function handle(CategoryId $categoryId, MoveCategoryPayload $payload, Origin $origin): Category
     {
         $parentId = $payload->parentId;
 
-        return $this->db->transaction(function () use ($categoryId, $parentId, $payload): Category {
+        return $this->db->transaction(function () use ($origin, $categoryId, $parentId, $payload): Category {
             $category = Category::query()->lockForUpdate()->findOrFail($categoryId->value);
             if ($parentId !== null) {
                 $this->assertNoCycle($category, $parentId);
@@ -48,7 +49,7 @@ final readonly class MoveCategory
             }
 
             if ($moved || $category->wasChanged('position')) {
-                CategoryMoved::dispatch($categoryId, $oldParentId === null ? null : new CategoryId($oldParentId), $parentId);
+                CategoryMoved::dispatch($categoryId, $oldParentId === null ? null : new CategoryId($oldParentId), $parentId, $origin);
             }
 
             return $category;

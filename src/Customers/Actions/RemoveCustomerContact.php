@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerContactId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerContactRemoved;
@@ -14,15 +15,15 @@ final readonly class RemoveCustomerContact
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerContactId $contactId): void
+    public function handle(CustomerContactId $contactId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($contactId): void {
+        $this->db->transaction(function () use ($origin, $contactId): void {
             $contact = CustomerContact::query()->findOrFail($contactId->value);
             // Done here as well as by the foreign key, which SQLite only honours with foreign keys on.
             CustomerAccount::query()->where('contact_id', $contact->id)->update(['contact_id' => null]);
             $contact->delete();
 
-            CustomerContactRemoved::dispatch($contactId, new CustomerId($contact->customer_id));
+            CustomerContactRemoved::dispatch($contactId, new CustomerId($contact->customer_id), $origin);
         });
     }
 }

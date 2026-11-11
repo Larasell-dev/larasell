@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\SalesChannels\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 
 /**
@@ -16,5 +17,5 @@ final readonly class SalesChannelUpdated
     use Dispatchable;
 
     /** @param  list<string>  $changed */
-    public function __construct(public SalesChannelId $channelId, public array $changed) {}
+    public function __construct(public SalesChannelId $channelId, public array $changed, public Origin $origin) {}
 }

@@ -32,7 +32,7 @@ function routedProduct(array|string $name, Visibility $status = Visibility::Visi
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]));
+    ]), origin());
 }
 
 function routedCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
@@ -41,7 +41,7 @@ function routedCategory(string $name, ?Category $parent = null, Visibility $stat
         name: new Translatable(['en' => $name]),
         status: $status,
         parentId: $parent === null ? null : CategoryId::of($parent),
-    ));
+    ), origin());
 }
 
 function storefrontRoutes(): void
@@ -59,7 +59,7 @@ function storefrontRoutes(): void
 
 function moveSeoUrl(Product|Category $resource, string $path): void
 {
-    app(SeoUrlManager::class)->setCustom($resource, app(SeoUrlManager::class)->contexts()[0], $path);
+    app(SeoUrlManager::class)->setCustom($resource, app(SeoUrlManager::class)->contexts()[0], $path, origin());
 }
 
 it('shows a product on its typed route', function () {

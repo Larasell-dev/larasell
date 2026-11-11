@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerGroupId;
 use Larasell\Larasell\Customers\CustomerId;
 
@@ -18,5 +19,7 @@ final readonly class CustomerLeftGroup
     public function __construct(
         public CustomerId $customerId,
         public CustomerGroupId $groupId,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

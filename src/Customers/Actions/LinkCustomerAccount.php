@@ -5,6 +5,7 @@ namespace Larasell\Larasell\Customers\Actions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerAccountId;
 use Larasell\Larasell\Customers\CustomerContactId;
 use Larasell\Larasell\Customers\CustomerId;
@@ -25,9 +26,9 @@ final readonly class LinkCustomerAccount
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerId $customerId, Model&Authenticatable $user, ?CustomerContactId $contactId = null): CustomerAccount
+    public function handle(CustomerId $customerId, Model&Authenticatable $user, Origin $origin, ?CustomerContactId $contactId = null): CustomerAccount
     {
-        return $this->db->transaction(function () use ($customerId, $user, $contactId): CustomerAccount {
+        return $this->db->transaction(function () use ($origin, $customerId, $user, $contactId): CustomerAccount {
             $customer = Customer::query()->lockForUpdate()->findOrFail($customerId->value);
 
             if ($customer->status !== CustomerStatus::Active) {
@@ -46,7 +47,7 @@ final readonly class LinkCustomerAccount
             $account->account()->associate($user);
             $account->save();
 
-            CustomerAccountLinked::dispatch(CustomerAccountId::of($account), $customerId);
+            CustomerAccountLinked::dispatch(CustomerAccountId::of($account), $customerId, $origin);
 
             return $account;
         });

@@ -36,7 +36,7 @@ it('creates an individual customer from a person profile', function () {
         source: CustomerSource::Pos,
         preferredLocale: Locale::GERMAN_GERMANY,
         preferredCurrency: Currency::EUR,
-    ));
+    ), origin());
 
     $customer = Customer::query()->findOrFail($customer->id);
     expect($customer->type)->toBe(CustomerType::Individual)
@@ -56,7 +56,7 @@ it('creates a company customer from a company profile', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new CompanyProfileData(legalName: 'Muster GmbH', countryCode: Country::DE, vatId: VatId::of('DE 123 456 789'), legalForm: 'GmbH'),
         source: CustomerSource::Admin,
-    ));
+    ), origin());
 
     expect($customer->type)->toBe(CustomerType::Company)
         ->and($customer->companyProfile?->vat_id)->toEqual(VatId::of('DE123456789'))
@@ -86,7 +86,7 @@ it('stores the number returned by a custom generator', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new PersonProfileData(firstName: 'A', lastName: 'B'),
         source: CustomerSource::Import,
-    ));
+    ), origin());
 
     expect($customer->customer_number)->toBe('K-7');
 });
@@ -94,8 +94,8 @@ it('stores the number returned by a custom generator', function () {
 it('creates a new guest customer every time, even for a known email', function () {
     $profile = new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau', email: EmailAddress::of('erika@example.com'));
 
-    $first = app(CreateGuestCustomer::class)->handle($profile);
-    $second = app(CreateGuestCustomer::class)->handle($profile);
+    $first = app(CreateGuestCustomer::class)->handle($profile, origin());
+    $second = app(CreateGuestCustomer::class)->handle($profile, origin());
 
     expect(CustomerId::of($first))->not->toEqual(CustomerId::of($second))
         ->and($first->customer_number)->not->toBe($second->customer_number)
@@ -108,13 +108,13 @@ it('updates the profile and preferences of a customer', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new CompanyProfileData(legalName: 'Muster GmbH', countryCode: Country::DE),
         source: CustomerSource::Admin,
-    ));
+    ), origin());
     Event::fake([CustomerUpdated::class]);
 
     app(UpdateCustomer::class)->handle(CustomerId::of($customer), new UpdateCustomerPayload(
         profile: new CompanyProfileData(legalName: 'Muster AG', countryCode: Country::AT, website: Url::of('muster.example')),
         preferredLocale: Locale::GERMAN_AUSTRIA,
-    ));
+    ), origin());
 
     $customer = Customer::query()->findOrFail($customer->id);
     expect($customer->companyProfile?->legal_name)->toBe('Muster AG')
@@ -128,23 +128,23 @@ it('refuses a profile of the other type', function () {
     $customer = app(CreateCustomer::class)->handle(new CreateCustomerPayload(
         profile: new PersonProfileData(firstName: 'Erika', lastName: 'Musterfrau'),
         source: CustomerSource::Admin,
-    ));
+    ), origin());
 
     expect(fn () => app(UpdateCustomer::class)->handle(CustomerId::of($customer), new UpdateCustomerPayload(
         profile: new CompanyProfileData(legalName: 'Muster GmbH', countryCode: Country::DE),
-    )))->toThrow(ProfileDoesNotMatchType::class);
+    ), origin()))->toThrow(ProfileDoesNotMatchType::class);
 
     expect($customer->fresh()?->companyProfile)->toBeNull();
 });
 
 it('blocks, archives and reactivates a customer and announces each change', function () {
-    $customer = app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'A', lastName: 'B'));
+    $customer = app(CreateGuestCustomer::class)->handle(new PersonProfileData(firstName: 'A', lastName: 'B'), origin());
     Event::fake([CustomerStatusChanged::class]);
 
-    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Blocked);
-    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Archived);
-    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Active);
-    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Active);
+    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Blocked, origin());
+    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Archived, origin());
+    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Active, origin());
+    app(ChangeCustomerStatus::class)->handle(CustomerId::of($customer), CustomerStatus::Active, origin());
 
     expect($customer->fresh()?->status)->toBe(CustomerStatus::Active);
     Event::assertDispatchedTimes(CustomerStatusChanged::class, 3);

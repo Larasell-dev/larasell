@@ -59,7 +59,7 @@ it('names each copy by locale', function () {
 
 it('reserves translated paths only in their locale', function () {
     localizedRoutes();
-    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['de' => 'Warenkorb', 'en' => 'Warenkorb'])));
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['de' => 'Warenkorb', 'en' => 'Warenkorb'])), origin());
 
     expect(SeoUrl::query()->where('resource_id', $category->getKey())->pluck('path', 'locale')->all())
         ->toBe(['de' => 'warenkorb-2', 'en' => 'warenkorb']);

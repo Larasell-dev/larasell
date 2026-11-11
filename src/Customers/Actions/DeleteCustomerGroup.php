@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerGroupId;
 use Larasell\Larasell\Customers\Events\CustomerGroupDeleted;
 use Larasell\Larasell\Customers\Exceptions\CustomerGroupInUse;
@@ -13,9 +14,9 @@ final readonly class DeleteCustomerGroup
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerGroupId $groupId): void
+    public function handle(CustomerGroupId $groupId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($groupId): void {
+        $this->db->transaction(function () use ($origin, $groupId): void {
             $group = CustomerGroup::query()->lockForUpdate()->findOrFail($groupId->value);
             $members = $group->customers()->count();
 
@@ -24,7 +25,7 @@ final readonly class DeleteCustomerGroup
             }
 
             $group->delete();
-            CustomerGroupDeleted::dispatch($groupId);
+            CustomerGroupDeleted::dispatch($groupId, $origin);
         });
     }
 }

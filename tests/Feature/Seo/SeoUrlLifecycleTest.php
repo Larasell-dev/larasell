@@ -45,7 +45,7 @@ function seoProduct(string|array $name, Visibility $status = Visibility::Visible
         'name' => is_string($name) ? ['en' => $name] : $name,
         'price' => Price::of(1000),
         'status' => $status,
-    ]));
+    ]), origin());
 }
 
 function seoCategory(string $name, ?Category $parent = null, Visibility $status = Visibility::Visible): Category
@@ -54,7 +54,7 @@ function seoCategory(string $name, ?Category $parent = null, Visibility $status 
         name: new Translatable(['en' => $name]),
         status: $status,
         parentId: $parent === null ? null : CategoryId::of($parent),
-    ));
+    ), origin());
 }
 
 /**
@@ -96,8 +96,8 @@ it('keeps the old URL as history when a public product is renamed', function () 
 });
 
 it('treats products and categories created without a status as public', function () {
-    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]));
-    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]), origin());
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])), origin());
 
     updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
     updateCatalog($category, ['name' => ['en' => 'Footwear']]);
@@ -150,7 +150,7 @@ it('keeps categories out of the product prefix', function () {
     expect(seoPaths($p))->toBe(['p-2' => 'canonical'])
         ->and(seoPaths($child))->toBe(['p-2/boots' => 'canonical']);
 
-    app(SeoUrlManager::class)->setCustom($p, seoContext(), 'p/sale');
+    app(SeoUrlManager::class)->setCustom($p, seoContext(), 'p/sale', origin());
 })->throws(InvalidSeoPath::class, 'reserved');
 
 it('lets a new page claim the URL of a deleted one', function () {
@@ -171,7 +171,7 @@ it('keeps a custom URL through renames until it is reset', function () {
     $manager = app(SeoUrlManager::class);
     $product = seoProduct('Boots');
 
-    $manager->setCustom($product, seoContext(), '/Winter-Sale/');
+    $manager->setCustom($product, seoContext(), '/Winter-Sale/', origin());
     updateCatalog($product, ['name' => ['en' => 'Leather Boots']]);
 
     expect(seoPaths($product))->toBe([
@@ -179,7 +179,7 @@ it('keeps a custom URL through renames until it is reset', function () {
         'winter-sale' => 'canonical',
     ]);
 
-    $manager->resetToAutomatic($product, seoContext());
+    $manager->resetToAutomatic($product, seoContext(), origin());
 
     expect(seoPaths($product))->toBe([
         'p/boots' => 'historic',
@@ -192,7 +192,7 @@ it('rejects a custom URL that another page uses or that is malformed, and says w
     seoProduct('Boots');
     $product = seoProduct('Shoes');
 
-    expect(fn () => app(SeoUrlManager::class)->setCustom($product, seoContext(), $path))
+    expect(fn () => app(SeoUrlManager::class)->setCustom($product, seoContext(), $path, origin()))
         ->toThrow(fn (InvalidSeoPath $e) => expect($e->reason)->toBe($reason));
 })->with([
     'taken' => ['p/boots', InvalidSeoPath::TAKEN],
@@ -205,7 +205,7 @@ it('moves the URLs of child categories along with their parent', function () {
     $shoes = seoCategory('Shoes');
     $boots = seoCategory('Boots', $shoes);
     $sandals = seoCategory('Sandals', $shoes);
-    app(SeoUrlManager::class)->setCustom($sandals, seoContext(), 'summer');
+    app(SeoUrlManager::class)->setCustom($sandals, seoContext(), 'summer', origin());
 
     updateCatalog($shoes, ['parent_id' => $sale->getKey()]);
 
@@ -218,7 +218,7 @@ it('builds child URLs on the parent custom URL', function () {
     $shoes = seoCategory('Shoes');
     $boots = seoCategory('Boots', $shoes);
 
-    app(SeoUrlManager::class)->setCustom($shoes, seoContext(), 'footwear');
+    app(SeoUrlManager::class)->setCustom($shoes, seoContext(), 'footwear', origin());
 
     expect(seoPaths($boots))->toBe(['footwear/boots' => 'canonical', 'shoes/boots' => 'historic']);
 });
@@ -259,11 +259,11 @@ it('keeps exactly one canonical URL and no duplicate paths through any sequence 
 
     $steps = [
         fn () => updateCatalog($product, ['name' => ['en' => 'Shoes']]),
-        fn () => $manager->setCustom($product, seoContext(), 'sale'),
+        fn () => $manager->setCustom($product, seoContext(), 'sale', origin()),
         fn () => updateCatalog($product, ['name' => ['en' => 'Boots']]),
-        fn () => $manager->resetToAutomatic($product, seoContext()),
-        fn () => $manager->setCustom($product, seoContext(), 'p/shoes-2'),
-        fn () => $manager->resetToAutomatic($product, seoContext()),
+        fn () => $manager->resetToAutomatic($product, seoContext(), origin()),
+        fn () => $manager->setCustom($product, seoContext(), 'p/shoes-2', origin()),
+        fn () => $manager->resetToAutomatic($product, seoContext(), origin()),
         fn () => updateCatalog($product, ['name' => ['en' => 'Sale']]),
     ];
 
@@ -305,7 +305,7 @@ it('regenerates URLs that bulk updates left behind', function () {
 it('refuses to remove a canonical URL', function () {
     seoProduct('Boots');
 
-    app(SeoUrlManager::class)->remove(SeoUrl::query()->sole());
+    app(SeoUrlManager::class)->remove(SeoUrl::query()->sole(), origin());
 })->throws(LogicException::class);
 
 it('uses German transliteration for German paths', function () {
@@ -357,15 +357,15 @@ it('treats paths that differ only in accents as different paths', function () {
     $manager = app(SeoUrlManager::class);
 
     $coffee = seoProduct('Coffee');
-    $manager->setCustom($coffee, seoContext(), 'café');
-    $manager->setCustom($coffee, seoContext(), 'cafe');
+    $manager->setCustom($coffee, seoContext(), 'café', origin());
+    $manager->setCustom($coffee, seoContext(), 'cafe', origin());
 
     $street = seoProduct('Street');
-    $manager->setCustom($street, seoContext(), 'straße');
-    $manager->setCustom(seoProduct('Strasse'), seoContext(), 'strasse');
+    $manager->setCustom($street, seoContext(), 'straße', origin());
+    $manager->setCustom(seoProduct('Strasse'), seoContext(), 'strasse', origin());
 
     $tea = seoProduct('Tea');
-    $manager->setCustom($tea, seoContext(), 'thé');
+    $manager->setCustom($tea, seoContext(), 'thé', origin());
 
     expect(seoPaths($coffee))->toEqual(['p/coffee' => 'historic', 'café' => 'historic', 'cafe' => 'canonical'])
         ->and(seoPaths($street))->toEqual(['p/street' => 'historic', 'straße' => 'canonical'])
@@ -492,7 +492,7 @@ it('brings no URL back for a page refreshed from a copy loaded before its delete
     $stale = Product::query()->findOrFail($product->getKey());
     deleteFromCatalog($product);
 
-    expect(app(SeoUrlManager::class)->refresh($stale))->toBe([])
+    expect(app(SeoUrlManager::class)->refresh($stale, origin()))->toBe([])
         ->and(seoPaths($product))->toBe(['p/boots' => 'gone']);
 });
 
@@ -514,7 +514,7 @@ it('stores and finds paths of any length', function () {
         ->and(seoPaths($product))->toBe([$automatic => 'canonical'])
         ->and(app(SeoPages::class)->resolve($automatic, StorefrontContext::for(seoContext()))->resource?->is($product))->toBeTrue();
 
-    app(SeoUrlManager::class)->setCustom($product, seoContext(), $custom);
+    app(SeoUrlManager::class)->setCustom($product, seoContext(), $custom, origin());
 
     expect(app(SeoPages::class)->resolve($custom, StorefrontContext::for(seoContext()))->resource?->is($product))->toBeTrue()
         ->and(app(SeoPages::class)->resolve($automatic, StorefrontContext::for(seoContext()))->redirect?->url)->toBe('http://localhost/'.$custom);
@@ -539,8 +539,8 @@ it('gives a page the lowest free number', function () {
     seoProduct('Boots');
     $second = seoProduct('Boots');
     seoProduct('Boots');
-    app(SeoUrlManager::class)->setCustom($second, seoContext(), 'second-boots');
-    app(SeoUrlManager::class)->remove(SeoUrl::query()->where('path', 'p/boots-2')->sole());
+    app(SeoUrlManager::class)->setCustom($second, seoContext(), 'second-boots', origin());
+    app(SeoUrlManager::class)->remove(SeoUrl::query()->where('path', 'p/boots-2')->sole(), origin());
 
     expect(seoPaths(seoProduct('Boots')))->toBe(['p/boots-2' => 'canonical'])
         ->and(seoPaths(seoProduct('Boots')))->toBe(['p/boots-4' => 'canonical']);
@@ -550,7 +550,7 @@ it('gives existing pages their URLs in a locale a channel gains, in a queued job
     config()->set('queue.default', 'sync');
     config()->set('larasell.locale.supported', ['en', 'de']);
     $product = seoProduct(['en' => 'Boots', 'de' => 'Stiefel']);
-    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes', 'de' => 'Schuhe'])));
+    $category = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes', 'de' => 'Schuhe'])), origin());
 
     expect(seoPaths($product, 'de'))->toBe([]);
 

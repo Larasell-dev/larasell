@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerAccountId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerAccountUnlinked;
@@ -13,13 +14,13 @@ final readonly class UnlinkCustomerAccount
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerAccountId $accountId): void
+    public function handle(CustomerAccountId $accountId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($accountId): void {
+        $this->db->transaction(function () use ($origin, $accountId): void {
             $account = CustomerAccount::query()->findOrFail($accountId->value);
             $account->delete();
 
-            CustomerAccountUnlinked::dispatch($accountId, new CustomerId($account->customer_id));
+            CustomerAccountUnlinked::dispatch($accountId, new CustomerId($account->customer_id), $origin);
         });
     }
 }

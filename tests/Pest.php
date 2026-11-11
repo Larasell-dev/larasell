@@ -168,3 +168,11 @@ function outsideTestTransaction(Closure $callback): mixed
         DB::beginTransaction();
     }
 }
+
+/*
+| Who the tests make their audited changes as.
+*/
+function origin(): Origin
+{
+    return Origin::cli(new SystemActor('tests'));
+}

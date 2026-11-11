@@ -15,7 +15,10 @@ use Larasell\Larasell\Carts\CartMergeStrategy;
 use Larasell\Larasell\Carts\Listeners\KeepChannelsWithCarts;
 use Larasell\Larasell\Carts\Strategies\CombineQuantities;
 use Larasell\Larasell\Catalog\CoreProductType;
+use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
+use Larasell\Larasell\Catalog\Events\ProductUpdated;
+use Larasell\Larasell\Catalog\Listeners\AuditProductChanges;
 use Larasell\Larasell\Catalog\ProductCapabilities;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
@@ -29,6 +32,7 @@ use Larasell\Larasell\Contracts\TaxCalculator;
 use Larasell\Larasell\Contracts\TaxJurisdictionResolver;
 use Larasell\Larasell\Contracts\TaxRateResolver;
 use Larasell\Larasell\Customers\CustomerNumbers\SequentialCustomerNumberGenerator;
+use Larasell\Larasell\Customers\Listeners\AuditCustomerChanges;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\TaxRoundingMode;
 use Larasell\Larasell\Inventory\Commands\ReleaseExpiredInventoryCommand;
@@ -46,7 +50,10 @@ use Larasell\Larasell\OrderNumbers\SequentialOrderNumberGenerator;
 use Larasell\Larasell\Payments\PaymentManager;
 use Larasell\Larasell\Promotions\Commands\ReleaseExpiredPromotionRedemptionsCommand;
 use Larasell\Larasell\Promotions\DefaultPromotionCustomerResolver;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelCreated;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
+use Larasell\Larasell\SalesChannels\Events\SalesChannelUpdated;
+use Larasell\Larasell\SalesChannels\Listeners\AuditSalesChannelChanges;
 use Larasell\Larasell\SalesChannels\SalesChannels;
 use Larasell\Larasell\SalesChannels\SalesChannelTypes;
 use Larasell\Larasell\SalesChannels\SalesContext;
@@ -139,6 +146,15 @@ class LarasellServiceProvider extends ServiceProvider
         Event::listen(ProductDeleted::class, KeepReservedProducts::class);
         Event::listen(SalesChannelDeleted::class, KeepChannelsWithCarts::class);
         Event::listen(SalesChannelDeleted::class, KeepChannelsWithOrders::class);
+
+        // Audited in the action's transaction, so a change that can't be audited rolls back.
+        Event::listen(ProductCreated::class, [AuditProductChanges::class, 'created']);
+        Event::listen(ProductUpdated::class, [AuditProductChanges::class, 'updated']);
+        Event::listen(ProductDeleted::class, [AuditProductChanges::class, 'deleted']);
+        Event::listen(SalesChannelCreated::class, [AuditSalesChannelChanges::class, 'created']);
+        Event::listen(SalesChannelUpdated::class, [AuditSalesChannelChanges::class, 'updated']);
+        Event::listen(SalesChannelDeleted::class, [AuditSalesChannelChanges::class, 'deleted']);
+        Event::listen(AuditCustomerChanges::EVENTS, AuditCustomerChanges::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([

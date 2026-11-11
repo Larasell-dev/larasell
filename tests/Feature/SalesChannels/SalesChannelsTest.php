@@ -38,7 +38,7 @@ function createSalesChannel(array $input = []): SalesChannel
         'locales' => ['de', 'fr-CH'],
         'currencies' => ['CHF', 'EUR'],
         ...$input,
-    ]);
+    ], origin());
 }
 
 it('installs a default storefront channel from the supported locales and the enabled currencies', function () {
@@ -94,7 +94,7 @@ it('says which fields an update changed, and announces nothing when none did', f
     Event::listen(SalesChannelUpdated::class, function (SalesChannelUpdated $event) use (&$events): void {
         $events[] = $event->changed;
     });
-    $update = fn (array $input) => app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), $input);
+    $update = fn (array $input) => app(UpdateSalesChannel::class)->handle(SalesChannelId::of($channel), $input, origin());
 
     $update(['name' => 'Schweiz']);
     $update(['name' => 'Schweiz', 'active' => false]);
@@ -119,7 +119,7 @@ it('sells through a channel that has no URL at all', function () {
     $context = SalesContext::for('pos', Locale::GERMAN);
     $product = app(CreateProduct::class)->handle(new CreateProductPayload([
         'name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5,
-    ]));
+    ]), origin());
 
     $cart = Cart::createIn($context);
     $cart->add($product, 1);
@@ -157,9 +157,9 @@ it('creates a cart only in a context it is given, not in one that happens to be 
 it('deletes a channel with its locales, currencies and entry points, and announces it', function () {
     Event::fake([SalesChannelDeleted::class]);
     $channel = createSalesChannel();
-    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.ch', 'locale' => 'de']);
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.ch', 'locale' => 'de'], origin());
 
-    app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel));
+    app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel), origin());
 
     expect(SalesChannel::query()->whereKey($channel->id)->exists())->toBeFalse()
         ->and(DB::table('larasell_sales_channel_locales')->where('sales_channel_id', $channel->id)->exists())->toBeFalse()
@@ -171,19 +171,19 @@ it('deletes a channel with its locales, currencies and entry points, and announc
 it('refuses to delete the last channel, or one that carts or orders were made in', function () {
     $default = SalesChannelId::of(SalesChannel::query()->where('key', 'default')->sole());
 
-    expect(fn () => app(DeleteSalesChannel::class)->handle($default))->toThrow(InvalidSalesChannel::class, 'last one');
+    expect(fn () => app(DeleteSalesChannel::class)->handle($default, origin()))->toThrow(InvalidSalesChannel::class, 'last one');
 
     $channel = createSalesChannel();
-    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5]));
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['de' => 'Stiefel'], 'price' => Price::of(1000), 'stock' => 5]), origin());
     $cart = Cart::createIn(SalesContext::for('ch', 'de'));
     $cart->add($product, 1);
 
-    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel)))->toThrow(SalesChannelInUse::class, '1 carts');
+    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel), origin()))->toThrow(SalesChannelInUse::class, '1 carts');
 
     app(Checkout::class)->create($cart, ['customer_email' => 'a@example.com', 'customer_name' => 'A']);
     $cart->delete();
 
-    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel)))->toThrow(SalesChannelInUse::class, '1 orders')
+    expect(fn () => app(DeleteSalesChannel::class)->handle(SalesChannelId::of($channel), origin()))->toThrow(SalesChannelInUse::class, '1 orders')
         ->and(SalesChannel::query()->whereKey($channel->id)->exists())->toBeTrue()
         ->and(SalesContext::for('ch', 'de')->channel)->toBe('ch');
 });

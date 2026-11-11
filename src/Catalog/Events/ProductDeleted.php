@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Catalog\VariantId;
@@ -26,5 +27,7 @@ final readonly class ProductDeleted
         public Translatable $name,
         public array $categoryIds,
         public array $variantIds,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

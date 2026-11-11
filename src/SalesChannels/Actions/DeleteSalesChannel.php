@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\SalesChannels\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\SalesChannels\Events\SalesChannelDeleted;
 use Larasell\Larasell\SalesChannels\Exceptions\InvalidSalesChannel;
 use Larasell\Larasell\SalesChannels\Models\SalesChannel;
@@ -22,9 +23,9 @@ final readonly class DeleteSalesChannel
         private SalesChannels $channels,
     ) {}
 
-    public function handle(SalesChannelId $channelId): void
+    public function handle(SalesChannelId $channelId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($channelId): void {
+        $this->db->transaction(function () use ($origin, $channelId): void {
             // Locks every channel, so two deletes can't each leave the other as the last one.
             // Postgres allows no FOR UPDATE on an aggregate, so it locks the rows and counts them here.
             $count = count(SalesChannel::query()->lockForUpdate()->pluck('id')->all());
@@ -35,7 +36,7 @@ final readonly class DeleteSalesChannel
             }
 
             // Before the delete, so listeners still see the channel and can refuse before a foreign key does.
-            SalesChannelDeleted::dispatch($channelId, $channel->key, $channel->type);
+            SalesChannelDeleted::dispatch($channelId, $channel->key, $channel->type, $origin);
 
             $channel->delete();
         });

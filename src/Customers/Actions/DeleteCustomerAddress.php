@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Customers\CustomerAddressId;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Events\CustomerAddressDeleted;
@@ -13,13 +14,13 @@ final readonly class DeleteCustomerAddress
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(CustomerAddressId $addressId): void
+    public function handle(CustomerAddressId $addressId, Origin $origin): void
     {
-        $this->db->transaction(function () use ($addressId): void {
+        $this->db->transaction(function () use ($origin, $addressId): void {
             $address = CustomerAddress::query()->findOrFail($addressId->value);
             $address->delete();
 
-            CustomerAddressDeleted::dispatch($addressId, new CustomerId($address->customer_id));
+            CustomerAddressDeleted::dispatch($addressId, new CustomerId($address->customer_id), $origin);
         });
     }
 }

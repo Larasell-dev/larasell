@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Customers\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Contracts\CustomerNumberGenerator;
 use Larasell\Larasell\Customers\CustomerId;
 use Larasell\Larasell\Customers\Enums\CustomerStatus;
@@ -15,9 +16,9 @@ final readonly class CreateCustomer
 {
     public function __construct(private ConnectionInterface $db, private CustomerNumberGenerator $numbers) {}
 
-    public function handle(CreateCustomerPayload $payload): Customer
+    public function handle(CreateCustomerPayload $payload, Origin $origin): Customer
     {
-        return $this->db->transaction(function () use ($payload): Customer {
+        return $this->db->transaction(function () use ($origin, $payload): Customer {
             $customer = Customer::query()->create([
                 'customer_number' => $this->numbers->generate(),
                 'type' => $payload->profile instanceof CompanyProfileData ? CustomerType::Company : CustomerType::Individual,
@@ -33,7 +34,7 @@ final readonly class CreateCustomer
                 $customer->personProfile()->create($payload->profile->toAttributes());
             }
 
-            CustomerCreated::dispatch(CustomerId::of($customer));
+            CustomerCreated::dispatch(CustomerId::of($customer), $origin);
 
             return $customer->load(['personProfile', 'companyProfile']);
         });

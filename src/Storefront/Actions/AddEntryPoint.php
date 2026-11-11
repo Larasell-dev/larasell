@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Storefront\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\ChannelRules;
@@ -32,9 +33,9 @@ final readonly class AddEntryPoint
      * @param  array{url: string, locale: Locale|string, default_currency?: Currency|string|null, primary?: bool}  $input  The first
      *                                                                                                                     entry point of its locale is the primary one; pass primary to make a later one primary
      */
-    public function handle(SalesChannelId $channelId, array $input): EntryPoint
+    public function handle(SalesChannelId $channelId, array $input, Origin $origin): EntryPoint
     {
-        $entryPoint = $this->db->transaction(function () use ($channelId, $input): EntryPoint {
+        $entryPoint = $this->db->transaction(function () use ($origin, $channelId, $input): EntryPoint {
             $channel = SalesChannel::query()->lockForUpdate()->findOrFail($channelId->value);
 
             if ($channel->type !== StorefrontContext::TYPE) {
@@ -59,7 +60,7 @@ final readonly class AddEntryPoint
                 'is_primary' => $primary ? true : null,
             ]);
 
-            EntryPointCreated::dispatch(EntryPointId::of($entryPoint), $channelId, $locale, $currency);
+            EntryPointCreated::dispatch(EntryPointId::of($entryPoint), $channelId, $locale, $currency, $origin);
 
             return $entryPoint;
         });

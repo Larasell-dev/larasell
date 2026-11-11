@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Storefront\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Locale;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
@@ -19,5 +20,7 @@ final readonly class EntryPointCreated
         public Locale $locale,
         /** The currency a visit starts in, or null for the channel's default. */
         public ?Currency $defaultCurrency,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

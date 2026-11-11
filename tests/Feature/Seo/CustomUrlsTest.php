@@ -40,8 +40,8 @@ function ukChannel(): SalesChannelId
 {
     $channel = app(CreateSalesChannel::class)->handle([
         'key' => 'uk', 'name' => 'UK', 'type' => 'storefront', 'locales' => ['en'], 'currencies' => app(CurrencySettings::class)->enabled(),
-    ]);
-    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.co.uk', 'locale' => 'en']);
+    ], origin());
+    app(AddEntryPoint::class)->handle(SalesChannelId::of($channel), ['url' => 'https://shop.co.uk', 'locale' => 'en'], origin());
 
     return SalesChannelId::of($channel);
 }
@@ -57,7 +57,7 @@ it('creates a product with custom URLs per locale, next to its automatic ones', 
     $product = app(CreateProduct::class)->handle(new CreateProductPayload(
         ['name' => ['en' => 'Boots', 'de' => 'Stiefel'], 'price' => Price::of(1000), 'status' => Visibility::Visible],
         withUrls(['de' => 'winter-angebot']),
-    ));
+    ), origin());
 
     expect(customUrl('winter-angebot', 'de')->resource?->is($product))->toBeTrue()
         ->and(customUrl('p/stiefel', 'de')->redirect?->url)->toBe('http://localhost/de/winter-angebot')
@@ -65,35 +65,35 @@ it('creates a product with custom URLs per locale, next to its automatic ones', 
 });
 
 it('creates no product when its custom URL is taken', function () {
-    app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Sale'], 'price' => Price::of(1000)], withUrls(['en' => 'sale'])));
+    app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Sale'], 'price' => Price::of(1000)], withUrls(['en' => 'sale'])), origin());
 
-    expect(fn () => app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)], withUrls(['en' => 'sale']))))
+    expect(fn () => app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)], withUrls(['en' => 'sale'])), origin()))
         ->toThrow(CustomUrlRejected::class)
         ->and(Product::query()->count())->toBe(1)
         ->and(SeoUrl::query()->where('path', 'p/boots')->exists())->toBeFalse();
 });
 
 it('updates only a product\'s custom URL, and null goes back to the automatic URL', function () {
-    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]));
+    $product = app(CreateProduct::class)->handle(new CreateProductPayload(['name' => ['en' => 'Boots'], 'price' => Price::of(1000)]), origin());
 
-    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => 'Leather Boots']], withUrls(['en' => 'boots-sale'])));
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(['name' => ['en' => 'Leather Boots']], withUrls(['en' => 'boots-sale'])), origin());
 
     expect(customUrl('boots-sale')->resource?->name->get('en'))->toBe('Leather Boots')
         ->and(customUrl('p/boots')->redirect?->url)->toBe('http://localhost/boots-sale');
 
-    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(attachments: withUrls(['en' => null])));
+    app(UpdateProduct::class)->handle(ProductId::of($product), new UpdateProductPayload(attachments: withUrls(['en' => null])), origin());
 
     expect(customUrl('p/leather-boots')->kind)->toBe(ResolutionKind::Found)
         ->and(customUrl('boots-sale')->redirect?->url)->toBe('http://localhost/p/leather-boots');
 });
 
 it('creates and updates a category with a custom URL, and its subcategories follow', function () {
-    $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes']), attachments: withUrls(['en' => 'footwear'])));
-    $boots = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), parentId: CategoryId::of($shoes)));
+    $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes']), attachments: withUrls(['en' => 'footwear'])), origin());
+    $boots = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), parentId: CategoryId::of($shoes)), origin());
 
     expect(customUrl('footwear/boots')->resource?->is($boots))->toBeTrue();
 
-    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'All Shoes']), attachments: withUrls(['en' => 'all-shoes'])));
+    app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'All Shoes']), attachments: withUrls(['en' => 'all-shoes'])), origin());
 
     expect(customUrl('all-shoes/boots')->resource?->is($boots))->toBeTrue()
         ->and(customUrl('footwear/boots')->redirect?->url)->toBe('http://localhost/all-shoes/boots')
@@ -101,12 +101,12 @@ it('creates and updates a category with a custom URL, and its subcategories foll
 });
 
 it('rolls back the category when its custom URL is taken', function () {
-    $sale = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Sale']), attachments: withUrls(['en' => 'sale'])));
-    $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])));
+    $sale = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Sale']), attachments: withUrls(['en' => 'sale'])), origin());
+    $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Shoes'])), origin());
 
-    expect(fn () => app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: withUrls(['en' => 'sale']))))
+    expect(fn () => app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: withUrls(['en' => 'sale'])), origin()))
         ->toThrow(CustomUrlRejected::class)
-        ->and(fn () => app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'Footwear']), attachments: withUrls(['en' => 'sale']))))
+        ->and(fn () => app(UpdateCategory::class)->handle(CategoryId::of($shoes), new UpdateCategoryPayload(new Translatable(['en' => 'Footwear']), attachments: withUrls(['en' => 'sale'])), origin()))
         ->toThrow(CustomUrlRejected::class)
         ->and(Category::query()->pluck('id')->all())->toBe([$sale->id, $shoes->id])
         ->and(Category::query()->findOrFail($shoes->id)->name->get('en'))->toBe('Shoes');
@@ -132,7 +132,7 @@ it('gives each channel of a locale its own custom URL', function () {
     $shoes = app(CreateCategory::class)->handle(new CreateCategoryPayload(
         new Translatable(['en' => 'Shoes']),
         attachments: new Attachments(CustomUrls::byChannel('en', [$default->value => 'footwear', $uk->value => 'trainers'])),
-    ));
+    ), origin());
 
     expect(customUrl('footwear')->resource?->is($shoes))->toBeTrue()
         ->and(app(SeoPages::class)->resolve('trainers', StorefrontContext::for('uk', 'en'))->resource?->is($shoes))->toBeTrue()
@@ -141,10 +141,10 @@ it('gives each channel of a locale its own custom URL', function () {
 
 it('names the channel and reason of a rejected custom URL', function () {
     $uk = ukChannel();
-    app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Sale']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))));
+    app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Sale']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))), origin());
 
     try {
-        app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))));
+        app(CreateCategory::class)->handle(new CreateCategoryPayload(new Translatable(['en' => 'Boots']), attachments: new Attachments(CustomUrls::byChannel('en', [$uk->value => 'sale']))), origin());
         $this->fail('The taken path was accepted.');
     } catch (CustomUrlRejected $exception) {
         expect($exception->context->channelId->equals($uk))->toBeTrue()

@@ -22,8 +22,11 @@ use Larasell\Larasell\Seo\Contracts\HiddenPagePolicy;
 use Larasell\Larasell\Seo\Contracts\PathNormalizer;
 use Larasell\Larasell\Seo\Contracts\Slugifier;
 use Larasell\Larasell\Seo\Events\SeoUrlChanged;
+use Larasell\Larasell\Seo\Events\SeoUrlReleased;
+use Larasell\Larasell\Seo\Events\SeoUrlRestored;
 use Larasell\Larasell\Seo\Http\Middleware\ResolveStorefront;
 use Larasell\Larasell\Seo\Jobs\BackfillSeoUrls;
+use Larasell\Larasell\Seo\Listeners\AuditSeoChanges;
 use Larasell\Larasell\Storefront\Events\EntryPointCreated;
 use Larasell\Larasell\Storefront\StorefrontRoutes;
 
@@ -74,8 +77,11 @@ class SeoServiceProvider extends ServiceProvider
             $router->pushMiddlewareToGroup(StorefrontRoutes::MIDDLEWARE_GROUP, ResolveStorefront::class);
         });
 
+        Event::listen(SeoUrlReleased::class, [AuditSeoChanges::class, 'released']);
+        Event::listen(SeoUrlRestored::class, [AuditSeoChanges::class, 'restored']);
+
         // A new channel or language gets its URLs from a queued backfill; its pages answer 404 meanwhile.
-        Event::listen(EntryPointCreated::class, fn (EntryPointCreated $event) => BackfillSeoUrls::dispatch($event->channelId, $event->locale));
+        Event::listen(EntryPointCreated::class, fn (EntryPointCreated $event) => BackfillSeoUrls::dispatch($event->channelId, $event->locale, $event->origin->inJob()));
 
         // Sync listeners, so the URLs are written inside the catalog action's transaction.
         Event::listen([ProductCreated::class, ProductUpdated::class], [CatalogUrls::class, 'productChanged']);
