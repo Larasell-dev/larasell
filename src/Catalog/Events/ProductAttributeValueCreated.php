@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\AttributeId;
 use Larasell\Larasell\Catalog\AttributeValueId;
 
@@ -18,5 +19,7 @@ final readonly class ProductAttributeValueCreated
     public function __construct(
         public AttributeValueId $valueId,
         public AttributeId $attributeId,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }

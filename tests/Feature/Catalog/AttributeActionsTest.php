@@ -22,12 +22,12 @@ use Larasell\Larasell\Enums\ProductAttributeType;
 it('writes attributes and their values with an event for each change', function () {
     Event::fake();
 
-    $size = app(CreateProductAttribute::class)->handle(['slug' => 'size', 'name' => ['en' => 'Size']]);
-    $small = app(CreateProductAttributeValue::class)->handle(AttributeId::of($size), ['slug' => 's', 'name' => ['en' => 'S'], 'value' => 's']);
-    app(UpdateProductAttribute::class)->handle(AttributeId::of($size), ['name' => ['en' => 'Shoe size']]);
-    app(UpdateProductAttributeValue::class)->handle(AttributeValueId::of($small), ['name' => ['en' => 'Small']]);
-    app(DeleteProductAttributeValue::class)->handle(AttributeValueId::of($small));
-    app(DeleteProductAttribute::class)->handle(AttributeId::of($size));
+    $size = app(CreateProductAttribute::class)->handle(['slug' => 'size', 'name' => ['en' => 'Size']], origin());
+    $small = app(CreateProductAttributeValue::class)->handle(AttributeId::of($size), ['slug' => 's', 'name' => ['en' => 'S'], 'value' => 's'], origin());
+    app(UpdateProductAttribute::class)->handle(AttributeId::of($size), ['name' => ['en' => 'Shoe size']], origin());
+    app(UpdateProductAttributeValue::class)->handle(AttributeValueId::of($small), ['name' => ['en' => 'Small']], origin());
+    app(DeleteProductAttributeValue::class)->handle(AttributeValueId::of($small), origin());
+    app(DeleteProductAttribute::class)->handle(AttributeId::of($size), origin());
 
     expect(ProductAttribute::query()->count())->toBe(0)
         ->and(ProductAttributeValue::query()->count())->toBe(0);
@@ -41,9 +41,9 @@ it('writes attributes and their values with an event for each change', function 
 });
 
 it('checks attribute values against their attribute type before writing', function () {
-    $weight = app(CreateProductAttribute::class)->handle(['slug' => 'weight', 'name' => ['en' => 'Weight'], 'type' => ProductAttributeType::Number]);
+    $weight = app(CreateProductAttribute::class)->handle(['slug' => 'weight', 'name' => ['en' => 'Weight'], 'type' => ProductAttributeType::Number], origin());
 
-    expect(fn () => app(CreateProductAttributeValue::class)->handle(AttributeId::of($weight), ['slug' => 'heavy', 'name' => ['en' => 'Heavy'], 'value' => 'heavy']))
+    expect(fn () => app(CreateProductAttributeValue::class)->handle(AttributeId::of($weight), ['slug' => 'heavy', 'name' => ['en' => 'Heavy'], 'value' => 'heavy'], origin()))
         ->toThrow(InvalidArgumentException::class)
         ->and(ProductAttributeValue::query()->count())->toBe(0);
 });

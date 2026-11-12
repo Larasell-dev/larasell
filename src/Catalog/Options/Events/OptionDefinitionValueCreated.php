@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Options\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\Options\OptionDefinitionId;
 use Larasell\Larasell\Catalog\Options\OptionDefinitionValueId;
 
@@ -18,5 +19,7 @@ final readonly class OptionDefinitionValueCreated
     public function __construct(
         public OptionDefinitionValueId $valueId,
         public OptionDefinitionId $definitionId,
+        /** Who made the change and how it came in. */
+        public Origin $origin,
     ) {}
 }
