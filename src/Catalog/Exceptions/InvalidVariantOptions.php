@@ -60,4 +60,14 @@ final class InvalidVariantOptions extends InvalidArgumentException implements St
             fix: 'Pass one or more values of the definition.',
         );
     }
+
+    public static function wouldDeleteEveryVariant(): self
+    {
+        return self::structured(
+            errorCode: 'larasell.catalog.options-delete-every-variant',
+            message: 'The change would delete every variant of the product.',
+            why: 'A product always keeps at least one variant.',
+            fix: 'Keep at least one value that a variant uses, or remove the whole option instead.',
+        );
+    }
 }
