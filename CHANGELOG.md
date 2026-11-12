@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.29.0](https://github.com/Larasell-dev/larasell/compare/v1.28.0...v1.29.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove attribute-based variant dimensions
+* keep identifiers on variants and inherit variant fields explicitly
+
+### Features
+
+* add global option definitions and create only selected variant combinations ([fa0b2cd](https://github.com/Larasell-dev/larasell/commit/fa0b2cd23665f0655ab6290fbf8a44bebcb626c8))
+* drop the cleared inheritance state for empty overrides ([d33ccc6](https://github.com/Larasell-dev/larasell/commit/d33ccc64835eeb8f5d8337835388de3bd017327c))
+* give a product exactly the selected options in one action ([490d9e6](https://github.com/Larasell-dev/larasell/commit/490d9e6e74cbecda1afdb124fe75afe252c675b3))
+* hide variants of hidden products, and give attributes several values ([f9066b6](https://github.com/Larasell-dev/larasell/commit/f9066b661750bf9993bc4c81287e7779a53590c9))
+* keep identifiers on variants and inherit variant fields explicitly ([2a58f25](https://github.com/Larasell-dev/larasell/commit/2a58f25a891975fe1b1caeaa915cbd7dada40db2))
+* move existing variant dimensions to options ([b120e75](https://github.com/Larasell-dev/larasell/commit/b120e751f7158748138b3b5966f8bd0b5227c9c9))
+* remove attribute-based variant dimensions ([f69cecc](https://github.com/Larasell-dev/larasell/commit/f69ceccafc3d5c4c508e7dbfa09dab2872b3441a))
+* save an attribute with all of its values in one action ([e53d501](https://github.com/Larasell-dev/larasell/commit/e53d501a0a5a2594fa95419f50e59f03208f4c3f))
+* save an option with all of its values in one action ([697bbe1](https://github.com/Larasell-dev/larasell/commit/697bbe15bc459f75f83b5873fe0a03a7b35c96ba))
+* scope attributes to products, variants or both, with variant overrides ([3f483b0](https://github.com/Larasell-dev/larasell/commit/3f483b0263312da5f830af8fbf1babf036337103))
+
 ## [1.28.0](https://github.com/Larasell-dev/larasell/compare/v1.27.4...v1.28.0) (2026-11-11)
 
 
