@@ -22,7 +22,6 @@ use Larasell\Larasell\Discounts\AppliedDiscount;
 use Larasell\Larasell\Discounts\DiscountResult;
 use Larasell\Larasell\Discounts\PromotionManager;
 use Larasell\Larasell\Enums\Currency;
-use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Events\PromotionCodeRemoved;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityBelowMinimumException;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityExceedsMaximumException;
@@ -199,7 +198,7 @@ class Cart extends Model
     public function purchasableItems(): Collection
     {
         return $this->items()
-            ->with(['product', 'variant.product', 'variant.attributeValues.attribute'])
+            ->with(['product', 'variant.product', 'variant.optionValues.option.definition', 'variant.optionValues.definitionValue'])
             ->orderBy('id')
             ->get();
     }

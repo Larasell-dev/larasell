@@ -1,7 +1,6 @@
 <?php
 
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Checkout\OrderId;
@@ -88,14 +87,8 @@ function variantInventoryCart(): array
         'allow_backorders' => false,
         'status' => Visibility::Visible,
     ]);
-    $size = ProductAttribute::create([
-        'slug' => fake()->unique()->bothify('inventory-size-####'),
-        'name' => 'Size',
-    ]);
-    $small = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
-    $medium = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
-    $product->attributeValues()->attach([$small->id, $medium->id]);
-    $variants = $product->generateVariants([$size]);
+    // The first combination is the product's default variant, which shares the product's stock.
+    $variants = collect(optionVariants($product, [optionDefinition('size', ['xs', 'small', 'medium'])]))->slice(1);
     $variants->each->update([
         'price' => Price::of(1500),
         'stock' => 5,

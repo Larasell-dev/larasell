@@ -65,7 +65,6 @@ use Larasell\Larasell\Weight;
  * @property string $combination_key
  * @property array<string, mixed>|null $metadata
  * @property Product $product
- * @property Collection<int, ProductAttributeValue> $attributeValues
  *
  * @method static Builder<static> visible()
  */
@@ -373,17 +372,6 @@ class ProductVariant extends Model
         )->withPivot('product_option_id');
     }
 
-    /** @return BelongsToMany<ProductAttributeValue, $this> */
-    public function attributeValues(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            ProductAttributeValue::class,
-            'larasell_product_variant_product_attribute_value',
-            'product_variant_id',
-            'product_attribute_value_id',
-        );
-    }
-
     public function unitPrice(): Price
     {
         return $this->price ?? $this->product->price;
@@ -469,31 +457,7 @@ class ProductVariant extends Model
                 ->all();
         }
 
-        if ($this->is_default) {
-            return [];
-        }
-
-        $this->loadMissing(['product.variantDimensions', 'attributeValues.attribute']);
-
-        $positions = $this->product->variantDimensions
-            ->pluck('pivot.position', 'id');
-
-        return $this->attributeValues
-            ->sortBy(fn (ProductAttributeValue $value): array => [
-                $positions->get($value->product_attribute_id, PHP_INT_MAX),
-                $value->product_attribute_id,
-            ])
-            ->mapWithKeys(fn (ProductAttributeValue $value): array => [
-                $value->attribute->slug => [
-                    'attribute_id' => $value->attribute->id,
-                    'attribute_slug' => $value->attribute->slug,
-                    'attribute_name' => $value->attribute->name->get($locale),
-                    'value_id' => $value->id,
-                    'value_slug' => $value->slug,
-                    'value_name' => $value->name->get($locale),
-                ],
-            ])
-            ->all();
+        return [];
     }
 
     /** The variant's own name in the locale, or else its option values, or else the product's name. */

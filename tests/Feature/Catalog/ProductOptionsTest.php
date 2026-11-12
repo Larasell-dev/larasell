@@ -5,26 +5,8 @@ use Larasell\Larasell\Catalog\Exceptions\InvalidVariantOptions;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Catalog\Options\Models\OptionDefinition;
-use Larasell\Larasell\Catalog\Options\Models\OptionDefinitionValue;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Price;
-
-function optionDefinition(string $slug, array $values): OptionDefinition
-{
-    // Arrange
-    $definition = OptionDefinition::create(['slug' => $slug, 'name' => ['en' => ucfirst($slug)]]);
-
-    foreach ($values as $position => $value) {
-        $definition->values()->create(['slug' => $value, 'name' => ['en' => ucfirst($value)], 'position' => $position]);
-    }
-
-    return $definition;
-}
-
-function optionValue(OptionDefinition $definition, string $slug): OptionDefinitionValue
-{
-    return $definition->values()->where('slug', $slug)->sole();
-}
 
 function shirt(): Product
 {

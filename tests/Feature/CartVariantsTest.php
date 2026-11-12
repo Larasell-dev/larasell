@@ -2,13 +2,10 @@
 
 use Larasell\Larasell\Carts\CartItemId;
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
-use Larasell\Larasell\Catalog\Models\ProductAttributeValue;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
 use Larasell\Larasell\Catalog\ProductId;
 use Larasell\Larasell\Catalog\VariantId;
 use Larasell\Larasell\Enums\Currency;
-use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityBelowMinimumException;
 use Larasell\Larasell\Exceptions\Cart\CartQuantityExceedsMaximumException;
 use Larasell\Larasell\Models\Cart;
@@ -206,26 +203,9 @@ function cartVariantProduct(array $attributes = []): Product
 function cartVariantCatalog(array $firstVariantAttributes = []): array
 {
     $product = cartVariantProduct();
-    $size = ProductAttribute::create([
-        'slug' => fake()->unique()->bothify('size-####'),
-        'name' => 'Size',
-    ]);
-    $small = cartVariantValue($size, 'small');
-    $medium = cartVariantValue($size, 'medium');
-    $product->attributeValues()->attach([$small->id, $medium->id]);
-    $variants = $product->generateVariants([$size]);
+    // The first combination is the product's default variant, which mirrors the product.
+    [, $first, $second] = optionVariants($product, [optionDefinition('size', ['xs', 'small', 'medium'])]);
+    $first->update($firstVariantAttributes);
 
-    $variants->each->update(['status' => Visibility::Visible]);
-    $variants->first()->update($firstVariantAttributes);
-
-    return [$product, $variants->first()->refresh(), $variants->last()->refresh()];
-}
-
-function cartVariantValue(ProductAttribute $attribute, string $slug): ProductAttributeValue
-{
-    return $attribute->values()->create([
-        'slug' => $slug,
-        'name' => ucfirst($slug),
-        'value' => $slug,
-    ]);
+    return [$product, $first->refresh(), $second];
 }
