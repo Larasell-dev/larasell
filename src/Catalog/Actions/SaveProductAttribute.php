@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\AttributeId;
 use Larasell\Larasell\Catalog\AttributeValueId;
 use Larasell\Larasell\Catalog\Exceptions\InvalidAttributeValues;
@@ -36,9 +37,9 @@ final readonly class SaveProductAttribute
      * exactly its yes and no, by the slugs __boolean_true and __boolean_false; a number
      * attribute's values are the numbers their names spell.
      */
-    public function handle(?AttributeId $attributeId, SaveProductAttributePayload $payload): ProductAttribute
+    public function handle(?AttributeId $attributeId, SaveProductAttributePayload $payload, Origin $origin): ProductAttribute
     {
-        return $this->db->transaction(function () use ($attributeId, $payload): ProductAttribute {
+        return $this->db->transaction(function () use ($origin, $attributeId, $payload): ProductAttribute {
             $fields = [
                 'name' => $payload->name,
                 'slug' => $payload->slug,
@@ -50,8 +51,8 @@ final readonly class SaveProductAttribute
             }
 
             $attribute = $attributeId === null
-                ? $this->createAttribute->handle([...$fields, 'type' => $payload->type])
-                : $this->updateAttribute->handle($attributeId, $fields);
+                ? $this->createAttribute->handle([...$fields, 'type' => $payload->type], $origin)
+                : $this->updateAttribute->handle($attributeId, $fields, $origin);
 
             $existing = $attribute->values()->lockForUpdate()->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
             $kept = [];
@@ -81,7 +82,7 @@ final readonly class SaveProductAttribute
 
             // Deleted first, so a kept or new value can take a deleted one's slug.
             foreach (array_diff($existing, $kept) as $id) {
-                $this->deleteValue->handle(new AttributeValueId($id));
+                $this->deleteValue->handle(new AttributeValueId($id), $origin);
             }
 
             // Slugs are unique per attribute and checked on each write, so values that change theirs
@@ -102,8 +103,8 @@ final readonly class SaveProductAttribute
                 }
 
                 $draft->id === null
-                    ? $this->createValue->handle(AttributeId::of($attribute), $fields)
-                    : $this->updateValue->handle($draft->id, $fields);
+                    ? $this->createValue->handle(AttributeId::of($attribute), $fields, $origin)
+                    : $this->updateValue->handle($draft->id, $fields, $origin);
             }
 
             return $attribute->refresh();

@@ -31,7 +31,7 @@ function payload(array $values, string $name = 'Material', ProductAttributeType 
 
 it('creates an attribute with its values in the given order', function () {
     // Act
-    $attribute = app(SaveProductAttribute::class)->handle(null, payload([draft(null, 'Wool', 'wool'), draft(null, 'Cotton', 'cotton')]));
+    $attribute = app(SaveProductAttribute::class)->handle(null, payload([draft(null, 'Wool', 'wool'), draft(null, 'Cotton', 'cotton')]), origin());
 
     // Assert
     expect($attribute->type)->toBe(ProductAttributeType::Text)
@@ -53,7 +53,7 @@ it('updates, creates, reorders and deletes values to match the drafts', function
         draft($wool, 'Merino wool', 'merino'),
         draft(null, 'Linen', 'linen'),
         draft($cotton, 'Cotton', 'cotton'),
-    ], 'Fabric'));
+    ], 'Fabric'), origin());
 
     // Assert
     expect($attribute->fresh()->name->get('en'))->toBe('Fabric')
@@ -73,7 +73,7 @@ it('refuses a draft of another attribute\'s value and changes nothing', function
     $wash = $care->values()->create(['slug' => 'wash', 'name' => ['en' => 'Wash'], 'value' => 'Wash']);
 
     // Act & Assert
-    expect(fn () => app(SaveProductAttribute::class)->handle(AttributeId::of($material), payload([draft($wash, 'Wash', 'wash')], 'Fabric')))
+    expect(fn () => app(SaveProductAttribute::class)->handle(AttributeId::of($material), payload([draft($wash, 'Wash', 'wash')], 'Fabric'), origin()))
         ->toThrow(InvalidAttributeValues::class);
     expect($material->fresh()->name->get('en'))->toBe('Material')
         ->and($cotton->fresh())->not->toBeNull()
@@ -93,7 +93,7 @@ it('swaps the slugs of two values in one save, with one slug change each', funct
         draft($wool, 'Wool', 'a'),
         // A new value takes the slug another one gives up in the same save.
         draft(null, 'Silk', 'c'),
-    ]));
+    ]), origin());
 
     // Assert
     expect($cotton->fresh()->slug)->toBe('b')
@@ -107,15 +107,15 @@ it('creates a yes-or-no attribute with its yes and no, which can be renamed but 
     $save = app(SaveProductAttribute::class);
 
     // Act
-    $attribute = $save->handle(null, payload([draft(null, 'Yes', '__boolean_true'), draft(null, 'No', '__boolean_false')], 'Waterproof', ProductAttributeType::Boolean));
+    $attribute = $save->handle(null, payload([draft(null, 'Yes', '__boolean_true'), draft(null, 'No', '__boolean_false')], 'Waterproof', ProductAttributeType::Boolean), origin());
     [$yes, $no] = $attribute->values()->orderBy('position')->get()->all();
-    $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Waterproof', '__boolean_true'), draft($no, 'Not waterproof', '__boolean_false')], 'Waterproof', ProductAttributeType::Boolean));
+    $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Waterproof', '__boolean_true'), draft($no, 'Not waterproof', '__boolean_false')], 'Waterproof', ProductAttributeType::Boolean), origin());
 
     // Assert
     expect([$yes->fresh()->value, $yes->fresh()->name->get('en'), $no->fresh()->value])->toBe([true, 'Waterproof', false])
-        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Yes', '__boolean_true'), draft($no, 'No', '__boolean_false'), draft(null, 'Maybe', 'maybe')], 'Waterproof', ProductAttributeType::Boolean)))
+        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Yes', '__boolean_true'), draft($no, 'No', '__boolean_false'), draft(null, 'Maybe', 'maybe')], 'Waterproof', ProductAttributeType::Boolean), origin()))
         ->toThrow(InvalidAttributeValues::class)
-        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Yes', '__boolean_true')], 'Waterproof', ProductAttributeType::Boolean)))
+        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($yes, 'Yes', '__boolean_true')], 'Waterproof', ProductAttributeType::Boolean), origin()))
         ->toThrow(InvalidAttributeValues::class)
         ->and($attribute->values()->count())->toBe(2);
 });
@@ -123,17 +123,17 @@ it('creates a yes-or-no attribute with its yes and no, which can be renamed but 
 it('keeps a number value\'s number in step with its name, and refuses one that isn\'t a number', function () {
     // Arrange
     $save = app(SaveProductAttribute::class);
-    $attribute = $save->handle(null, payload([draft(null, '180', 'g180')], 'Weight', ProductAttributeType::Number));
+    $attribute = $save->handle(null, payload([draft(null, '180', 'g180')], 'Weight', ProductAttributeType::Number), origin());
     $value = $attribute->values()->sole();
 
     // Act
-    $save->handle(AttributeId::of($attribute), payload([draft($value, '2.5', 'g180')], 'Weight', ProductAttributeType::Number));
+    $save->handle(AttributeId::of($attribute), payload([draft($value, '2.5', 'g180')], 'Weight', ProductAttributeType::Number), origin());
 
     // Assert
     expect($value->fresh()->value)->toBe(2.5)
-        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($value, 'heavy', 'g180')], 'Weight', ProductAttributeType::Number)))
+        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($value, 'heavy', 'g180')], 'Weight', ProductAttributeType::Number), origin()))
         ->toThrow(InvalidAttributeValues::class)
-        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($value, '3', 'g180')], 'Weight')))
+        ->and(fn () => $save->handle(AttributeId::of($attribute), payload([draft($value, '3', 'g180')], 'Weight'), origin()))
         ->toThrow(InvalidAttributeValues::class)
         ->and($value->fresh()->value)->toBe(2.5);
 });

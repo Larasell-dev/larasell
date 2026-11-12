@@ -3,6 +3,7 @@
 namespace Larasell\Larasell\Catalog\Options\Actions;
 
 use Illuminate\Database\ConnectionInterface;
+use Larasell\Larasell\Audit\Origin;
 use Larasell\Larasell\Catalog\Options\Events\OptionDefinitionCreated;
 use Larasell\Larasell\Catalog\Options\Events\OptionDefinitionUpdated;
 use Larasell\Larasell\Catalog\Options\Events\OptionDefinitionValueCreated;
@@ -27,21 +28,21 @@ final readonly class SaveOptionDefinition
 {
     public function __construct(private ConnectionInterface $db) {}
 
-    public function handle(?OptionDefinitionId $definitionId, SaveOptionDefinitionPayload $payload): OptionDefinition
+    public function handle(?OptionDefinitionId $definitionId, SaveOptionDefinitionPayload $payload, Origin $origin): OptionDefinition
     {
-        return $this->db->transaction(function () use ($definitionId, $payload): OptionDefinition {
+        return $this->db->transaction(function () use ($origin, $definitionId, $payload): OptionDefinition {
             $fields = ['name' => $payload->name, 'slug' => $payload->slug, 'display' => $payload->display->value];
 
             if ($definitionId === null) {
                 $definition = OptionDefinition::query()->create($fields);
-                OptionDefinitionCreated::dispatch(OptionDefinitionId::of($definition));
+                OptionDefinitionCreated::dispatch(OptionDefinitionId::of($definition), origin: $origin);
             } else {
                 $definition = OptionDefinition::query()->lockForUpdate()->findOrFail($definitionId->value);
                 $changed = array_keys($definition->fill($fields)->getDirty());
                 $definition->save();
 
                 if ($changed !== []) {
-                    OptionDefinitionUpdated::dispatch($definitionId, $changed);
+                    OptionDefinitionUpdated::dispatch($definitionId, $changed, origin: $origin);
                 }
             }
 
@@ -69,7 +70,7 @@ final readonly class SaveOptionDefinition
 
                 OptionUsage::withdraw([$value->id]);
                 $value->delete();
-                OptionDefinitionValueDeleted::dispatch(OptionDefinitionValueId::of($value), $id);
+                OptionDefinitionValueDeleted::dispatch(OptionDefinitionValueId::of($value), $id, origin: $origin);
             }
 
             // Slugs are unique per option, so values that change theirs first give them up:
@@ -85,7 +86,7 @@ final readonly class SaveOptionDefinition
 
                 if ($draft->id === null) {
                     $value = $definition->values()->create($fields);
-                    OptionDefinitionValueCreated::dispatch(OptionDefinitionValueId::of($value), $id);
+                    OptionDefinitionValueCreated::dispatch(OptionDefinitionValueId::of($value), $id, origin: $origin);
 
                     continue;
                 }
@@ -95,7 +96,7 @@ final readonly class SaveOptionDefinition
                 $value->save();
 
                 if ($changed !== []) {
-                    OptionDefinitionValueUpdated::dispatch($draft->id, $id, $changed);
+                    OptionDefinitionValueUpdated::dispatch($draft->id, $id, $changed, origin: $origin);
                 }
             }
 

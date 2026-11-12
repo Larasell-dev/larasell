@@ -55,7 +55,7 @@ it('creates an option with its display and its values with swatches, in the give
     $colour = app(SaveOptionDefinition::class)->handle(null, optionPayload([
         optionDraft(null, 'White', 'white', '#ffffff'),
         optionDraft(null, 'Black', 'black', '#000000'),
-    ]));
+    ]), origin());
 
     // Assert
     expect($colour->display)->toBe('swatch')
@@ -76,7 +76,7 @@ it('updates, creates, reorders and deletes values to match the drafts, swapping 
         optionDraft($white, 'White', 'black', '#fafafa'),
         optionDraft(null, 'Blue', 'blue', '#0000ff'),
         optionDraft($black, 'Black', 'white', '#000000'),
-    ], 'Color', OptionDisplay::Buttons));
+    ], 'Color', OptionDisplay::Buttons), origin());
 
     // Assert
     expect($colour->fresh()->name->get('en'))->toBe('Color')
@@ -104,7 +104,7 @@ it('refuses to delete a value variants use, saying how many on how many products
 
     // Act
     try {
-        app(SaveOptionDefinition::class)->handle(OptionDefinitionId::of($colour), optionPayload([optionDraft($white, 'White', 'white', '#ffffff')]));
+        app(SaveOptionDefinition::class)->handle(OptionDefinitionId::of($colour), optionPayload([optionDraft($white, 'White', 'white', '#ffffff')]), origin());
         $thrown = null;
     } catch (OptionInUse $exception) {
         $thrown = $exception;
@@ -125,7 +125,7 @@ it('refuses another option\'s value id', function () {
     $small = $size->values()->create(['slug' => 's', 'name' => ['en' => 'S']]);
 
     // Act & Assert
-    expect(fn () => app(SaveOptionDefinition::class)->handle(OptionDefinitionId::of($colour), optionPayload([optionDraft($small, 'S', 's')])))
+    expect(fn () => app(SaveOptionDefinition::class)->handle(OptionDefinitionId::of($colour), optionPayload([optionDraft($small, 'S', 's')]), origin()))
         ->toThrow(InvalidOptionValues::class);
     expect($small->fresh()->option_definition_id)->toBe($size->id);
 });
@@ -139,7 +139,7 @@ it('deletes an option no variant uses, with what products offer of it', function
     Event::fake([OptionDefinitionDeleted::class]);
 
     // Act
-    app(DeleteOptionDefinition::class)->handle(OptionDefinitionId::of($size));
+    app(DeleteOptionDefinition::class)->handle(OptionDefinitionId::of($size), origin());
 
     // Assert
     expect($size->fresh())->toBeNull()
@@ -153,7 +153,7 @@ it('refuses to delete an option variants use, saying how many on how many produc
     [$colour] = colours();
 
     // Act & Assert
-    expect(fn () => app(DeleteOptionDefinition::class)->handle(OptionDefinitionId::of($colour)))
+    expect(fn () => app(DeleteOptionDefinition::class)->handle(OptionDefinitionId::of($colour), origin()))
         ->toThrow(fn (OptionInUse $exception) => expect([$exception->value, $exception->variants, $exception->products])->toBe([null, 2, 1]));
     expect($colour->fresh())->not->toBeNull();
 });
