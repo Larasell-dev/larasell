@@ -54,7 +54,7 @@ final readonly class PromotionContext
     public function withAttributeValue(ProductAttributeValue $value): Collection
     {
         return $this->items->filter(
-            fn (CartItem $item): bool => $item->variant->attributeValues->contains(
+            fn (CartItem $item): bool => $item->variant->effectiveAttributeValues()->contains(
                 fn (ProductAttributeValue $candidate): bool => $candidate->is($value),
             ),
         )->values();

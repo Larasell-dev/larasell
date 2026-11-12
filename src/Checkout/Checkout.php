@@ -126,7 +126,7 @@ class Checkout
                 $total = Price::of(0);
 
                 $variants = ProductVariant::query()
-                    ->with(['product', 'attributeValues.attribute'])
+                    ->with(['product', 'optionValues.option.definition', 'optionValues.definitionValue'])
                     ->whereKey($items->pluck('product_variant_id'))
                     ->orderBy('id')
                     ->lockForUpdate()

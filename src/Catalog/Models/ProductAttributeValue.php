@@ -77,19 +77,6 @@ class ProductAttributeValue extends Model
         )->withTimestamps();
     }
 
-    /**
-     * @return BelongsToMany<ProductVariant, $this>
-     */
-    public function variants(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            ProductVariant::class,
-            'larasell_product_variant_product_attribute_value',
-            'product_attribute_value_id',
-            'product_variant_id',
-        );
-    }
-
     private function assertValueMatchesAttributeType(): void
     {
         $attribute = $this->relationLoaded('attribute')

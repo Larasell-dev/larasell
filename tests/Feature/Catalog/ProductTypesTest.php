@@ -5,7 +5,6 @@ use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
 use Larasell\Larasell\Catalog\CoreProductType;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\ProductCapabilities;
 use Larasell\Larasell\Catalog\ProductType;
 use Larasell\Larasell\Catalog\ProductTypes;
@@ -74,17 +73,15 @@ it('does not let a product or variant change its type', function () {
 });
 
 it('lets a variant override the product type', function () {
+    // Arrange
     registerDownloadType();
     $product = Product::create(['name' => 'Book', 'price' => Price::of(2000)]);
-    $format = ProductAttribute::create(['name' => 'Format', 'slug' => 'format']);
-    $ebook = $format->values()->create(['name' => 'Ebook', 'slug' => 'ebook', 'value' => 'ebook']);
-    $hardcover = $format->values()->create(['name' => 'Hardcover', 'slug' => 'hardcover', 'value' => 'hardcover']);
-    $product->attributeValues()->attach([$ebook->id, $hardcover->id]);
-    $product->variantDimensions()->attach($format->id, ['position' => 0]);
+    $print = $product->defaultVariant();
 
-    $digital = $product->createVariant([$ebook], ['type_inheritance' => 'overridden', 'type' => 'download']);
-    $print = $product->createVariant([$hardcover]);
+    // Act
+    $digital = $product->variants()->create(['combination_key' => 'ebook', 'type_inheritance' => 'overridden', 'type' => 'download']);
 
+    // Assert
     expect($digital->effectiveType()->key())->toBe('download')
         ->and($digital->has('shipping'))->toBeFalse()
         ->and($print->effectiveType()->key())->toBe('physical')

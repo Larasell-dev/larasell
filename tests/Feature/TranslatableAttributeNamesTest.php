@@ -34,22 +34,22 @@ it('accepts string attribute and value names for the current locale', function (
 });
 
 it('names variant options in the current locale', function () {
+    // Arrange
     $product = Product::create([
         'name' => ['en' => 'Shirt', 'de' => 'Hemd'],
         'price' => Price::of(1000),
         'status' => Visibility::Visible,
     ]);
-    $size = ProductAttribute::create(['slug' => 'size', 'name' => ['en' => 'Size', 'de' => 'Größe']]);
-    $small = $size->values()->create(['slug' => 'small', 'name' => ['en' => 'Small', 'de' => 'Klein'], 'value' => 'small']);
-    $medium = $size->values()->create(['slug' => 'medium', 'name' => ['en' => 'Medium', 'de' => 'Mittel'], 'value' => 'medium']);
-    $color = ProductAttribute::create(['slug' => 'color', 'name' => ['en' => 'Color']]);
-    $black = $color->values()->create(['slug' => 'black', 'name' => ['en' => 'Black', 'de' => 'Schwarz'], 'value' => 'black']);
-    $product->attributeValues()->attach([$small->id, $medium->id, $black->id]);
-    $product->generateVariants([$size, $color])->each->update(['status' => Visibility::Visible]);
+    optionVariants($product, [
+        optionDefinition('size', ['small' => ['en' => 'Small', 'de' => 'Klein'], 'medium' => ['en' => 'Medium', 'de' => 'Mittel']], ['en' => 'Size', 'de' => 'Größe']),
+        optionDefinition('color', ['black' => ['en' => 'Black', 'de' => 'Schwarz']], ['en' => 'Color']),
+    ]);
+    $variant = optionVariant($product, ['size' => 'small', 'color' => 'black']);
 
+    // Act
     App::setLocale('de');
-    $variant = $product->variantFor(['size' => 'small', 'color' => 'black']);
 
+    // Assert
     expect($variant->name())->toBe('Klein / Schwarz')
         ->and($variant->options()['size']['attribute_name'])->toBe('Größe')
         ->and($variant->options()['size']['value_name'])->toBe('Klein')

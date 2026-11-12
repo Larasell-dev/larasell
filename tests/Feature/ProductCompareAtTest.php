@@ -1,7 +1,6 @@
 <?php
 
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Models\Cart;
 use Larasell\Larasell\Price;
@@ -121,22 +120,21 @@ it('syncs the default variant compare-at when the product compare-at changes', f
 });
 
 it('lets a variant inherit or override the product compare-at price', function () {
+    // Arrange
     $product = Product::create([
         'name' => 'Variant sale tee',
         'price' => Price::of(1000),
         'compare_at' => Price::of(1800),
     ]);
-    $size = ProductAttribute::create(['slug' => 'compare-size', 'name' => 'Size']);
-    $small = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
-    $medium = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
-    $product->attributeValues()->attach([$small->id, $medium->id]);
-    $product->variantDimensions()->sync([$size->id => ['position' => 0]]);
-    $inherited = $product->createVariant([$small]);
-    $overridden = $product->createVariant([$medium], [
+    [$inherited, $overridden] = optionVariants($product, [optionDefinition('size', ['small', 'medium'])]);
+
+    // Act
+    $overridden->update([
         'price' => Price::of(900),
         'compare_at' => Price::of(1400),
     ]);
 
+    // Assert
     expect($inherited->compare_at)->toBeNull()
         ->and($inherited->compareAtPrice())->toEqual(Price::of(1800))
         ->and($inherited->onSale())->toBeTrue()

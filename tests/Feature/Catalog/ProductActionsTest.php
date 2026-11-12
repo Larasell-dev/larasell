@@ -5,22 +5,18 @@ use Illuminate\Support\Facades\Event;
 use Larasell\Larasell\Attachments\Attachments;
 use Larasell\Larasell\Catalog\Actions\CreateProduct;
 use Larasell\Larasell\Catalog\Actions\CreateProductPayload;
-use Larasell\Larasell\Catalog\Actions\CreateProductVariant;
 use Larasell\Larasell\Catalog\Actions\DeleteProduct;
 use Larasell\Larasell\Catalog\Actions\DeleteProductVariant;
-use Larasell\Larasell\Catalog\Actions\GenerateProductVariants;
 use Larasell\Larasell\Catalog\Actions\SetProductAttributeValues;
 use Larasell\Larasell\Catalog\Actions\SetProductCategories;
 use Larasell\Larasell\Catalog\Actions\UpdateProduct;
 use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
 use Larasell\Larasell\Catalog\Actions\UpdateProductVariant;
-use Larasell\Larasell\Catalog\AttributeId;
 use Larasell\Larasell\Catalog\AttributeValueId;
 use Larasell\Larasell\Catalog\CategoryId;
 use Larasell\Larasell\Catalog\Events\ProductCreated;
 use Larasell\Larasell\Catalog\Events\ProductDeleted;
 use Larasell\Larasell\Catalog\Events\ProductUpdated;
-use Larasell\Larasell\Catalog\Events\ProductVariantCreated;
 use Larasell\Larasell\Catalog\Events\ProductVariantDeleted;
 use Larasell\Larasell\Catalog\Events\ProductVariantUpdated;
 use Larasell\Larasell\Catalog\Models\Category;
@@ -151,39 +147,21 @@ it('sets the categories and attribute values of a product', function () {
         ->and($changes)->toBe([['categories'], ['attribute_values']]);
 });
 
-it('creates, updates and deletes variants with an event for each change', function () {
+it('updates and deletes variants with an event for each change', function () {
+    // Arrange
     $product = createProduct('Shirt');
-    $size = ProductAttribute::query()->create(['slug' => 'size', 'name' => ['en' => 'Size']]);
-    $small = $size->values()->create(['slug' => 's', 'name' => ['en' => 'S'], 'value' => 's']);
-    $large = $size->values()->create(['slug' => 'l', 'name' => ['en' => 'L'], 'value' => 'l']);
-    app(SetProductAttributeValues::class)->handle(ProductId::of($product), [AttributeValueId::of($small), AttributeValueId::of($large)], origin());
-    $defaultId = $product->defaultVariant()->id;
-    Event::fake([ProductVariantCreated::class, ProductVariantUpdated::class, ProductVariantDeleted::class]);
+    [$small, $large] = optionVariants(Product::query()->findOrFail($product->id), [optionDefinition('size', ['s', 'l'])]);
+    Event::fake([ProductVariantUpdated::class, ProductVariantDeleted::class]);
 
-    $variantIds = app(GenerateProductVariants::class)->handle(ProductId::of($product), [AttributeId::of($size)]);
-    app(UpdateProductVariant::class)->handle($variantIds[0], ['sku' => 'S-1', 'status' => Visibility::Visible]);
-    app(DeleteProductVariant::class)->handle($variantIds[1]);
+    // Act
+    app(UpdateProductVariant::class)->handle(VariantId::of($small), ['sku' => 'S-1', 'status' => Visibility::Hidden]);
+    app(DeleteProductVariant::class)->handle(VariantId::of($large));
 
+    // Assert
     expect(ProductVariant::query()->where('product_id', $product->id)->pluck('sku')->all())->toBe(['S-1']);
-    Event::assertDispatchedTimes(ProductVariantCreated::class, 2);
-    Event::assertDispatched(ProductVariantDeleted::class, fn (ProductVariantDeleted $event): bool => $event->variantId->value === $defaultId);
-    Event::assertDispatched(ProductVariantUpdated::class, fn (ProductVariantUpdated $event): bool => $event->variantId->equals($variantIds[0])
+    Event::assertDispatched(ProductVariantUpdated::class, fn (ProductVariantUpdated $event): bool => $event->variantId->equals(VariantId::of($small))
         && $event->productId->value === $product->id && $event->changed === ['sku', 'status']);
-    Event::assertDispatched(ProductVariantDeleted::class, fn (ProductVariantDeleted $event): bool => $event->variantId->equals($variantIds[1]));
-});
-
-it('creates a single variant from attribute values', function () {
-    $product = createProduct('Shirt');
-    $size = ProductAttribute::query()->create(['slug' => 'size', 'name' => ['en' => 'Size']]);
-    $small = $size->values()->create(['slug' => 's', 'name' => ['en' => 'S'], 'value' => 's']);
-    Product::query()->findOrFail($product->id)->variantDimensions()->attach($size->id, ['position' => 0]);
-    app(SetProductAttributeValues::class)->handle(ProductId::of($product), [AttributeValueId::of($small)], origin());
-    Event::fake([ProductVariantCreated::class]);
-
-    $variantId = app(CreateProductVariant::class)->handle(ProductId::of($product), [AttributeValueId::of($small)], ['sku' => 'S']);
-
-    expect(ProductVariant::query()->findOrFail($variantId)->sku)->toBe('S');
-    Event::assertDispatched(ProductVariantCreated::class, fn (ProductVariantCreated $event): bool => $event->variantId->equals($variantId));
+    Event::assertDispatched(ProductVariantDeleted::class, fn (ProductVariantDeleted $event): bool => $event->variantId->equals(VariantId::of($large)));
 });
 
 it('hands what the app passed along to the product\'s events, even when nothing else changed', function () {

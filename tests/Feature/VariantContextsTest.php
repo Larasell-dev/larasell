@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Larasell\Larasell\Catalog\AttributeScope;
 use Larasell\Larasell\Catalog\Models\Product;
 use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Checkout\Checkout;
@@ -47,8 +48,8 @@ it('exposes variant-loaded purchasable items to shipping and integrations', func
 
     expect($item->relationLoaded('product'))->toBeTrue()
         ->and($item->relationLoaded('variant'))->toBeTrue()
-        ->and($item->variant->relationLoaded('attributeValues'))->toBeTrue()
-        ->and($item->variant->attributeValues->first()->relationLoaded('attribute'))->toBeTrue();
+        ->and($item->variant->relationLoaded('optionValues'))->toBeTrue()
+        ->and($item->variant->optionValues->first()->relationLoaded('definitionValue'))->toBeTrue();
 });
 
 it('includes the concrete variant in inventory events', function () {
@@ -75,18 +76,19 @@ function variantContextCart(): array
         'stock' => 10,
         'status' => Visibility::Visible,
     ]);
-    $size = ProductAttribute::create(['slug' => fake()->unique()->bothify('context-size-####'), 'name' => 'Size']);
-    $smallValue = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
-    $mediumValue = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
-    $product->attributeValues()->attach([$smallValue->id, $mediumValue->id]);
-    $variants = $product->generateVariants([$size]);
-    $variants->each->update(['stock' => 5, 'status' => Visibility::Visible]);
+    // The first combination is the product's default variant, which shares the product's stock.
+    [, $small, $medium] = optionVariants($product, [optionDefinition('size', ['xs', 'small', 'medium'])]);
+    $small->update(['stock' => 5]);
+    $medium->update(['stock' => 5]);
+    $fit = ProductAttribute::create(['slug' => 'fit', 'name' => 'Fit', 'scope' => AttributeScope::Variant]);
+    $slim = $fit->values()->create(['slug' => 'slim', 'name' => 'Slim', 'value' => 'slim']);
+    $small->overrideAttribute($fit, $slim);
 
     return [
         Cart::createIn(shopContext(), ['currency' => Currency::EUR]),
         $product,
-        $product->variantFor([$size->slug => $smallValue->slug]),
-        $product->variantFor([$size->slug => $mediumValue->slug]),
-        $smallValue,
+        $small->refresh(),
+        $medium->refresh(),
+        $slim,
     ];
 }

@@ -1,7 +1,6 @@
 <?php
 
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Dimensions;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\LengthUnit;
@@ -61,25 +60,24 @@ it('lets the default variant follow the product measurements change', function (
 });
 
 it('lets a variant inherit or override the product measurements', function () {
+    // Arrange
     $product = Product::create([
         'name' => 'Variant parcel',
         'price' => Price::of(1000),
         'weight' => Weight::of(400, WeightUnit::Gram),
         'dimensions' => Dimensions::of(30, 20, 2, LengthUnit::Centimeter),
     ]);
-    $size = ProductAttribute::create(['slug' => 'parcel-size', 'name' => 'Size']);
-    $small = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
-    $large = $size->values()->create(['slug' => 'large', 'name' => 'Large', 'value' => 'large']);
-    $product->attributeValues()->attach([$small->id, $large->id]);
-    $product->variantDimensions()->sync([$size->id => ['position' => 0]]);
-    $inherited = $product->createVariant([$small]);
-    $overridden = $product->createVariant([$large], [
+    [$inherited, $overridden] = optionVariants($product, [optionDefinition('size', ['small', 'large'])]);
+
+    // Act
+    $overridden->update([
         'weight_inheritance' => 'overridden',
         'dimensions_inheritance' => 'overridden',
         'weight' => Weight::of(600, WeightUnit::Gram),
         'dimensions' => Dimensions::of(40, 25, 3, LengthUnit::Centimeter),
     ]);
 
+    // Assert
     expect($inherited->weight)->toBeNull()
         ->and($inherited->effectiveWeight()?->equals(Weight::of(400, WeightUnit::Gram)))->toBeTrue()
         ->and($inherited->effectiveDimensions()?->equals(Dimensions::of(30, 20, 2, LengthUnit::Centimeter)))->toBeTrue()

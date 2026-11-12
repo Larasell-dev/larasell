@@ -4,7 +4,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Larasell\Larasell\Catalog\Actions\MoveCategoryPayload;
 use Larasell\Larasell\Catalog\Actions\UpdateCategoryPayload;
 use Larasell\Larasell\Catalog\CategoryId;
+use Larasell\Larasell\Catalog\Models\Product;
+use Larasell\Larasell\Catalog\Models\ProductVariant;
+use Larasell\Larasell\Catalog\Options\Models\OptionDefinition;
+use Larasell\Larasell\Catalog\Options\Models\OptionDefinitionValue;
 use Larasell\Larasell\Catalog\ProductId;
+use Larasell\Larasell\Enums\Visibility;
 use Larasell\Larasell\SalesChannels\SalesChannelId;
 use Larasell\Larasell\Storefront\EntryPointId;
 use Larasell\Larasell\Tests\ConcurrencyTestCase;
@@ -62,7 +67,6 @@ use Larasell\Larasell\Catalog\Actions\UpdateCategory;
 use Larasell\Larasell\Catalog\Actions\UpdateProduct;
 use Larasell\Larasell\Catalog\Actions\UpdateProductPayload;
 use Larasell\Larasell\Catalog\Models\Category;
-use Larasell\Larasell\Catalog\Models\Product;
 
 /** @param  array<string, mixed>  $attributes */
 function updateCatalog(Product|Category $model, array $attributes): void
@@ -175,4 +179,71 @@ function outsideTestTransaction(Closure $callback): mixed
 function origin(): Origin
 {
     return Origin::cli(new SystemActor('tests'));
+}
+
+/**
+ * An option with the given values, created unless it exists. Names are plain strings or translations.
+ *
+ * @param  array<int|string, mixed>  $values  Value slugs, or names keyed by value slug
+ */
+function optionDefinition(string $slug, array $values, mixed $name = null): OptionDefinition
+{
+    $definition = OptionDefinition::query()->firstOrCreate(['slug' => $slug], ['name' => $name ?? ['en' => ucfirst($slug)]]);
+
+    $position = 0;
+
+    foreach (array_is_list($values) ? array_fill_keys($values, null) : $values as $valueSlug => $valueName) {
+        $definition->values()->firstOrCreate(
+            ['slug' => (string) $valueSlug],
+            ['name' => $valueName ?? ['en' => ucfirst((string) $valueSlug)], 'position' => $position++],
+        );
+    }
+
+    return $definition;
+}
+
+function optionValue(OptionDefinition $definition, string $slug): OptionDefinitionValue
+{
+    return $definition->values()->where('slug', $slug)->sole();
+}
+
+/**
+ * Gives the product the options, in order, and a visible variant for every combination of their values.
+ * Each variant inherits the product's commerce values, the former default variant included.
+ *
+ * @param  list<OptionDefinition>  $definitions  Every value of each is offered
+ * @return list<ProductVariant> In combination order, the first option varying slowest
+ */
+function optionVariants(Product $product, array $definitions): array
+{
+    $combinations = [[]];
+
+    foreach ($definitions as $definition) {
+        $values = $definition->values()->orderBy('position')->get()->all();
+        $product->addOption($definition, $values);
+        $combinations = array_merge(...array_map(
+            fn (array $combination): array => array_map(fn (OptionDefinitionValue $value): array => [...$combination, $value], $values),
+            $combinations,
+        ));
+    }
+
+    return array_map(function (ProductVariant $variant): ProductVariant {
+        $variant->update([
+            'status' => Visibility::Visible,
+            'price' => null,
+            'compare_at' => null,
+            'stock' => null,
+            'allow_backorders' => null,
+            'min_quantity' => null,
+            'max_quantity' => null,
+        ]);
+
+        return $variant->refresh();
+    }, $product->createCombinations($combinations));
+}
+
+/** The product's variant with the given value slugs, keyed by option slug. */
+function optionVariant(Product $product, array $selection): ProductVariant
+{
+    return $product->variants()->get()->sole(fn (ProductVariant $variant): bool => collect($variant->options())->map(fn (array $option): string => $option['value_slug'])->sort()->all() == collect($selection)->sort()->all());
 }

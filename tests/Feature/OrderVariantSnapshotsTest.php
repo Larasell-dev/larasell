@@ -1,8 +1,8 @@
 <?php
 
 use Larasell\Larasell\Catalog\Models\Product;
-use Larasell\Larasell\Catalog\Models\ProductAttribute;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
+use Larasell\Larasell\Catalog\Options\Models\OptionDefinition;
 use Larasell\Larasell\Checkout\Checkout;
 use Larasell\Larasell\Enums\Currency;
 use Larasell\Larasell\Enums\Visibility;
@@ -107,7 +107,7 @@ it('snapshots simple products without variant options', function () {
         ->and($item->variant_options)->toBe([]);
 });
 
-/** @return array{Cart, ProductVariant, ProductAttribute, mixed, ProductAttribute, mixed} */
+/** @return array{Cart, ProductVariant, OptionDefinition, mixed, OptionDefinition, mixed} */
 function orderSnapshotVariantCart(): array
 {
     $product = Product::create([
@@ -116,15 +116,12 @@ function orderSnapshotVariantCart(): array
         'stock' => 10,
         'status' => Visibility::Visible,
     ]);
-    $size = ProductAttribute::create(['slug' => 'size', 'name' => 'Size']);
-    $small = $size->values()->create(['slug' => 'small', 'name' => 'Small', 'value' => 'small']);
-    $medium = $size->values()->create(['slug' => 'medium', 'name' => 'Medium', 'value' => 'medium']);
-    $color = ProductAttribute::create(['slug' => 'color', 'name' => 'Color']);
-    $black = $color->values()->create(['slug' => 'black', 'name' => 'Black', 'value' => 'black']);
-    $product->attributeValues()->attach([$small->id, $medium->id, $black->id]);
-    $variants = $product->generateVariants([$size, $color]);
-    $variants->each->update(['status' => Visibility::Visible]);
-    $variant = $product->variantFor([
+    $size = optionDefinition('size', ['small', 'medium']);
+    $color = optionDefinition('color', ['black']);
+    optionVariants($product, [$size, $color]);
+    $small = optionValue($size, 'small');
+    $black = optionValue($color, 'black');
+    $variant = optionVariant($product, [
         'size' => 'small',
         'color' => 'black',
     ]);
