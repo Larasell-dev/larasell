@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.30.0](https://github.com/Larasell-dev/larasell/compare/v1.29.0...v1.30.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* audit options and attributes in the core, with the caller's origin
+
+### Features
+
+* audit options and attributes in the core, with the caller's origin ([acbda4d](https://github.com/Larasell-dev/larasell/commit/acbda4dc6b2c82aec5c2d130e3f1e9ff01475f08))
+
 ## [1.29.0](https://github.com/Larasell-dev/larasell/compare/v1.28.0...v1.29.0) (2026-11-12)
 
 
