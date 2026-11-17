@@ -265,4 +265,14 @@ enum Country: string
     {
         return \Locale::getDisplayRegion('-'.$this->value, $locale ?? App::currentLocale()) ?: $this->value;
     }
+
+    /** Whether the country is a member state of the European Union. */
+    public function isInEu(): bool
+    {
+        return in_array($this, [
+            self::AT, self::BE, self::BG, self::CY, self::CZ, self::DE, self::DK, self::EE, self::ES,
+            self::FI, self::FR, self::GR, self::HR, self::HU, self::IE, self::IT, self::LT, self::LU,
+            self::LV, self::MT, self::NL, self::PL, self::PT, self::RO, self::SE, self::SI, self::SK,
+        ], true);
+    }
 }

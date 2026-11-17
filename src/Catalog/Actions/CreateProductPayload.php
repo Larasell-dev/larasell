@@ -4,7 +4,9 @@ namespace Larasell\Larasell\Catalog\Actions;
 
 use BackedEnum;
 use Larasell\Larasell\Attachments\Attachments;
+use Larasell\Larasell\Catalog\Brands\BrandId;
 use Larasell\Larasell\Catalog\CoreProductType;
+use Larasell\Larasell\Catalog\Manufacturers\ManufacturerId;
 
 /** A new product, with its default variant. */
 final readonly class CreateProductPayload
@@ -16,5 +18,8 @@ final readonly class CreateProductPayload
         public Attachments $attachments = new Attachments,
         /** A registered product type; it cannot change later. */
         public string|BackedEnum $type = CoreProductType::Physical,
+        public ?BrandId $brandId = null,
+        /** The legal producer, which the GPSR has product pages in the EU name. */
+        public ?ManufacturerId $manufacturerId = null,
     ) {}
 }

@@ -16,7 +16,12 @@ final readonly class CreateProduct
     public function handle(CreateProductPayload $payload, Origin $origin): Product
     {
         return $this->db->transaction(function () use ($origin, $payload): Product {
-            $product = Product::query()->create([...$payload->attributes, 'type' => ProductTypes::keyOf($payload->type)]);
+            $product = Product::query()->create([
+                ...$payload->attributes,
+                'type' => ProductTypes::keyOf($payload->type),
+                'brand_id' => $payload->brandId?->value,
+                'manufacturer_id' => $payload->manufacturerId?->value,
+            ]);
 
             ProductCreated::dispatch(ProductId::of($product), origin: $origin, attachments: $payload->attachments);
 

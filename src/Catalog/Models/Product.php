@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -20,8 +21,10 @@ use Larasell\Larasell\Casts\NullableWeightCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Casts\TranslatableRichTextCast;
+use Larasell\Larasell\Catalog\Brands\Models\Brand;
 use Larasell\Larasell\Catalog\Exceptions\InvalidProductType;
 use Larasell\Larasell\Catalog\Exceptions\InvalidVariantOptions;
+use Larasell\Larasell\Catalog\Manufacturers\Models\Manufacturer;
 use Larasell\Larasell\Catalog\Options\Models\OptionDefinition;
 use Larasell\Larasell\Catalog\Options\Models\OptionDefinitionValue;
 use Larasell\Larasell\Catalog\Options\Models\ProductOption;
@@ -53,6 +56,10 @@ use Larasell\Larasell\Weight;
  * @property bool $allow_backorders
  * @property Visibility $status
  * @property string $type
+ * @property int|null $brand_id
+ * @property int|null $manufacturer_id
+ * @property-read Brand|null $brand
+ * @property-read Manufacturer|null $manufacturer
  *
  * @method static Builder<static> ofType(string|\BackedEnum $type)
  * @method static Builder<static> withCapability(string $capability)
@@ -257,6 +264,22 @@ class Product extends Model
             ->merge($category->descendants->flatMap(
                 fn (Category $descendant): Collection => $this->categoryTreeIds($descendant),
             ));
+    }
+
+    /** @return BelongsTo<Brand, $this> */
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    /**
+     * The legal producer; variants have their product's.
+     *
+     * @return BelongsTo<Manufacturer, $this>
+     */
+    public function manufacturer(): BelongsTo
+    {
+        return $this->belongsTo(Manufacturer::class);
     }
 
     /**
