@@ -65,7 +65,7 @@ it('updates only the brand fields given, keeping the description unless it is cl
     // Assert
     expect($kept)->toBe(['en' => 'Tools'])
         ->and($brand->refresh()->only('slug', 'description'))->toBe(['slug' => 'acme-tools', 'description' => null])
-        ->and($brand->name->all())->toBe(['en' => 'Acme', 'de' => 'Akme']);
+        ->and($brand->name->all())->toEqual(['en' => 'Acme', 'de' => 'Akme']);
 });
 
 it('names the responsible person as EU contact of a manufacturer outside the EU, and the manufacturer itself inside', function () {
@@ -139,7 +139,7 @@ it('audits brand and manufacturer changes', function () {
 
         return true;
     });
-    expect($records)->toBe([
+    expect($records)->toEqual([
         ['brand.created', ['slug' => 'acme', 'name' => ['en' => 'Acme', 'de' => 'Akme']]],
         ['brand.updated', ['changed' => ['slug']]],
         ['brand.deleted', []],
@@ -160,7 +160,7 @@ it('snapshots the brand and manufacturer on order items, unchanged when they cha
 
     // Assert
     $item->refresh();
-    expect($item->brand_name?->all())->toBe(['en' => 'Acme', 'de' => 'Akme'])
+    expect($item->brand_name?->all())->toEqual(['en' => 'Acme', 'de' => 'Akme'])
         ->and($item->manufacturer['name'])->toBe('Acme Inc.')
         ->and($item->manufacturer['address']['country'])->toBe('US')
         ->and($item->manufacturer['responsible_person']['name'])->toBe('Acme GmbH');
