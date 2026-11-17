@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.1](https://github.com/Larasell-dev/larasell/compare/v1.30.0...v1.30.1) (2026-11-17)
+
+
+### Features
+
+* add brands and manufacturers ([8a69b77](https://github.com/Larasell-dev/larasell/commit/8a69b77592f6d51367319ac1fbfd950a273af1a0))
+
 ## [1.30.0](https://github.com/Larasell-dev/larasell/compare/v1.29.0...v1.30.0) (2026-11-12)
 
 
