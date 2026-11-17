@@ -251,6 +251,8 @@ class Checkout
                         'product_id' => $item->product->getKey(),
                         'product_variant_id' => $item->variant->getKey(),
                         'product_name' => $item->product->name,
+                        'brand_name' => $item->product->brand?->name,
+                        'manufacturer' => $item->product->manufacturer?->snapshot(),
                         'product_sku' => $item->sku(),
                         'product_barcode' => $item->barcode(),
                         'variant_name' => $item->variant->name(),

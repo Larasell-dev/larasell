@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection as SupportCollection;
 use Larasell\Larasell\Casts\NullablePriceCast;
+use Larasell\Larasell\Casts\NullableTranslatableCast;
 use Larasell\Larasell\Casts\PriceCast;
 use Larasell\Larasell\Casts\TranslatableCast;
 use Larasell\Larasell\Catalog\Models\ProductVariant;
@@ -38,6 +39,8 @@ use Larasell\Larasell\Translatable;
  * @property array<string, mixed>|null $tax_snapshot
  * @property SupportCollection<string, mixed> $metadata
  * @property string|null $product_type Effective type at checkout; null on orders placed before product types
+ * @property Translatable|null $brand_name The product's brand at checkout
+ * @property array<string, mixed>|null $manufacturer The product's manufacturer at checkout: name, address, email, url, responsible_person
  * @property list<string>|null $capabilities Capabilities at checkout; null on orders placed before product types
  */
 class OrderItem extends Model
@@ -69,6 +72,8 @@ class OrderItem extends Model
         'tax_total' => NullablePriceCast::class,
         'tax_snapshot' => 'array',
         'capabilities' => 'array',
+        'brand_name' => NullableTranslatableCast::class,
+        'manufacturer' => 'array',
     ];
 
     /** @return BelongsTo<Order, $this> */

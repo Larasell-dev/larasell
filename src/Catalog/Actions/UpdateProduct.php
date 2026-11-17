@@ -19,7 +19,7 @@ final readonly class UpdateProduct
     {
         return $this->db->transaction(function () use ($origin, $productId, $payload): Product {
             $product = Product::query()->lockForUpdate()->findOrFail($productId->value);
-            $changed = array_keys($product->fill($payload->attributes)->getDirty());
+            $changed = array_keys($product->fill($payload->toAttributes())->getDirty());
 
             if ($changed !== []) {
                 $product->save();
